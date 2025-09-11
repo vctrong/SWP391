@@ -1,0 +1,21 @@
+# Ignore build directories
+/SweetimalPetCare/target/
+/SweetimalPetCare/build/
+/SweetimalPetCare/dist/
+
+# Ignore IDE files (NetBeans, IntelliJ, Eclipse, VSCode)
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/build/
+/.vscode/
+/.idea/
+/*.iml
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
