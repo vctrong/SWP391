@@ -7,3 +7,36 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/CascadeStyleSheet.css
     Author     : Vo Chi Trong - CE191062
 */
 
+.pet-gradient {
+    background: linear-gradient(135deg, #f0e7ff 0%, #e0f7fa 100%);
+}
+.pet-title {
+    font-family: 'Pacifico', cursive;
+}
+
+@keyframes fadeInLeft {
+    0% {
+        opacity: 0;
+        transform: translateX(-40px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+@keyframes fadeInRight {
+    0% {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+.animate-fadeInLeft {
+    animation: fadeInLeft 1.2s;
+}
+.animate-fadeInRight {
+    animation: fadeInRight 1.2s;
+}
