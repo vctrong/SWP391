@@ -14,24 +14,25 @@
                 <img src="assets/img/logo.jpg" alt="Sweetimal Logo" class="w-8 h-8 rounded-full">
                 <h4 class="font-bold text-lg">Sweetimal Pet Care</h4>
             </div>
-            <p>Your trusted partner for pet services and products.</p>
+            <p>Đối tác tin cậy của bạn về dịch vụ và sản phẩm cho thú cưng.</p>
         </div>
         <div>
-            <h4 class="font-bold text-lg mb-4">Quick Links</h4>
+            <h4 class="font-bold text-lg mb-4">Liên kết nhanh</h4>
             <ul>
-                <li><a href="#" class="hover:underline">Home</a></li>
-                <li><a href="#services" class="hover:underline">Services</a></li>
-                <li><a href="#shop" class="hover:underline">Shop</a></li>
-                <li><a href="#contact" class="hover:underline">Contact</a></li>
+                <li><a href="home" class="hover:underline">Trang chủ</a></li>
+                <li><a href="#services" class="hover:underline">Dịch vụ</a></li>
+                <li><a href="#shop" class="hover:underline">Cửa hàng</a></li>
+                <li><a href="#contact" class="hover:underline">Liên hệ</a></li>
+                <li><a href="aboutUs" class="hover:underline">Về chúng tôi</a></li>
             </ul>
         </div>
         <div>
-            <h4 class="font-bold text-lg mb-4">Contact Us</h4>
+            <h4 class="font-bold text-lg mb-4">Liên hệ</h4>
             <p>Email: support@sweetimal.com</p>
-            <p>Phone: +336 922 235</p>
+            <p>Điện thoại: +336 922 235</p>
         </div>
     </div>
     <div class="text-center mt-10 text-gray-400">
-        © 2025 Sweetimal Pet Care. All rights reserved.
+        © 2025 Sweetimal Pet Care. Đã đăng ký bản quyền.
     </div>
 </footer>
