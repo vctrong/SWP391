@@ -4,6 +4,7 @@
     Author     : Vo Chi Trong - CE191062
 --%>
 
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 
 <header class="fixed top-0 left-0 w-full z-50 bg-white/30 backdrop-blur-md shadow-sm">
@@ -25,10 +26,18 @@
             <a href="aboutUs" class="hover:text-blue-500">Về chúng tôi</a>
         </nav>
 
-        <!-- Buttons -->
-        <div class="space-x-4">
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Đăng nhập</button>
-            <button class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Đăng ký</button>
-        </div>
+        <c:if test="${not empty user}">
+            <div class="space-x-4">
+                <a href="#" class="button px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">${user.fullName}</a>
+            </div>
+        </c:if>
+        <c:if test="${empty user}">
+            <!-- Buttons -->
+            <div class="space-x-4">
+                <a href="login" class="button px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Đăng nhập</a>
+                <button class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Đăng ký</button>
+            </div>
+        </c:if>
+
     </div>
 </header>
