@@ -4,13 +4,13 @@
 *********************************************************************/
 IF DB_ID('SweetimalPetCare') IS NOT NULL
 BEGIN
-    ALTER DATABASE PetServicePlatform_Test SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE PetServicePlatform_Test;
+    ALTER DATABASE SweetimalPetCare SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE SweetimalPetCare;
 END
 GO
-CREATE DATABASE PetServicePlatform_Test;
+CREATE DATABASE SweetimalPetCare;
 GO
-USE PetServicePlatform_Test;
+USE SweetimalPetCare;
 GO
 
 /* ============== SECURITY / USERS & AUTH ============== */
