@@ -5,6 +5,7 @@
 
 package controller;
 
+import daos.LoginDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -12,6 +13,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import model.Users;
 
 /**
  *
@@ -55,7 +58,7 @@ public class loginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
-        processRequest(request, response);
+        request.getRequestDispatcher("WEB-INF/login/login.jsp").forward(request, response);
     } 
 
     /** 
@@ -68,7 +71,20 @@ public class loginServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
-        processRequest(request, response);
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        
+        LoginDAO lDAO = new LoginDAO();
+        Users user = lDAO.login(username, password);
+        HttpSession session = request.getSession(false);
+        session.setAttribute("user", user);
+        String view = request.getParameter("view");
+        if (view.equals("login") && user != null) {
+            response.sendRedirect(request.getContextPath() + "/home");
+        } else {
+            response.sendRedirect(request.getContextPath() + "/login?view=fail");
+        }
+        
     }
 
     /** 
