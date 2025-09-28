@@ -38,9 +38,9 @@ public class LoginDAO extends db.DBContext {
     public Users login(String username, String password) {
         try {
             String qr = "select user_id, username, full_name, email,\n"
-                    + "phone, is_active, gender, img_url, role_id, birtday\n"
+                    + "phone, is_active, gender, avatar_url, role_id, birthday\n"
                     + "from users\n"
-                    + "where username  = ? and password  = ?";
+                    + "where username  = ? and password_hash  = ?";
             Object[] params = {username, hashMd5(password)};
             ResultSet rs = this.executeSelectQuery(qr, params);
             if (rs.next()) {
@@ -58,6 +58,6 @@ public class LoginDAO extends db.DBContext {
         LoginDAO l = new LoginDAO();
 
         System.out.println("Dya la pass: " + l.hashMd5("123456"));
-        System.out.println("day la user: " + l.login("admin", "123456"));
+        System.out.println("day la user: " + l.login("admin1", "123456"));
     }
 }

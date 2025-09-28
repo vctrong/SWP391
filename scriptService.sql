@@ -37,9 +37,9 @@ CREATE TABLE Users (
     username        NVARCHAR(50) NOT NULL UNIQUE,
     email           NVARCHAR(150) NOT NULL UNIQUE,
     phone           NVARCHAR(20),
-    password_hash   VARBINARY(256) NOT NULL,
+    password_hash   nvarchar(255) NOT NULL,
     full_name       NVARCHAR(120),
-    gender          CHAR(1) CHECK (gender IN ('M','F','O')),
+    gender          INT,
     birthday        DATE NULL,
     is_active       BIT NOT NULL DEFAULT 1,
     avatar_url      NVARCHAR(300),
@@ -560,13 +560,13 @@ WHERE r.role_name = N'Admin';
 
 -- Users
 INSERT INTO Users(username, email, password_hash, full_name, role_id, gender, birthday)
-SELECT 'customer1','customer1@example.com', 0x01, N'Nguyễn Khách 1', role_id,'M','1995-05-10' FROM Roles WHERE role_name='Customer';
+SELECT 'customer1','customer1@example.com', 0x01, N'Nguyễn Khách 1', role_id, 1,'1995-05-10' FROM Roles WHERE role_name='Customer';
 INSERT INTO Users(username, email, password_hash, full_name, role_id, gender)
-SELECT 'staff1','staff1@example.com', 0x02, N'Lê Nhân Viên 1', role_id,'F' FROM Roles WHERE role_name='Staff';
+SELECT 'staff1','staff1@example.com', 0x02, N'Lê Nhân Viên 1', role_id, 2 FROM Roles WHERE role_name='Staff';
 INSERT INTO Users(username, email, password_hash, full_name, role_id, gender)
-SELECT 'vet1','vet1@example.com', 0x03, N'Trần Bác Sĩ 1', role_id,'M' FROM Roles WHERE role_name='Vet';
+SELECT 'vet1','vet1@example.com', 0x03, N'Trần Bác Sĩ 1', role_id, 1 FROM Roles WHERE role_name='Vet';
 INSERT INTO Users(username, email, password_hash, full_name, role_id, gender)
-SELECT 'admin','admin@example.com', 0x04, N'Quản Trị', role_id,'O' FROM Roles WHERE role_name='Admin';
+SELECT 'admin','admin@example.com', 0x04, N'Quản Trị', role_id, 0 FROM Roles WHERE role_name='Admin';
 
 INSERT INTO StaffProfile(staff_id, position_title, specialty, license_number, hire_date, is_veterinarian)
 SELECT user_id, N'Groomer', N'Grooming', NULL, '2024-01-01', 0 FROM Users WHERE username='staff1';
