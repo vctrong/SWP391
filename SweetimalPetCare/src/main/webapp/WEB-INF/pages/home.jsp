@@ -1,4 +1,4 @@
-<%-- 
+<%--
     Document   : home
     Created on : Sep 15, 2025, 12:41:25 AM
     Author     : Vo Chi Trong - CE191062
@@ -10,7 +10,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sweetimal Pet Care</title>
+        <title>Sweetimal Pet Care</title>
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-white text-gray-800">
@@ -62,7 +62,7 @@
                     <p class="text-gray-500 text-sm">Huấn luyện vâng lời, cải thiện hành vi.</p>
                 </div>
             </div>
-            <a href="/services" class="inline-block mt-8 bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">Xem thêm dịch vụ</a>
+            <a href="services" class="inline-block mt-8 bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">Xem thêm dịch vụ</a>
         </section>
 
         <!-- Cửa hàng thú cưng -->
