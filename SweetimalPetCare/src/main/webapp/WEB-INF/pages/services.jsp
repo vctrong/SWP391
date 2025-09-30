@@ -23,10 +23,21 @@
                         <h3 class="font-semibold text-lg text-blue-700">${s.name}</h3>
                         <p class="text-gray-500 text-sm mb-4">${s.description}</p>
                         <p class="text-pink-600 font-bold mb-2">${s.price} đ</p>
-                        <a href="/booking?serviceId=${s.id}"
-                           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                            Đặt ngay
-                        </a>
+                        <c:choose>
+                            <c:when test="${empty sessionScope.user}">
+                                <a href="${pageContext.request.contextPath}/login?redirect=booking&serviceId=${s.id}"
+                                   class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                    Đặt ngay
+                                </a>
+                            </c:when>
+                            <c:otherwise>
+                                <a href="${pageContext.request.contextPath}/booking?serviceId=${s.id}"
+                                   class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                    Đặt ngay
+                                </a>
+                            </c:otherwise>
+                        </c:choose>
+
                     </div>
                 </c:forEach>
             </div>
