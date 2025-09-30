@@ -12,11 +12,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Sweetimal Pet Care</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>
     </head>
     <body class="bg-white text-gray-800">
         <!-- Navbar -->
         <%@include file="/WEB-INF/include/header.jsp" %>
-
+        <%@include file="/WEB-INF/include/sidebarInfo.jsp" %>
         <!-- Phần giới thiệu -->
         <section class="relative bg-blue-100">
             <div class="container mx-auto flex flex-col md:flex-row items-center py-20 px-6">
@@ -108,6 +110,7 @@
 
         <!-- Footer -->
         <%@include file="/WEB-INF/include/footer.jsp" %>
+        <script src="assets/js/script.js"></script>
     </body>
 </html>
 
