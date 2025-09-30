@@ -4,6 +4,7 @@
     Author     : Vo Chi Trong - CE191062
 --%>
 
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 
 <!-- Sidebar Overlay -->
@@ -25,9 +26,9 @@
                     <!-- Full Name -->
                     <div class="font-bold text-xl">${user.fullName}</div>
                     <!-- Role -->
-                    <div class="text-blue-100">Role: Admin</div>
+                    <div class="text-blue-100">Role: ${user.roleEnum.text} <i class="${user.roleEnum.icon}" ></i> </div>
                     <!-- Email -->
-                    <div class="text-blue-100 text-sm">mail@gmail.com</div>
+                    <div class="text-blue-100 text-sm">${user.email}</div>
                     <!-- User ID -->
                     <a href="#"
                        class="inline-flex items-center px-3 py-1 rounded-full
@@ -40,16 +41,16 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                   d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        ID: 1
+                        ID: ${user.id}
                     </a>
                 </div>
         </div>
 
         <div class="mt-4">
-            <div class="text-sm text-blue-100">Last login: Today at 14:31</div>
+            <div class="text-sm text-blue-100">Number of pets: ${user.nop}</div>
             <div class="mt-2 bg-blue-800 bg-opacity-30 rounded-lg p-2 text-sm">
                 <div class="font-semibold">
-                    Account Status: <span class="text-green-300">Active</span>
+                    Pet Owner Since: <span class="text-green-300"> <fmt:formatDate value="${user.create}" type="date" /> </span>
                 </div>
             </div>
         </div>

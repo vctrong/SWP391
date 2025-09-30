@@ -37,16 +37,19 @@ public class LoginDAO extends db.DBContext {
 
     public Users login(String username, String password) {
         try {
-            String qr = "select user_id, username, full_name, email,\n"
-                    + "phone, is_active, gender, avatar_url, role_id, birthday\n"
-                    + "from users\n"
-                    + "where username  = ? and password_hash  = ?";
+            String qr = "select u.user_id, u.username, u.full_name, u.email,\n"
+                    + "phone, is_active, u.gender, avatar_url, role_id, birthday, u.created_at, COUNT(p.pet_id) as soluong\n"
+                    + "from users u\n"
+                    + "left join pets p on p.owner_id = u.user_id\n"
+                    + "where username = ? and password_hash = ?\n"
+                    + "group by u.user_id, u.full_name, u.username, u.email, u.phone, u.is_active, u.birthday, u.gender,\n"
+                    + "u.is_active, u.avatar_url, u.role_id, u.created_at";
             Object[] params = {username, hashMd5(password)};
             ResultSet rs = this.executeSelectQuery(qr, params);
             if (rs.next()) {
                 return new Users(rs.getInt(1), rs.getString(2), rs.getString(3),
                         rs.getString(4), rs.getString(5), rs.getInt(6), rs.getInt(7),
-                        rs.getString(8), rs.getInt(9), rs.getDate(10));
+                        rs.getString(8), rs.getInt(9), rs.getDate(10), rs.getDate(11), rs.getInt(12));
             }
         } catch (SQLException ex) {
             Logger.getLogger(LoginDAO.class.getName()).log(Level.SEVERE, null, ex);
