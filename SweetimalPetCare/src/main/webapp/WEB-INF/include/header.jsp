@@ -28,7 +28,9 @@
 
         <c:if test="${not empty user}">
             <div class="space-x-4">
-                <a href="#" class="button px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">${user.fullName}</a>
+                <button id="userMenuButton" class="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600
+                        hover:to-blue-700 text-white px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">${user.fullName}</button>
             </div>
         </c:if>
         <c:if test="${empty user}">
