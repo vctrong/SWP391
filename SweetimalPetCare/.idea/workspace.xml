@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ArtifactsWorkspaceSettings">
     <artifacts-to-build>
-      <artifact name="SweetimalPetCare:war exploded" />
+      <artifact name="SweetimalPetCare" />
     </artifacts-to-build>
   </component>
   <component name="AutoImportSettings">
@@ -10,8 +10,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="de4bc61f-e3a1-4b2c-840e-8ab64b0b7b84" name="Changes" comment="changes file pom">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/webapp/WEB-INF/include/sidebarInfo.jsp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/webapp/WEB-INF/include/sidebarInfo.jsp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,10 +74,15 @@
     </option>
   </component>
   <component name="RunManager">
-    <configuration name="Tomcat 10.1.40" type="#com.intellij.j2ee.web.tomcat.TomcatRunConfigurationFactory" factoryName="Local" APPLICATION_SERVER_NAME="Tomcat 10.1.40" ALTERNATIVE_JRE_ENABLED="true" ALTERNATIVE_JRE_PATH="24" nameIsGenerated="true">
-      <option name="OPEN_IN_BROWSER_URL" value="http://localhost:8080/SweetimalPetCare" />
+    <configuration name="Tomcat 10.1.40" type="#com.intellij.j2ee.web.tomcat.TomcatRunConfigurationFactory" factoryName="Local" APPLICATION_SERVER_NAME="Tomcat 10.1.40" ALTERNATIVE_JRE_ENABLED="true" ALTERNATIVE_JRE_PATH="C:/Program Files/Java/jdk-24" nameIsGenerated="true">
       <option name="UPDATING_POLICY" value="restart-server" />
-      <deployment />
+      <deployment>
+        <artifact name="SweetimalPetCare">
+          <settings>
+            <option name="CONTEXT_PATH" value="/SweetimalPetCare" />
+          </settings>
+        </artifact>
+      </deployment>
       <server-settings>
         <option name="BASE_DIRECTORY_NAME" value="79390a74-b2a2-4e06-861a-c0fb7409250f" />
       </server-settings>
@@ -176,7 +182,8 @@
       <workItem from="1759055282061" duration="1566000" />
       <workItem from="1759068459596" duration="688000" />
       <workItem from="1759069155648" duration="45000" />
-      <workItem from="1759073103766" duration="2530000" />
+      <workItem from="1759073103766" duration="3456000" />
+      <workItem from="1759201900530" duration="870000" />
     </task>
     <task id="LOCAL-00001" summary="changes file pom">
       <option name="closed" value="true" />
