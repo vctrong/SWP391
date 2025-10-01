@@ -43,3 +43,5 @@
 
     </div>
 </header>
+<%@include file="/WEB-INF/include/sidebarInfo.jsp" %>
+<script src="assets/js/script.js"></script>

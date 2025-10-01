@@ -74,19 +74,25 @@ public class bookingServlet extends HttpServlet {
         }
 
         try {
-            // Lấy danh sách pet của user
             PetDAO petDAO = new PetDAO();
-            List<Pet> pets = petDAO.getPetsByOwner(user.getId());
-
             ServiceDAO serviceDAO = new ServiceDAO();
+
+            List<Pet> pets = petDAO.getPetsByOwner(user.getId());
             List<Service> services = serviceDAO.getAllServices();
+
+            // Lấy serviceId từ URL
+            String serviceIdParam = request.getParameter("serviceId");
+            Long selectedServiceId = (serviceIdParam != null && !serviceIdParam.isEmpty())
+                    ? Long.parseLong(serviceIdParam)
+                    : null;
 
             request.setAttribute("pets", pets);
             request.setAttribute("services", services);
+            request.setAttribute("selectedServiceId", selectedServiceId);
 
             request.getRequestDispatcher("/WEB-INF/pages/booking.jsp").forward(request, response);
         } catch (Exception e) {
-            throw new ServletException("Lỗi khi load booking form", e);
+            throw new ServletException(e);
         }
     }
 
@@ -123,7 +129,7 @@ public class bookingServlet extends HttpServlet {
                     + "VALUES (?, ?, ?, SYSUTCDATETIME(), ?, ?, ?, 'PENDING')";
             db.executeQuery(sql, new Object[]{customerId, petId, serviceId, requestedDate, requestedStart, notes});
 
-            response.sendRedirect("bookingHistory.jsp"); // sau này làm trang history
+            response.sendRedirect(request.getContextPath() + "bookingHistory.jsp"); // sau này làm trang history
         } catch (Exception e) {
             throw new ServletException("Booking failed", e);
         }

@@ -14,7 +14,6 @@
     </head>
     <body class="bg-gray-50 text-gray-800">
         <%@include file="/WEB-INF/include/header.jsp" %>
-
         <section class="py-16 px-6 max-w-6xl mx-auto">
             <h2 class="text-3xl font-bold mb-8 text-center">Danh sách dịch vụ</h2>
             <div class="grid md:grid-cols-3 gap-6">
