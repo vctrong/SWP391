@@ -40,11 +40,24 @@
                     <span class="text-gray-700">Dịch vụ</span>
                     <select name="serviceId" class="w-full border rounded px-3 py-2" required>
                         <option value="">-- Chọn dịch vụ --</option>
-                        <% for (Service s : services) {%>
-                        <option value="<%= s.getId()%>"><%= s.getName()%></option>
-                        <% }%>
+                        <%
+                            Long selectedServiceId = (Long) request.getAttribute("selectedServiceId");
+                            if (services != null) {
+                                for (Service s : services) {
+                                    String selected = (selectedServiceId != null && selectedServiceId == s.getId())
+                                            ? "selected"
+                                            : "";
+                        %>
+                        <option value="<%= s.getId()%>" <%= selected%>>
+                            <%= s.getName()%>
+                        </option>
+                        <%
+                                }
+                            }
+                        %>
                     </select>
                 </label>
+
 
                 <!-- Chọn ngày -->
                 <label class="block">

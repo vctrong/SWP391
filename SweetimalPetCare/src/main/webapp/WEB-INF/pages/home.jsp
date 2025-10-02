@@ -20,7 +20,10 @@
     <body class="bg-white text-gray-800">
         <!-- Navbar -->
         <%@include file="/WEB-INF/include/header.jsp" %>
+<<<<<<< HEAD
         <%@include file="/WEB-INF/toast/loginOk.jsp" %>       
+=======
+>>>>>>> pets
         <!-- Phần giới thiệu -->
         <section class="relative bg-blue-100">
             <div class="container mx-auto flex flex-col md:flex-row items-center py-20 px-6">
