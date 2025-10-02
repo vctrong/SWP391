@@ -80,8 +80,10 @@ public class loginServlet extends HttpServlet {
         session.setAttribute("user", user);
         String view = request.getParameter("view");
         if (view.equals("login") && user != null) {
+            session.setAttribute("loginOk", Boolean.TRUE);
             response.sendRedirect(request.getContextPath() + "/home");
         } else {
+            session.setAttribute("loginFail", Boolean.TRUE);
             response.sendRedirect(request.getContextPath() + "/login?view=fail");
         }
         
