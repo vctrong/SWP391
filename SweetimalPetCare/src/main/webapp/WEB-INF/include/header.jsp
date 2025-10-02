@@ -44,8 +44,5 @@
     </div>
 </header>
 <%@include file="/WEB-INF/include/sidebarInfo.jsp" %>
-<<<<<<< HEAD
 <%@include file="/WEB-INF/include/cardID.jsp" %>
-=======
 <script src="assets/js/script.js"></script>
->>>>>>> pets
