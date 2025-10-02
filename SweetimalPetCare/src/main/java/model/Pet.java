@@ -4,7 +4,7 @@
  */
 package model;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 /**
  *
@@ -16,17 +16,17 @@ public class Pet {
     private int ownerId;
     private String name;
     private int speciesId;
-    private int BreedId;
+    private Integer BreedId;
     private String gender;
-    private Date birthDate;
-    private double weightKg;
+    private LocalDate birthDate;
+    private Double weightKg;
     private String color;
     private String notes;
 
     public Pet() {
     }
 
-    public Pet(int id, int ownerId, String name, int speciesId, int BreedId, String gender, Date birthDate, double weightKg, String color, String notes) {
+    public Pet(int id, int ownerId, String name, int speciesId, Integer BreedId, String gender, LocalDate birthDate, Double weightKg, String color, String notes) {
         this.id = id;
         this.ownerId = ownerId;
         this.name = name;
@@ -71,11 +71,11 @@ public class Pet {
         this.speciesId = speciesId;
     }
 
-    public int getBreedId() {
+    public Integer getBreedId() {
         return BreedId;
     }
 
-    public void setBreedId(int BreedId) {
+    public void setBreedId(Integer BreedId) {
         this.BreedId = BreedId;
     }
 
@@ -87,19 +87,19 @@ public class Pet {
         this.gender = gender;
     }
 
-    public Date getBirthDate() {
+    public LocalDate getBirthDate() {
         return birthDate;
     }
 
-    public void setBirthDate(Date birthDate) {
+    public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
     }
 
-    public double getWeightKg() {
+    public Double getWeightKg() {
         return weightKg;
     }
 
-    public void setWeightKg(double weightKg) {
+    public void setWeightKg(Double weightKg) {
         this.weightKg = weightKg;
     }
 
