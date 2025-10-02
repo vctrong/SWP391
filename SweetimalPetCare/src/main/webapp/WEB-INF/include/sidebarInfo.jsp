@@ -59,14 +59,21 @@
 
         <!-- Middle Section: Useful Information -->
         <div class="flex-1 overflow-y-auto p-4 bg-gray-50">
-            <h3 class="font-bold text-gray-700 mb-3">Your Repositories</h3>
+            <h3 class="font-bold text-gray-700 mb-3">Utilities</h3>
             <div class="space-y-2">
-                <a href="https://github.com/vctrong/SWP391" class="flex items-center p-2 rounded-lg hover:bg-blue-100 transition-colors duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                <a href="${pageContext.request.contextPath}/pets" 
+                   class="flex items-center p-2 rounded-lg hover:bg-blue-100 transition-colors duration-200 group">
+                    <svg class="h-5 w-5 text-blue-600 mr-2 group-hover:text-blue-800 transition-colors duration-200" 
+                         xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+                         viewBox="0 0 14 14" fill="currentColor">
+                        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M.75 11.018v-7.59l1.254 1.004c.633.506 1.42.782 2.23.782H7L8.292 2.63a1.786 1.786 0 0 1 1.597-.987h.682v2.232l2.679.893v.893c0 .986-.8 1.785-1.786 1.785H9.68v3.572a1.34 1.34 0 1 1-2.679 0v-.447c0-.493-.4-.892-.893-.892H4.321c-.493 0-.892.4-.892.892v.447a1.34 1.34 0 1 1-2.679 0"/>
+                            <path d="M7.012 5.097c.175.717 1 2.195 2.895 2.375"/>
+                        </g>
                     </svg>
-                    <span class="text-gray-700">SWP391</span>
+                    <span class="text-gray-700 group-hover:text-blue-800 transition-colors duration-200">Quản lý Pets</span>
                 </a>
+
                 <a href="https://github.com/vctrong/CacBaiThuyetTrinh" class="flex items-center p-2 rounded-lg hover:bg-blue-100 transition-colors duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />

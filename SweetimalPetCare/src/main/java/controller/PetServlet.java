@@ -4,7 +4,7 @@
  */
 package controller;
 
-import daos.ServiceDAO;
+import daos.PetDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -12,15 +12,17 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import java.util.List;
+import model.Pet;
+import model.Users;
 
 /**
  *
- * @author Vo Chi Trong - CE191062
+ * @author Lim Thế Toàn - CE190616
  */
-@WebServlet(name = "serviceServlet", urlPatterns = {"/services"})
-public class serviceServlet extends HttpServlet {
-
-    private ServiceDAO serviceDAO = new ServiceDAO();
+@WebServlet(name = "PetServlet", urlPatterns = {"/pets"})
+public class PetServlet extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -39,10 +41,10 @@ public class serviceServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet serviceServlet</title>");
+            out.println("<title>Servlet PetServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet serviceServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet PetServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
@@ -60,8 +62,22 @@ public class serviceServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setAttribute("services", serviceDAO.getAllServices());
-        request.getRequestDispatcher("/WEB-INF/pages/services.jsp").forward(request, response);
+        HttpSession session = request.getSession(false);
+        Users user = (session != null) ? (Users) session.getAttribute("user") : null;
+
+        if (user == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        try {
+            PetDAO petDAO = new PetDAO();
+            List<Pet> pets = petDAO.getPetsByOwner(user.getId());
+            request.setAttribute("pets", pets);
+            request.getRequestDispatcher("/WEB-INF/pages/pets.jsp").forward(request, response);
+        } catch (Exception e) {
+            throw new ServletException(e);
+        }
     }
 
     /**

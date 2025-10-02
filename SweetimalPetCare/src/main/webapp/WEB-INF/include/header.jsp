@@ -1,4 +1,4 @@
-<%-- 
+<%--
     Document   : header
     Created on : Sep 15, 2025, 1:13:59 AM
     Author     : Vo Chi Trong - CE191062
@@ -7,12 +7,12 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 
-<header class="fixed top-0 left-0 w-full z-50 bg-white/30 backdrop-blur-md shadow-sm">
+<header class="sticky top-0 left-0 w-full z-50 bg-white/30 backdrop-blur-md shadow-sm">
     <div class="container mx-auto flex justify-between items-center py-4 px-6">
         <!-- Logo + Brand -->
         <div class="flex items-center space-x-3">
-            <img src="assets/img/logo.jpg" 
-                 alt="Sweetimal Logo" 
+            <img src="assets/img/logo.jpg"
+                 alt="Sweetimal Logo"
                  class="w-10 h-10 rounded-full border border-blue-600 shadow-sm">
             <h1 class="text-2xl font-bold text-blue-600">Sweetimal Pet Care</h1>
         </div>
