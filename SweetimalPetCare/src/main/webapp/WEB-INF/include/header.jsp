@@ -43,3 +43,5 @@
 
     </div>
 </header>
+<%@include file="/WEB-INF/include/sidebarInfo.jsp" %>
+<%@include file="/WEB-INF/include/cardID.jsp" %>
