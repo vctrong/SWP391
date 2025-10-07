@@ -1,4 +1,4 @@
-<%-- 
+<%--
     Document   : sidebarInfo
     Created on : Sep 28, 2025, 10:06:25 PM
     Author     : Vo Chi Trong - CE191062
@@ -61,10 +61,10 @@
         <div class="flex-1 overflow-y-auto p-4 bg-gray-50">
             <h3 class="font-bold text-gray-700 mb-3">Utilities</h3>
             <div class="space-y-2">
-                <a href="${pageContext.request.contextPath}/pets" 
+                <a href="${pageContext.request.contextPath}/pets"
                    class="flex items-center p-2 rounded-lg hover:bg-blue-100 transition-colors duration-200 group">
-                    <svg class="h-5 w-5 text-blue-600 mr-2 group-hover:text-blue-800 transition-colors duration-200" 
-                         xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+                    <svg class="h-5 w-5 text-blue-600 mr-2 group-hover:text-blue-800 transition-colors duration-200"
+                         xmlns="http://www.w3.org/2000/svg" width="20" height="20"
                          viewBox="0 0 14 14" fill="currentColor">
                         <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M.75 11.018v-7.59l1.254 1.004c.633.506 1.42.782 2.23.782H7L8.292 2.63a1.786 1.786 0 0 1 1.597-.987h.682v2.232l2.679.893v.893c0 .986-.8 1.785-1.786 1.785H9.68v3.572a1.34 1.34 0 1 1-2.679 0v-.447c0-.493-.4-.892-.893-.892H4.321c-.493 0-.892.4-.892.892v.447a1.34 1.34 0 1 1-2.679 0"/>
@@ -97,14 +97,14 @@
                         </svg>
                         <span class="text-sm text-gray-600 mt-1">Profile</span>
                     </a>
-                    <a href="#" class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col items-center">
+                    <a href="settings" class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         <span class="text-sm text-gray-600 mt-1">Settings</span>
                     </a>
-                    <a href="#" class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col items-center">
+                    <a href="dashboard" class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
