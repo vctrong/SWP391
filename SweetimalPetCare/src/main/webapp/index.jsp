@@ -8,5 +8,3 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <c:redirect url="/home" />
 
-<!-- Floating Vet Chatbox available on index as well -->
-<jsp:include page="chatbox.jsp" />

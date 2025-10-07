@@ -52,4 +52,4 @@
 <script src="assets/js/sidebar.js"></script>
 
 <!-- Floating Vet Chatbox -->
-<jsp:include page="/chatbox.jsp" />
+<jsp:include page="/WEB-INF/include/chatbox.jsp" />
