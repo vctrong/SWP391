@@ -110,11 +110,12 @@
                         </svg>
                         <span class="text-sm text-gray-600 mt-1">Dashboard</span>
                     </a>
-                    <a href="#" class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col items-center">
+                    <a href="${pageContext.request.contextPath}/services"
+                       class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        <span class="text-sm text-gray-600 mt-1">Calendar</span>
+                        <span class="text-sm text-gray-600 mt-1">Services</span>
                     </a>
                 </div>
             </div>

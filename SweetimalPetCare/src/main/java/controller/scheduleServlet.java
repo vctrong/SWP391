@@ -4,7 +4,7 @@
  */
 package controller;
 
-import daos.LoginDAO;
+import daos.ScheduleDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -12,15 +12,21 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import model.ScheduleSlot;
 import model.Users;
 
 /**
  *
- * @author Vo Chi Trong - CE191062
+ * @author Lim Thế Toàn - CE190616
  */
-@WebServlet(name = "loginServlet", urlPatterns = {"/login"})
-public class loginServlet extends HttpServlet {
+@WebServlet(name = "scheduleServlet", urlPatterns = {"/schedule"})
+public class scheduleServlet extends HttpServlet {
+
+    ScheduleDAO scheduleDAO = new ScheduleDAO();
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -39,15 +45,16 @@ public class loginServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet loginServlet</title>");
+            out.println("<title>Servlet scheduleServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet loginServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet scheduleServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
     }
 
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
      *
@@ -59,7 +66,19 @@ public class loginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher("WEB-INF/login/login.jsp").forward(request, response);
+        Users user = (Users) request.getSession().getAttribute("user");
+        if (user == null) {
+            response.sendRedirect("login");
+            return;
+        }
+
+        try {
+            List<ScheduleSlot> slots = scheduleDAO.getSlotsByStaff(user.getId());
+            request.setAttribute("slots", slots);
+            request.getRequestDispatcher("/WEB-INF/pages/schedule.jsp").forward(request, response);
+        } catch (Exception e) {
+            throw new ServletException(e);
+        }
     }
 
     /**
@@ -73,37 +92,18 @@ public class loginServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String username = request.getParameter("username");
-        String password = request.getParameter("password");
-        String view = request.getParameter("view");
+        Users user = (Users) request.getSession().getAttribute("user");
 
-        LoginDAO lDAO = new LoginDAO();
-        Users user = lDAO.login(username, password);
+        String room = request.getParameter("room");
+        LocalDate date = LocalDate.parse(request.getParameter("date"));
+        LocalTime start = LocalTime.parse(request.getParameter("start"));
+        LocalTime end = LocalTime.parse(request.getParameter("end"));
 
-        HttpSession session = request.getSession(true); // always ensure a session exists
-
-        if (user == null) {
-            // Wrong credentials
-            session.setAttribute("loginFail", "Tên đăng nhập hoặc mật khẩu không đúng.");
-            response.sendRedirect(request.getContextPath() + "/login?view=fail");
-            return;
-        }
-
-        // 🚫 Check if the account is inactive
-        if (user.getActive() == 0) {
-            session.setAttribute("loginFail", "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ hỗ trợ.");
-            response.sendRedirect(request.getContextPath() + "/login?view=inactive");
-            return;
-        }
-
-        // ✅ Success: active account
-        session.setAttribute("user", user);
-        session.setAttribute("loginOk", Boolean.TRUE);
-
-        if ("login".equals(view)) {
-            response.sendRedirect(request.getContextPath() + "/home");
-        } else {
-            response.sendRedirect(request.getContextPath() + "/home");
+        try {
+            scheduleDAO.addSlot(user.getId(), room, LocalDateTime.of(date, start), LocalDateTime.of(date, end));
+            response.sendRedirect("schedule");
+        } catch (Exception e) {
+            throw new ServletException(e);
         }
     }
 

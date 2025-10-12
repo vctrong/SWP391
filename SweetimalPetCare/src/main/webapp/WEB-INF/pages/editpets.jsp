@@ -16,11 +16,12 @@
         <%@include file="/WEB-INF/include/header.jsp" %>
 
         <main class="min-h-screen flex flex-col items-center justify-center">
-            <form action="pets" method="post"
-                  class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full">
-                <h2 class="text-2xl font-bold mb-6 text-blue-700 text-center">Chỉnh sửa thú cưng</h2>
-                <input type="hidden" name="action" value="update"/>
-                <input type="hidden" name="petId" value="${pet.id}"/>
+                        <form id="editPetForm" action="pets" method="post"
+                                    class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full">
+                                <h2 class="text-2xl font-bold mb-6 text-blue-700 text-center">Chỉnh sửa thú cưng</h2>
+                                <!-- default hidden action is 'edit' for auto-submits (species change); submit button will set to 'update' -->
+                                <input type="hidden" id="formAction" name="action" value="edit"/>
+                                <input type="hidden" name="petId" value="${pet.id}"/>
 
                 <!-- Tên -->
                 <div>
@@ -32,15 +33,20 @@
                 <!-- Loài -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Loài</label>
-                    <select name="speciesId" class="w-full border rounded px-3 py-2" required>
+            <select name="speciesId"
+                class="w-full border rounded px-3 py-2"
+                            onchange="preserveAndSubmit(this.form)"
+                required>
                         <c:forEach var="s" items="${speciesList}">
-                            <option value="${s.id}"
-                                    <c:if test="${s.id == pet.speciesId}">selected</c:if>>
+                            <option value="${s.id}" <c:if test="${s.id == pet.speciesId}">selected</c:if>>
                                 ${s.name}
                             </option>
                         </c:forEach>
                     </select>
                 </div>
+
+                <!-- Hidden inputs are created dynamically by JS before auto-submitting to preserve current values -->
+
 
                 <!-- Giống -->
                 <div>
@@ -48,7 +54,9 @@
                     <select name="breedId" class="w-full border rounded px-3 py-2">
                         <option value="">-- Chọn giống --</option>
                         <c:forEach var="b" items="${breedList}">
-                            <option value="${b.id}">${b.name}</option>
+                            <option value="${b.id}" <c:if test="${b.id == pet.breedId}">selected</c:if>>
+                                ${b.name}
+                            </option>
                         </c:forEach>
                     </select>
                 </div>
@@ -91,7 +99,7 @@
                               class="w-full border rounded px-3 py-2">${pet.notes}</textarea>
                 </div>
 
-                <button type="submit"
+                <button type="submit" onclick="document.getElementById('formAction').value='update';"
                         class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                     Lưu thay đổi
                 </button>
@@ -100,5 +108,28 @@
 
         <%@include file="/WEB-INF/include/footer.jsp" %>
     </body>
+    <script>
+        // copy visible form values into hidden inputs before auto-submit so data persists
+        function preserveAndSubmit(form) {
+            const fields = ['name','gender','birthdate','color','weightKg','notes','petId'];
+            fields.forEach(function(n){
+                let el = form.querySelector('[name="'+n+'"]');
+                // create or update hidden input
+                let hidden = form.querySelector('input[type=hidden][name="'+n+'"]');
+                if (!hidden) {
+                    hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = n;
+                    form.appendChild(hidden);
+                }
+                hidden.value = (el && (el.value !== undefined)) ? el.value : '';
+            });
+            // ensure action is 'edit' for the GET reload
+            document.getElementById('formAction').value = 'edit';
+            form.method = 'get';
+            form.submit();
+        }
+        // attach to the species select onchange inline call.
+    </script>
 </html>
 

@@ -5,6 +5,7 @@
 package controller;
 
 import daos.PetDAO;
+import daos.ScheduleDAO;
 import daos.ServiceDAO;
 import db.DBContext;
 import java.io.IOException;
@@ -15,6 +16,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import model.Pet;
 import model.Service;
@@ -70,29 +76,36 @@ public class bookingServlet extends HttpServlet {
 
         if (user == null) {
             response.sendRedirect(request.getContextPath() + "/login?redirect=/booking");
-            return; // nhớ return để không chạy tiếp
+            return;
         }
 
         try {
             PetDAO petDAO = new PetDAO();
             ServiceDAO serviceDAO = new ServiceDAO();
+            ScheduleDAO scheduleDAO = new ScheduleDAO();
 
             List<Pet> pets = petDAO.getPetsByOwner(user.getId());
             List<Service> services = serviceDAO.getAllServices();
+            List<model.ScheduleSlot> availableSlots = scheduleDAO.getAvailableSlots();
 
-            // Lấy serviceId từ URL
+            // allow pre-selection of a service via query parameter ?serviceId=123
             String serviceIdParam = request.getParameter("serviceId");
-            Long selectedServiceId = (serviceIdParam != null && !serviceIdParam.isEmpty())
-                    ? Long.parseLong(serviceIdParam)
-                    : null;
+            if (serviceIdParam != null && !serviceIdParam.isEmpty()) {
+                try {
+                    Integer selectedServiceId = Integer.valueOf(serviceIdParam);
+                    request.setAttribute("selectedServiceId", selectedServiceId);
+                } catch (NumberFormatException ex) {
+                    // ignore invalid param
+                }
+            }
 
             request.setAttribute("pets", pets);
             request.setAttribute("services", services);
-            request.setAttribute("selectedServiceId", selectedServiceId);
+            request.setAttribute("availableSlots", availableSlots);
 
-            request.getRequestDispatcher("/WEB-INF/pages/booking.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/pages/calendar_user.jsp").forward(request, response);
         } catch (Exception e) {
-            throw new ServletException(e);
+            throw new ServletException("Error loading booking form", e);
         }
     }
 
@@ -109,7 +122,6 @@ public class bookingServlet extends HttpServlet {
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         Users user = (Users) session.getAttribute("user");
-
         if (user == null) {
             response.sendRedirect(request.getContextPath() + "/login.jsp");
             return;
@@ -117,19 +129,48 @@ public class bookingServlet extends HttpServlet {
 
         try {
             long customerId = user.getId();
-            long petId = Long.parseLong(request.getParameter("petId"));
-            long serviceId = Long.parseLong(request.getParameter("serviceId"));
-            String requestedDate = request.getParameter("requestedDate");
-            String requestedStart = request.getParameter("requestedStart");
+            int petId = Integer.parseInt(request.getParameter("petId"));
+            int serviceId = Integer.parseInt(request.getParameter("serviceId"));
+            int slotId = Integer.parseInt(request.getParameter("slotId"));
             String notes = request.getParameter("notes");
 
-            // Insert vào DB
-            DBContext db = new DBContext();
-            String sql = "INSERT INTO Booking(customer_id, pet_id, service_id, booking_time, requested_date, requested_start, notes, current_status) "
-                    + "VALUES (?, ?, ?, SYSUTCDATETIME(), ?, ?, ?, 'PENDING')";
-            db.executeQuery(sql, new Object[]{customerId, petId, serviceId, requestedDate, requestedStart, notes});
+            // 1) get slot info
+            daos.ScheduleDAO scheduleDAO = new daos.ScheduleDAO();
+            model.ScheduleSlot slot = scheduleDAO.getSlotById(slotId);
+            if (slot == null) {
+                throw new ServletException("Selected slot not found");
+            }
 
-            response.sendRedirect(request.getContextPath() + "bookingHistory.jsp"); // sau này làm trang history
+            // map slot start timestamp to requested_date and requested_start
+            java.sql.Timestamp ts = slot.getStartTime();
+            java.time.LocalDate requestedDate = ts.toLocalDateTime().toLocalDate();
+            java.time.LocalTime requestedStart = ts.toLocalDateTime().toLocalTime();
+
+            // 2) determine price from service
+            daos.ServiceDAO serviceDAO = new daos.ServiceDAO();
+            model.Service svc = null;
+            for (model.Service s : serviceDAO.getAllServices()) {
+                if (s.getId() == serviceId) {
+                    svc = s;
+                    break;
+                }
+            }
+
+            java.math.BigDecimal totalPrice = svc != null ? svc.getPrice() : java.math.BigDecimal.ZERO;
+
+            // 3) create booking via BookingDAO
+            daos.BookingDAO bookingDAO = new daos.BookingDAO();
+            int bookingId = bookingDAO.createBooking((int) customerId, petId, serviceId, null,
+                    requestedDate, requestedStart, notes, totalPrice);
+
+            if (bookingId <= 0) {
+                throw new ServletException("Failed to create booking");
+            }
+
+            // 4) assign booking to slot
+            scheduleDAO.assignBookingToSlot(slotId, bookingId);
+
+            response.sendRedirect(request.getContextPath() + "/booking?success=1");
         } catch (Exception e) {
             throw new ServletException("Booking failed", e);
         }
