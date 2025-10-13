@@ -31,6 +31,9 @@
                            class="w-full border border-blue-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
                     <input type="password" name="password" placeholder="Mật khẩu" required
                            class="w-full border border-blue-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
+                    <div class="text-right -mt-2">
+                        <a href="${pageContext.request.contextPath}/forgot-password" class="text-sm text-blue-600 hover:text-blue-700">Quên mật khẩu?</a>
+                    </div>
                     <button type="submit"
                             class="w-full bg-pink-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-600 transition">Đăng
                         nhập</button>
@@ -60,6 +63,17 @@
         </main>
 
         <%@include file="/WEB-INF/toast/loginFail.jsp" %>
+        <%
+            Boolean resetSuccess = (Boolean) session.getAttribute("resetSuccess");
+            if (resetSuccess != null && resetSuccess) {
+        %>
+        <div class="fixed bottom-6 right-6 bg-green-500 text-white px-4 py-3 rounded shadow">
+            Đổi mật khẩu thành công
+        </div>
+        <%
+            session.removeAttribute("resetSuccess");
+            }
+        %>
         <%@include file="/WEB-INF/include/footer.jsp" %>
     </body>
 </html>

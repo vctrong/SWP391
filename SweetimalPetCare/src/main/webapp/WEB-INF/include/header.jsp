@@ -50,3 +50,4 @@
 <%@include file="/WEB-INF/include/sidebarInfo.jsp" %>
 <%@include file="/WEB-INF/include/cardID.jsp" %>
 <script src="assets/js/sidebar.js"></script>
+<jsp:include page="/WEB-INF/include/chatbox.jsp" />
