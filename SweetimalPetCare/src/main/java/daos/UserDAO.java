@@ -34,6 +34,9 @@ public class UserDAO extends db.DBContext {
         try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setLong(1, userId);
             ps.executeUpdate();
+        }
+    }
+
     public Users findByEmail(String email) {
         try {
             String sql = "select user_id, username, full_name, email, phone, is_active, gender, avatar_url, role_id, birthday, created_at, 0 as nop from users where email = ?";
