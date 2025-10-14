@@ -10,7 +10,8 @@
     <head>
         <meta charset="UTF-8">
         <title>Dịch vụ</title>
-        <script src="https://cdn.tailwindcss.com"></script>
+
+        <%@include file="/WEB-INF/include/library.jsp" %>
     </head>
     <body class="bg-gray-50 text-gray-800">
         <%@include file="/WEB-INF/include/header.jsp" %>

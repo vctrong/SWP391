@@ -22,7 +22,7 @@
                 <li><a href="home" class="hover:underline">Trang chủ</a></li>
                 <li><a href="#services" class="hover:underline">Dịch vụ</a></li>
                 <li><a href="#shop" class="hover:underline">Cửa hàng</a></li>
-                <li><a href="#contact" class="hover:underline">Liên hệ</a></li>
+                <li><a href="contacts" class="hover:underline">Liên hệ</a></li>
                 <li><a href="aboutUs" class="hover:underline">Về chúng tôi</a></li>
             </ul>
         </div>

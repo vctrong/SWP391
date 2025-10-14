@@ -10,7 +10,7 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <script src="https://cdn.tailwindcss.com"></script>
+        <%@include file="/WEB-INF/include/library.jsp" %>
         <title>Quản lý thú cưng</title>
     </head>
     <body class="bg-gray-50 text-gray-800">
