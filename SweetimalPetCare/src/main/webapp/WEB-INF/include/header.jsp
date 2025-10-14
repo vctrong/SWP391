@@ -22,7 +22,7 @@
             <a href="home" class="hover:text-blue-500">Trang chủ</a>
             <a href="#services" class="hover:text-blue-500">Dịch vụ</a>
             <a href="#shop" class="hover:text-blue-500">Cửa hàng</a>
-            <a href="#contact" class="hover:text-blue-500">Liên hệ</a>
+            <a href="contacts" class="hover:text-blue-500">Liên hệ</a>
             <a href="aboutUs" class="hover:text-blue-500">Về chúng tôi</a>
         </nav>
 
