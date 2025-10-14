@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<%= request.getContextPath() %>/css/chatbox.css" />
+<link rel="stylesheet" href="<%= request.getContextPath() %>/assets/css/chatbox.css" />
 
 <!-- Floating Chat Icon (use logo) -->
 <button id="vet-chat-toggle"

@@ -5,6 +5,10 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +45,66 @@ public class FloatingVetChatbotServlet extends HttpServlet {
             out.println("</html>");
         }
     } 
+    
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Allow GET for quick info/debugging. If an 'action' parameter is present, delegate to doPost
+        request.getRequestDispatcher("WEB-INF/include/chatbox.jsp").forward(request, response);
+        String action = request.getParameter("action");
+        if (action != null) {
+            // Delegate to POST handling so the same logic applies
+            doPost(request, response);
+            return;
+        }
+
+        String infoParam = request.getParameter("info");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setContentType("application/json; charset=UTF-8");
+
+        try (PrintWriter out = response.getWriter()) {
+            if (infoParam != null && infoParam.equalsIgnoreCase("css")) {
+                // Return the chatbox.css content from the webapp assets
+                String cssPath = "/assets/css/chatbox.css";
+                InputStream is = getServletContext().getResourceAsStream(cssPath);
+                if (is == null) {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    out.write("{\"error\":\"chatbox.css not found at " + cssPath + "\"}");
+                    return;
+                }
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line).append('\n');
+                    }
+                }
+                String cssContent = sb.toString();
+                // Use existing toJsonString to escape content
+                String json = "{" +
+                        "\"cssPath\":\"" + cssPath + "\"," +
+                        "\"css\":" + toJsonString(cssContent) +
+                        "}";
+                out.write(json);
+                return;
+            }
+
+            if (infoParam != null && infoParam.equalsIgnoreCase("servlet")) {
+                String info = "{" +
+                        "\"service\":\"FloatingVetChatbot\"," +
+                        "\"endpoints\":{\"post\":\"/chatbot (action=form-data)\", \"get\":\"/chatbot?action=... or /chatbot?info=css\"}" +
+                        "}";
+                out.write(info);
+                return;
+            }
+
+            // Default info response
+            String info = "{" +
+                    "\"service\":\"FloatingVetChatbot\"," +
+                    "\"endpoints\":{\"post\":\"/chatbot (action=form-data)\", \"get\":\"/chatbot?action=... (optional)\"}" +
+                    "}";
+            out.write(info);
+        }
+    }
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
