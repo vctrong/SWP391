@@ -1,4 +1,4 @@
-<%-- 
+<%--
     Document   : header
     Created on : Sep 15, 2025, 1:13:59 AM
     Author     : Vo Chi Trong - CE191062
@@ -7,12 +7,12 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 
-<header class="fixed top-0 left-0 w-full z-50 bg-white/30 backdrop-blur-md shadow-sm">
+<header class="sticky top-0 left-0 w-full z-50 bg-white/30 backdrop-blur-md shadow-sm">
     <div class="container mx-auto flex justify-between items-center py-4 px-6">
         <!-- Logo + Brand -->
         <div class="flex items-center space-x-3">
-            <img src="assets/img/logo.jpg" 
-                 alt="Sweetimal Logo" 
+            <img src="assets/img/logo.jpg"
+                 alt="Sweetimal Logo"
                  class="w-10 h-10 rounded-full border border-blue-600 shadow-sm">
             <h1 class="text-2xl font-bold text-blue-600">Sweetimal Pet Care</h1>
         </div>
@@ -22,8 +22,11 @@
             <a href="home" class="hover:text-blue-500">Trang chủ</a>
             <a href="#services" class="hover:text-blue-500">Dịch vụ</a>
             <a href="#shop" class="hover:text-blue-500">Cửa hàng</a>
-            <a href="#contact" class="hover:text-blue-500">Liên hệ</a>
+            <a href="contacts" class="hover:text-blue-500">Liên hệ</a>
             <a href="aboutUs" class="hover:text-blue-500">Về chúng tôi</a>
+            <c:if test="${not empty user}">
+                <a href="${pageContext.request.contextPath}/booking-history" class="hover:text-blue-500">Lịch sử đặt lịch</a>
+            </c:if>
         </nav>
 
         <c:if test="${not empty user}">
@@ -43,3 +46,13 @@
 
     </div>
 </header>
+
+
+
+
+<%@include file="/WEB-INF/include/sidebarInfo.jsp" %>
+<%@include file="/WEB-INF/include/cardID.jsp" %>
+<script src="assets/js/sidebar.js"></script>
+
+<!-- Floating Vet Chatbox -->
+<jsp:include page="/WEB-INF/include/chatbox.jsp" />

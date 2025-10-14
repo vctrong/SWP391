@@ -1,0 +1,44 @@
+/*
+Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/CascadeStyleSheet.css to edit this template
+*/
+/* 
+    Created on : Oct 1, 2025, 2:58:55 PM
+    Author     : Vo Chi Trong - CE191062
+*/
+
+@keyframes fallDown {
+    from {
+        transform: translateY(-100vh) scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fallUp {
+    from {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(-100vh) scale(0.8);
+        opacity: 0;
+    }
+}
+
+.fall-down {
+    animation: fallDown 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.fall-up {
+    animation: fallUp 0.4s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards;
+}
+
+.backdrop-blur {
+    backdrop-filter: blur(8px);
+}

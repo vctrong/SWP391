@@ -1,4 +1,4 @@
-<%-- 
+<%--
     Document   : login
     Created on : Sep 15, 2025, 1:05:16 AM
     Author     : Vo Chi Trong - CE191062
@@ -13,6 +13,7 @@
         <title>Đăng nhập - Sweetimal Pet Care</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
         <script src="https://cdn.tailwindcss.com"></script>
+        <%@include file="/WEB-INF/include/library.jsp" %>
     </head>
     <body>
         <%@include file="/WEB-INF/include/header.jsp" %>
@@ -30,6 +31,15 @@
                            class="w-full border border-blue-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
                     <input type="password" name="password" placeholder="Mật khẩu" required
                            class="w-full border border-blue-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
+                    <c:if test="${not empty sessionScope.loginFail}">
+                        <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-center font-semibold">
+                            ${sessionScope.loginFail}
+                        </div>
+                        <c:remove var="loginFail" scope="session" />
+                    </c:if>
+                    <div class="text-right -mt-2">
+                        <a href="${pageContext.request.contextPath}/forgot-password" class="text-sm text-blue-600 hover:text-blue-700">Quên mật khẩu?</a>
+                    </div>
                     <button type="submit"
                             class="w-full bg-pink-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-600 transition">Đăng
                         nhập</button>
@@ -56,9 +66,21 @@
                     <a href="register.html" class="text-blue-600 hover:underline">Chưa có tài khoản? Đăng ký ngay</a>
                 </div>
             </div>
+
         </main>
 
-
+        <%@include file="/WEB-INF/toast/loginFail.jsp" %>
+        <%
+            Boolean resetSuccess = (Boolean) session.getAttribute("resetSuccess");
+            if (resetSuccess != null && resetSuccess) {
+        %>
+        <div class="fixed bottom-6 right-6 bg-green-500 text-white px-4 py-3 rounded shadow">
+            Đổi mật khẩu thành công
+        </div>
+        <%
+            session.removeAttribute("resetSuccess");
+            }
+        %>
         <%@include file="/WEB-INF/include/footer.jsp" %>
     </body>
 </html>

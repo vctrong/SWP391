@@ -1,4 +1,4 @@
-<%-- 
+<%--
     Document   : footer
     Created on : Sep 15, 2025, 1:05:25 AM
     Author     : Vo Chi Trong - CE191062
@@ -7,7 +7,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 
 
-<footer id="contact" class="bg-gray-800 text-gray-200 py-10">
+<footer id="contact" class="bg-gray-800 text-gray-200 py-10 mt-16">
     <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>
             <div class="flex items-center space-x-2 mb-3">
@@ -22,7 +22,7 @@
                 <li><a href="home" class="hover:underline">Trang chủ</a></li>
                 <li><a href="#services" class="hover:underline">Dịch vụ</a></li>
                 <li><a href="#shop" class="hover:underline">Cửa hàng</a></li>
-                <li><a href="#contact" class="hover:underline">Liên hệ</a></li>
+                <li><a href="contacts" class="hover:underline">Liên hệ</a></li>
                 <li><a href="aboutUs" class="hover:underline">Về chúng tôi</a></li>
             </ul>
         </div>

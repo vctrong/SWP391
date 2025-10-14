@@ -2,7 +2,6 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
  */
-
 package controller;
 
 import daos.LoginDAO;
@@ -20,36 +19,38 @@ import model.Users;
  *
  * @author Vo Chi Trong - CE191062
  */
-@WebServlet(name="loginServlet", urlPatterns={"/login"})
+@WebServlet(name = "loginServlet", urlPatterns = {"/login"})
 public class loginServlet extends HttpServlet {
-   
-    /** 
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code> methods.
+
+    /**
+     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
+     * methods.
+     *
      * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
+            throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
+        try ( PrintWriter out = response.getWriter()) {
             /* TODO output your page here. You may use following sample code. */
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet loginServlet</title>");  
+            out.println("<title>Servlet loginServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet loginServlet at " + request.getContextPath () + "</h1>");
+            out.println("<h1>Servlet loginServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
-    } 
+    }
 
-    
-    /** 
+    /**
      * Handles the HTTP <code>GET</code> method.
+     *
      * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
@@ -57,12 +58,13 @@ public class loginServlet extends HttpServlet {
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
+            throws ServletException, IOException {
         request.getRequestDispatcher("WEB-INF/login/login.jsp").forward(request, response);
-    } 
+    }
 
-    /** 
+    /**
      * Handles the HTTP <code>POST</code> method.
+     *
      * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
@@ -70,25 +72,44 @@ public class loginServlet extends HttpServlet {
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
+            throws ServletException, IOException {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
-        
+        String view = request.getParameter("view");
+
         LoginDAO lDAO = new LoginDAO();
         Users user = lDAO.login(username, password);
-        HttpSession session = request.getSession(false);
+
+        HttpSession session = request.getSession(true); // always ensure a session exists
+
+        if (user == null) {
+            // Wrong credentials
+            session.setAttribute("loginFail", "Tên đăng nhập hoặc mật khẩu không đúng.");
+            response.sendRedirect(request.getContextPath() + "/login?view=fail");
+            return;
+        }
+
+        // 🚫 Check if the account is inactive
+        if (user.getActive() == 0) {
+            session.setAttribute("loginFail", "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ hỗ trợ.");
+            response.sendRedirect(request.getContextPath() + "/login?view=inactive");
+            return;
+        }
+
+        // ✅ Success: active account
         session.setAttribute("user", user);
-        String view = request.getParameter("view");
-        if (view.equals("login") && user != null) {
+        session.setAttribute("loginOk", Boolean.TRUE);
+
+        if ("login".equals(view)) {
             response.sendRedirect(request.getContextPath() + "/home");
         } else {
-            response.sendRedirect(request.getContextPath() + "/login?view=fail");
+            response.sendRedirect(request.getContextPath() + "/home");
         }
-        
     }
 
-    /** 
+    /**
      * Returns a short description of the servlet.
+     *
      * @return a String containing servlet description
      */
     @Override
