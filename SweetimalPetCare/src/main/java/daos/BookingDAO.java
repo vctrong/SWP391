@@ -21,7 +21,7 @@ public class BookingDAO extends db.DBContext {
 
     // Ensure booking_time is set (DB requires non-null). Use server time for booking_time and created_at.
     String sql = "INSERT INTO Booking (customer_id, pet_id, service_id, package_id, requested_date, requested_start, notes, total_price, booking_time, current_status, created_at) "
-        + "OUTPUT INSERTED.booking_id VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), 'Pending', GETDATE())";
+    + "OUTPUT INSERTED.booking_id VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), 'PENDING', GETDATE())";
 
         ResultSet rs = executeSelectQuery(sql, new Object[]{
             customerId, petId, serviceId, packageId,
@@ -61,5 +61,14 @@ public class BookingDAO extends db.DBContext {
             list.add(b);
         }
         return list;
+    }
+
+    public void updateBookingStatus(int bookingId, String status, Integer changedBy) throws SQLException {
+        // Update booking status and insert a history record
+    String up = "UPDATE Booking SET current_status = ?, updated_at = SYSUTCDATETIME() WHERE booking_id = ?";
+    executeQuery(up, new Object[]{status, bookingId});
+
+    String ins = "INSERT INTO BookingStatusHistory(booking_id, status_code, changed_by, comment) VALUES (?, ?, ?, ?)";
+    executeQuery(ins, new Object[]{bookingId, status, changedBy, "Status changed by admin"});
     }
 }

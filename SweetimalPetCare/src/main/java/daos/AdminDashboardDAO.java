@@ -66,4 +66,32 @@ public class AdminDashboardDAO {
         }
         return list;
     }
+
+    public java.util.List<model.BookingSummary> getRecentBookingsForAdmin(int limit) throws SQLException {
+        java.util.List<model.BookingSummary> list = new java.util.ArrayList<>();
+        String sql = "SELECT TOP (?) b.booking_id, u.full_name AS customer_name, p.name AS pet_name, s.service_name, b.requested_date, b.requested_start, b.current_status, b.total_price "
+                + "FROM Booking b "
+                + "LEFT JOIN Users u ON b.customer_id = u.user_id "
+                + "LEFT JOIN Pets p ON b.pet_id = p.pet_id "
+                + "LEFT JOIN Services s ON b.service_id = s.service_id "
+                + "ORDER BY b.created_at DESC";
+
+        try (ResultSet rs = db.executeSelectQuery(sql, new Object[]{limit})) {
+            while (rs.next()) {
+                model.BookingSummary bs = new model.BookingSummary();
+                bs.setId(rs.getInt("booking_id"));
+                bs.setCustomerName(rs.getString("customer_name"));
+                bs.setPetName(rs.getString("pet_name"));
+                bs.setServiceName(rs.getString("service_name"));
+                java.sql.Date d = rs.getDate("requested_date");
+                if (d != null) bs.setRequestedDate(d.toLocalDate());
+                java.sql.Time t = rs.getTime("requested_start");
+                if (t != null) bs.setRequestedStart(t.toLocalTime());
+                bs.setCurrentStatus(rs.getString("current_status"));
+                bs.setTotalPrice(rs.getBigDecimal("total_price"));
+                list.add(bs);
+            }
+        }
+        return list;
+    }
 }

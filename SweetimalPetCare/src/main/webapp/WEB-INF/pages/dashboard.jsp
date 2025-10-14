@@ -85,6 +85,54 @@
             </table>
         </section>
 
+        <!-- Recent Bookings Section for Admin -->
+        <section style="max-width:1000px; margin:40px auto;">
+            <h2 style="font-size:1.8em; margin-bottom:10px;">Recent Bookings</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Customer</th>
+                        <th>Pet</th>
+                        <th>Service</th>
+                        <th>When</th>
+                        <th>Status</th>
+                        <th>Price</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <c:forEach var="b" items="${recentBookings}">
+                        <tr>
+                            <td>${b.id}</td>
+                            <td>${b.customerName}</td>
+                            <td>${b.petName}</td>
+                            <td>${b.serviceName}</td>
+                            <td>${b.requestedDate} ${b.requestedStart}</td>
+                            <td>${b.currentStatus}</td>
+                            <td>${b.totalPrice}</td>
+                            <td>
+                                <form action="${pageContext.request.contextPath}/admin/booking/status" method="post" style="display:inline-block;">
+                                    <input type="hidden" name="bookingId" value="${b.id}"/>
+                                    <select name="status">
+                                        <option value="PENDING" <c:if test="${b.currentStatus == 'PENDING'}">selected</c:if>>PENDING</option>
+                                        <option value="CONFIRMED" <c:if test="${b.currentStatus == 'CONFIRMED'}">selected</c:if>>CONFIRMED</option>
+                                        <option value="IN_PROGRESS" <c:if test="${b.currentStatus == 'IN_PROGRESS'}">selected</c:if>>IN_PROGRESS</option>
+                                        <option value="COMPLETED" <c:if test="${b.currentStatus == 'COMPLETED'}">selected</c:if>>COMPLETED</option>
+                                        <option value="CANCELLED" <c:if test="${b.currentStatus == 'CANCELLED'}">selected</c:if>>CANCELLED</option>
+                                    </select>
+                                    <button type="submit">Update</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </c:forEach>
+                    <c:if test="${empty recentBookings}">
+                        <tr><td colspan="8" style="text-align:center; color:gray;">No bookings found</td></tr>
+                    </c:if>
+                </tbody>
+            </table>
+        </section>
+
         <%@include file="/WEB-INF/include/footer.jsp" %>
     </body>
 </html>

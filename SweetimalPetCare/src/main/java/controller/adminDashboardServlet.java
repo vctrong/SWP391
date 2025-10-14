@@ -81,6 +81,8 @@ public class adminDashboardServlet extends HttpServlet {
             request.setAttribute("bookingCount", dao.getBookingCount());
             request.setAttribute("productCount", dao.getProductCount());
             request.setAttribute("recentActions", dao.getRecentAuditLogs());
+            // recent bookings for admin to review
+            request.setAttribute("recentBookings", dao.getRecentBookingsForAdmin(50));
         } catch (Exception e) {
             request.setAttribute("error", "Database error: " + e.getMessage());
         }
