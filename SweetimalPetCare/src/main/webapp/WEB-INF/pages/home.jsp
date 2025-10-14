@@ -87,7 +87,7 @@
                     <p class="text-gray-500 text-sm">450.000đ</p>
                 </div>
             </div>
-            <a href="/shop" class="inline-block mt-8 bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">Đến cửa hàng</a>
+            <a href="${pageContext.request.contextPath}/shop" class="inline-block mt-8 bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">Đến cửa hàng</a>
         </section>
 
         <!-- Đăng ký tư vấn miễn phí -->
