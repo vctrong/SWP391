@@ -25,8 +25,8 @@ public class ScheduleDAO extends db.DBContext {
         while (rs.next()) {
             slots.add(new ScheduleSlot(
                     rs.getInt("slot_id"),
+                    rs.getObject("booking_id") != null ? rs.getInt("booking_id") : null,
                     rs.getInt("staff_id"),
-                    rs.getInt("booking_id"),
                     rs.getString("room_name"),
                     rs.getTimestamp("start_time"),
                     rs.getTimestamp("end_time"),
@@ -43,8 +43,8 @@ public class ScheduleDAO extends db.DBContext {
         while (rs.next()) {
             list.add(new ScheduleSlot(
                     rs.getInt("slot_id"),
+                    rs.getObject("booking_id") != null ? rs.getInt("booking_id") : null,
                     rs.getInt("staff_id"),
-                    rs.getInt("booking_id"),
                     rs.getString("room_name"),
                     rs.getTimestamp("start_time"),
                     rs.getTimestamp("end_time"),
