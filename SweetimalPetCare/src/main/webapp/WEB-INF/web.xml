@@ -7,11 +7,11 @@
     <!-- Configure Gmail App Password here or via server JVM options -->
     <context-param>
         <param-name>MAIL_USER</param-name>
-        <param-value>nhap email</param-value>
+        <param-value>toanlt.ce190616@gmail.com</param-value>
     </context-param>
     <context-param>
         <param-name>MAIL_PASS</param-name>
-        <param-value>pass app</param-value>
+        <param-value>hkcrvveljritgaob</param-value>
     </context-param>
 
     <!-- Explicit servlet mappings (fallback if annotation scanning is disabled) -->

@@ -29,7 +29,7 @@ import model.Users;
  * @author Lim Thế Toàn - CE190616
  */
 @WebServlet(name = "PetServlet", urlPatterns = {"/pets"})
-public class petServlet extends HttpServlet {
+public class PetServlet extends HttpServlet {
 
     private final PetDAO petDAO = new PetDAO();
     private final SpeciesDAO speciesDAO = new SpeciesDAO();
