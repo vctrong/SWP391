@@ -112,7 +112,7 @@
 
         <!-- Footer Actions -->
         <div class="px-6 pb-6 flex space-x-3">
-            <a href="https://github.com/vctrong" target="_blank" class="flex-1 bg-fuchsia-500 hover:bg-fuchsia-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 text-center">
+            <a href="${pageContext.request.contextPath}/profile" target="_blank" class="flex-1 bg-fuchsia-500 hover:bg-fuchsia-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 text-center">
                 Edit Profile
             </a>
             <button onclick="hideCard()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200">
