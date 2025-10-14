@@ -1,4 +1,4 @@
-<%-- 
+<%--
     Document   : login
     Created on : Sep 15, 2025, 1:05:16 AM
     Author     : Vo Chi Trong - CE191062
@@ -31,6 +31,12 @@
                            class="w-full border border-blue-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
                     <input type="password" name="password" placeholder="Mật khẩu" required
                            class="w-full border border-blue-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
+                    <c:if test="${not empty sessionScope.loginFail}">
+                        <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-center font-semibold">
+                            ${sessionScope.loginFail}
+                        </div>
+                        <c:remove var="loginFail" scope="session" />
+                    </c:if>
                     <div class="text-right -mt-2">
                         <a href="${pageContext.request.contextPath}/forgot-password" class="text-sm text-blue-600 hover:text-blue-700">Quên mật khẩu?</a>
                     </div>
@@ -60,6 +66,7 @@
                     <a href="register.html" class="text-blue-600 hover:underline">Chưa có tài khoản? Đăng ký ngay</a>
                 </div>
             </div>
+
         </main>
 
         <%@include file="/WEB-INF/toast/loginFail.jsp" %>

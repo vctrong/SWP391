@@ -64,7 +64,7 @@
                                         </form>
 
                                         <!-- Nút xóa -->
-                                        <form action="pets" method="post" class="inline">
+                                        <form action="pets" method="post" class="inline" onsubmit="return confirmDelete(this);">
                                             <input type="hidden" name="petId" value="${p.id}"/>
                                             <button type="submit" name="action" value="delete"
                                                     class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
@@ -82,6 +82,20 @@
             </section>
         </main>
 
+        <script>
+            // confirm delete with pet name from the same row
+            function confirmDelete(form) {
+                try {
+                    var tr = form.closest('tr');
+                    var nameCell = tr ? tr.querySelector('td') : null;
+                    var petName = nameCell ? nameCell.textContent.trim() : '';
+                    if (!petName) petName = 'thú cưng này';
+                    return confirm('Bạn có chắc muốn xóa ' + petName + ' không?');
+                } catch (e) {
+                    return confirm('Bạn có chắc muốn xóa thú cưng này không?');
+                }
+            }
+        </script>
         <%@include file="/WEB-INF/include/footer.jsp" %>
     </body>
 </html>

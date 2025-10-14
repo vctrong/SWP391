@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import model.Pet;
 import model.PetBreed;
@@ -28,7 +29,7 @@ import model.Users;
  * @author Lim Thế Toàn - CE190616
  */
 @WebServlet(name = "PetServlet", urlPatterns = {"/pets"})
-public class PetServlet extends HttpServlet {
+public class petServlet extends HttpServlet {
 
     private final PetDAO petDAO = new PetDAO();
     private final SpeciesDAO speciesDAO = new SpeciesDAO();
@@ -45,15 +46,28 @@ public class PetServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
+
+// ✅ If no action but speciesId is present (means user changed species)
+        if (action == null && request.getParameter("speciesId") != null) {
+            action = "add";
+        }
         try {
             if ("add".equalsIgnoreCase(action)) {
                 List<PetSpecies> speciesList = speciesDAO.getAllSpecies();
-                List<PetBreed> breedList = breedDAO.getBreedsBySpecies(1); // mặc định species 1 hoặc để trống
+                List<PetBreed> breedList;
+                String speciesIdParam = request.getParameter("speciesId");
+                if (speciesIdParam != null && !speciesIdParam.isEmpty()) {
+                    int speciesId = Integer.parseInt(speciesIdParam);
+                    breedList = breedDAO.getBreedsBySpecies(speciesId);
+                } else {
+                    breedList = breedDAO.getBreedsBySpecies(1); // default or empty list
+                }
                 request.setAttribute("speciesList", speciesList);
                 request.setAttribute("breedList", breedList);
                 request.getRequestDispatcher("/WEB-INF/pages/addpets.jsp").forward(request, response);
                 return;
             }
+
             if ("edit".equalsIgnoreCase(action)) {
                 showEditForm(request, response, user);
             } else {
@@ -112,8 +126,21 @@ public class PetServlet extends HttpServlet {
         long petId = Long.parseLong(request.getParameter("petId"));
         Pet pet = petDAO.getPetByIdAndOwner(petId, user.getId());
 
+        // Always show all species
         List<PetSpecies> speciesList = speciesDAO.getAllSpecies();
-        List<PetBreed> breedList = breedDAO.getBreedsBySpecies(pet.getSpeciesId());
+
+        // If user changed species (reloaded form)
+        String speciesIdStr = request.getParameter("speciesId");
+        int speciesId;
+        if (speciesIdStr != null && !speciesIdStr.isEmpty()) {
+            speciesId = Integer.parseInt(speciesIdStr);
+            pet.setSpeciesId(speciesId); // temporarily update species
+        } else {
+            speciesId = pet.getSpeciesId();
+        }
+
+        // Fetch corresponding breeds
+        List<PetBreed> breedList = breedDAO.getBreedsBySpecies(speciesId);
 
         request.setAttribute("pet", pet);
         request.setAttribute("speciesList", speciesList);
@@ -141,29 +168,17 @@ public class PetServlet extends HttpServlet {
     }
 
     private Pet buildPetFromRequest(HttpServletRequest request) {
+        Pet pet = new Pet(); // ✅ create a new pet instance
+
         String name = request.getParameter("name");
         int speciesId = Integer.parseInt(request.getParameter("speciesId"));
 
+        // ✅ Breed may be optional
         String breedIdStr = request.getParameter("breedId");
         Integer breedId = null;
-        if ("other".equals(breedIdStr)) {
-            String otherBreed = request.getParameter("otherBreed");
-            if (otherBreed != null && !otherBreed.trim().isEmpty()) {
-                // Save to DB and get new breedId
-                try {
-                    breedId = breedDAO.insertUserBreed(otherBreed.trim(), /*speciesId*/ 1, user.getId());
-                } catch (SQLException e) {
-                    // Handle the error, e.g. show a message or log it
-                    e.printStackTrace();
-                    // Optionally, set an error message for the user
-                    request.setAttribute("error", "Lưu giống mới thất bại! Vui lòng thử lại.");
-                    // Optionally, return or forward back to the form
-                }
-            }
-        } else if (breedIdStr != null && !breedIdStr.isEmpty()) {
+        if (breedIdStr != null && !breedIdStr.isEmpty()) {
             breedId = Integer.parseInt(breedIdStr);
         }
-        pet.setBreedId(breedId);
 
         String gender = request.getParameter("gender");
 
@@ -180,6 +195,7 @@ public class PetServlet extends HttpServlet {
         String color = request.getParameter("color");
         String notes = request.getParameter("notes");
 
+        // ✅ assign values
         pet.setName(name);
         pet.setSpeciesId(speciesId);
         pet.setBreedId(breedId);
@@ -188,7 +204,9 @@ public class PetServlet extends HttpServlet {
         pet.setWeightKg(weight);
         pet.setColor(color);
         pet.setNotes(notes);
-        System.out.println("gender: " + gender + ", weight: " + weight + ", notes: " + notes);
+
+        System.out.println("Breed ID: " + breedId + ", Gender: " + gender + ", Weight: " + weight + ", Notes: " + notes);
+
         return pet;
     }
 

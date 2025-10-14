@@ -6,84 +6,66 @@
 
 <%@page import="java.util.List, model.Service, model.Pet"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
 <%
     List<Pet> pets = (List<Pet>) request.getAttribute("pets");
     List<Service> services = (List<Service>) request.getAttribute("services");
 %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
     <head>
-        <meta charset="UTF-8">
+        <title>Đặt lịch dịch vụ cho thú cưng</title>
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-gray-100 text-gray-800">
-        <!-- Navbar -->
         <%@include file="/WEB-INF/include/header.jsp" %>
 
-        <div class="max-w-2xl mx-auto mt-10 bg-white shadow p-6 rounded-lg">
-            <h2 class="text-2xl font-bold mb-4">Đặt dịch vụ cho thú cưng</h2>
+        <div class="max-w-2xl mx-auto mt-10 bg-white p-6 rounded-lg shadow">
+            <h2 class="text-2xl font-bold text-blue-700 mb-6 text-center">Đặt lịch dịch vụ</h2>
+
             <form action="booking" method="post" class="space-y-4">
-                <!-- Chọn thú cưng -->
-                <label class="block">
-                    <span class="text-gray-700">Thú cưng</span>
-                    <select name="petId" class="w-full border rounded px-3 py-2" required>
-                        <option value="">-- Chọn thú cưng --</option>
-                        <% for (Pet p : pets) {%>
-                        <option value="<%= p.getId()%>"><%= p.getName()%></option>
-                        <% } %>
-                    </select>
-                </label>
+                <!-- Pet -->
+                <label class="block font-semibold">Chọn thú cưng</label>
+                <select name="petId" class="w-full border rounded px-3 py-2" required>
+                    <c:forEach var="p" items="${pets}">
+                        <option value="${p.id}">${p.name}</option>
+                    </c:forEach>
+                </select>
 
-                <!-- Chọn dịch vụ -->
-                <label class="block">
-                    <span class="text-gray-700">Dịch vụ</span>
-                    <select name="serviceId" class="w-full border rounded px-3 py-2" required>
-                        <option value="">-- Chọn dịch vụ --</option>
-                        <%
-                            Long selectedServiceId = (Long) request.getAttribute("selectedServiceId");
-                            if (services != null) {
-                                for (Service s : services) {
-                                    String selected = (selectedServiceId != null && selectedServiceId == s.getId())
-                                            ? "selected"
-                                            : "";
-                        %>
-                        <option value="<%= s.getId()%>" <%= selected%>>
-                            <%= s.getName()%>
+                <!-- Service -->
+                <label class="block font-semibold">Chọn dịch vụ</label>
+                <select name="serviceId" class="w-full border rounded px-3 py-2" required>
+                    <c:forEach var="s" items="${services}">
+                        <option value="${s.id}" <c:if test="${not empty selectedServiceId and selectedServiceId == s.id}">selected</c:if>>${s.name}</option>
+                    </c:forEach>
+                </select>
+
+                <!-- Slot -->
+                <label class="block font-semibold">Chọn khung giờ</label>
+                <select name="slotId" class="w-full border rounded px-3 py-2" required>
+                    <c:forEach var="s" items="${availableSlots}">
+                        <option value="${s.id}">
+                            ${s.roomName} —
+                            <fmt:formatDate value="${s.startTime}" pattern="yyyy-MM-dd HH:mm"/> →
+                            <fmt:formatDate value="${s.endTime}" pattern="HH:mm"/>
                         </option>
-                        <%
-                                }
-                            }
-                        %>
-                    </select>
-                </label>
+                    </c:forEach>
+                </select>
 
+                <!-- Notes -->
+                <textarea name="notes" placeholder="Ghi chú thêm..."
+                          class="w-full border rounded px-3 py-2"></textarea>
 
-                <!-- Chọn ngày -->
-                <label class="block">
-                    <span class="text-gray-700">Ngày</span>
-                    <input type="date" name="requestedDate" class="w-full border rounded px-3 py-2" required />
-                </label>
-
-                <!-- Chọn giờ -->
-                <label class="block">
-                    <span class="text-gray-700">Giờ bắt đầu</span>
-                    <input type="time" name="requestedStart" class="w-full border rounded px-3 py-2" required />
-                </label>
-
-                <!-- Ghi chú -->
-                <label class="block">
-                    <span class="text-gray-700">Ghi chú</span>
-                    <textarea name="notes" class="w-full border rounded px-3 py-2"></textarea>
-                </label>
-
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                    Đặt lịch
+                <button type="submit"
+                        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                    Xác nhận đặt lịch
                 </button>
             </form>
         </div>
-
         <!-- Footer -->
         <%@include file="/WEB-INF/include/footer.jsp" %>
+        
     </body>
 </html>

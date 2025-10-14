@@ -4,7 +4,7 @@
  */
 package controller;
 
-import daos.LoginDAO;
+import daos.UserDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -17,10 +17,13 @@ import model.Users;
 
 /**
  *
- * @author Vo Chi Trong - CE191062
+ * @author Lim Thế Toàn - CE190616
  */
-@WebServlet(name = "loginServlet", urlPatterns = {"/login"})
-public class loginServlet extends HttpServlet {
+@WebServlet(name = "accountSettingServlet", urlPatterns = {"/settings"})
+public class accountSettingServlet extends HttpServlet {
+
+    Users user = new Users();
+    private final UserDAO userDAO = new UserDAO();
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -39,15 +42,16 @@ public class loginServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet loginServlet</title>");
+            out.println("<title>Servlet accountSettingServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet loginServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet accountSettingServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
     }
 
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
      *
@@ -59,7 +63,14 @@ public class loginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher("WEB-INF/login/login.jsp").forward(request, response);
+        HttpSession session = request.getSession(false);
+        user = (session != null) ? (Users) session.getAttribute("user") : null;
+
+        if (user == null) {
+            response.sendRedirect(request.getContextPath() + "/login?redirect=/settings");
+        } else {
+            request.getRequestDispatcher("/WEB-INF/pages/settings.jsp").forward(request, response);
+        }
     }
 
     /**
@@ -73,37 +84,27 @@ public class loginServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String username = request.getParameter("username");
-        String password = request.getParameter("password");
-        String view = request.getParameter("view");
-
-        LoginDAO lDAO = new LoginDAO();
-        Users user = lDAO.login(username, password);
-
-        HttpSession session = request.getSession(true); // always ensure a session exists
+        HttpSession session = request.getSession(false);
+        user = (session != null) ? (Users) session.getAttribute("user") : null;
 
         if (user == null) {
-            // Wrong credentials
-            session.setAttribute("loginFail", "Tên đăng nhập hoặc mật khẩu không đúng.");
-            response.sendRedirect(request.getContextPath() + "/login?view=fail");
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        // 🚫 Check if the account is inactive
-        if (user.getActive() == 0) {
-            session.setAttribute("loginFail", "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ hỗ trợ.");
-            response.sendRedirect(request.getContextPath() + "/login?view=inactive");
-            return;
-        }
-
-        // ✅ Success: active account
-        session.setAttribute("user", user);
-        session.setAttribute("loginOk", Boolean.TRUE);
-
-        if ("login".equals(view)) {
-            response.sendRedirect(request.getContextPath() + "/home");
-        } else {
-            response.sendRedirect(request.getContextPath() + "/home");
+        String action = request.getParameter("action");
+        try {
+            if ("deactivate".equalsIgnoreCase(action)) {
+                userDAO.updateUserStatus(user.getId(), false);  // Set is_active = 0
+                session.invalidate(); // Log them out
+                response.sendRedirect("login?msg=Account deactivated successfully");
+            } else if ("delete".equalsIgnoreCase(action)) {
+                userDAO.deleteUser(user.getId());
+                session.invalidate();
+                response.sendRedirect("login?msg=Account deleted successfully");
+            }
+        } catch (Exception e) {
+            throw new ServletException(e);
         }
     }
 

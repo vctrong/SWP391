@@ -24,6 +24,9 @@
             <a href="#shop" class="hover:text-blue-500">Cửa hàng</a>
             <a href="contacts" class="hover:text-blue-500">Liên hệ</a>
             <a href="aboutUs" class="hover:text-blue-500">Về chúng tôi</a>
+            <c:if test="${not empty user}">
+                <a href="${pageContext.request.contextPath}/booking-history" class="hover:text-blue-500">Lịch sử đặt lịch</a>
+            </c:if>
         </nav>
 
         <c:if test="${not empty user}">
