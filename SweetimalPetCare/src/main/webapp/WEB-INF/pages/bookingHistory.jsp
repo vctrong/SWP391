@@ -1,4 +1,4 @@
-<%@page import="java.util.List, model.Booking, model.Service, model.Pet"%>
+<%@page import="java.util.List, model.Booking, model.Service, model.Pet, enums.BookingStatusColor"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%
@@ -28,6 +28,7 @@
                             <th class="px-4 py-2 text-left">Tổng tiền</th>
                             <th class="px-4 py-2 text-left">Trạng thái</th>
                             <th class="px-4 py-2 text-left">Ghi chú</th>
+                            <th class="px-4 py-2 text-left">Hành động</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -38,23 +39,28 @@
                                 <td class="px-4 py-2">${b.requestedStart}</td>
                                 <td class="px-4 py-2"><c:out value="${serviceMap[b.serviceId]}" default="-"/></td>
                                 <td class="px-4 py-2">${b.totalPrice}</td>
+                                <td class="px-4 py-2 text-center">
+                                    <%
+                                        // Retrieve the current loop booking object (exposed as page attribute "b")
+                                        Booking __b = (Booking) pageContext.getAttribute("b");
+                                        BookingStatusColor st = BookingStatusColor.fromString(__b != null ? __b.getCurrentStatus() : null);
+                                    %>
+                                    <span class="inline-block px-2 py-1 <%= st.getBgClass() %> <%= st.getTextClass() %> rounded"><%= st.getLabel() %></span>
+                                </td>
+                                <td class="px-4 py-2">${b.notes}</td>
                                 <td class="px-4 py-2">
                                     <c:choose>
-                                        <c:when test="${b.currentStatus == 'Pending'}">
-                                            <span class="px-2 py-1 bg-yellow-200 text-yellow-800 rounded">PENDING</span>
-                                        </c:when>
-                                        <c:when test="${b.currentStatus == 'Confirmed' || b.currentStatus == 'CONFIRMED'}">
-                                            <span class="px-2 py-1 bg-green-200 text-green-800 rounded">CONFIRMED</span>
-                                        </c:when>
-                                        <c:when test="${b.currentStatus == 'Complete' || b.currentStatus == 'COMPLETE'}">
-                                            <span class="px-2 py-1 bg-gray-200 text-gray-800 rounded">COMPLETE</span>
+                                        <c:when test="${b.currentStatus == 'PENDING' || b.currentStatus == 'Pending' || b.currentStatus == 'CONFIRMED' || b.currentStatus == 'Confirmed'}">
+                                            <form method="post" action="${pageContext.request.contextPath}/cancel-booking" onsubmit="return confirm('Bạn có chắc muốn hủy đặt lịch này?');">
+                                                <input type="hidden" name="bookingId" value="${b.id}" />
+                                                <button type="submit" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Hủy yêu cầu</button>
+                                            </form>
                                         </c:when>
                                         <c:otherwise>
-                                            <span class="px-2 py-1 bg-blue-200 text-blue-800 rounded">${b.currentStatus}</span>
+                                            <span class="text-sm text-gray-500">-</span>
                                         </c:otherwise>
                                     </c:choose>
                                 </td>
-                                <td class="px-4 py-2">${b.notes}</td>
                             </tr>
                         </c:forEach>
                     </tbody>
