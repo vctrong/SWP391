@@ -80,4 +80,13 @@ public class ScheduleDAO extends db.DBContext {
         }
         return null;
     }
+
+    /**
+     * Free any schedule slots linked to the given bookingId.
+     * Sets booking_id = NULL and status = 'OPEN'.
+     */
+    public void freeSlotsByBookingId(int bookingId) throws SQLException {
+        String sql = "UPDATE ScheduleSlot SET booking_id = NULL, status = 'OPEN' WHERE booking_id = ?";
+        executeQuery(sql, new Object[]{bookingId});
+    }
 }
