@@ -16,8 +16,8 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <%@include file="/WEB-INF/include/library.jsp" %>
         <title>Đặt lịch dịch vụ cho thú cưng</title>
-        <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-gray-100 text-gray-800">
         <%@include file="/WEB-INF/include/header.jsp" %>
