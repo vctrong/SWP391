@@ -12,9 +12,10 @@
         <%@include file="/WEB-INF/include/header.jsp" %>
 
         <main class="max-w-5xl mx-auto py-10">
-            <h2 class="text-2xl font-bold text-blue-700 mb-6">Quản lý dịch vụ</h2>
+            <div class="px-6">
+                <h2 class="text-2xl font-bold text-blue-700 mb-6">Quản lý dịch vụ</h2>
 
-            <section class="bg-white p-6 rounded shadow mb-6">
+                <section class="bg-white p-6 rounded shadow mb-6">
                 <h3 class="font-semibold mb-3">Thêm dịch vụ mới</h3>
                 <form method="post" action="${pageContext.request.contextPath}/admin/services" class="grid grid-cols-2 gap-3">
                     <input type="hidden" name="action" value="create" />
@@ -29,7 +30,7 @@
                 </form>
             </section>
 
-            <section class="bg-white p-6 rounded shadow">
+                <section class="bg-white p-6 rounded shadow">
                 <h3 class="font-semibold mb-3">Danh sách dịch vụ</h3>
                 <table class="min-w-full">
                     <thead class="bg-blue-600 text-white"><tr><th class="p-2">ID</th><th class="p-2">Tên</th><th class="p-2">Mô tả</th><th class="p-2">Thời lượng</th><th class="p-2">Giá</th><th class="p-2">Hành động</th></tr></thead>
@@ -61,6 +62,7 @@
                 </table>
             </section>
 
+            </div>
             <!-- Edit modal (simple) -->
             <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
                 <div class="bg-white p-6 rounded w-96">
