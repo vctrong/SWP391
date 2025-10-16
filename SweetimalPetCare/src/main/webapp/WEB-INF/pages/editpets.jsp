@@ -9,7 +9,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <html>
     <head>
-        <script src="https://cdn.tailwindcss.com"></script>
+        <%@include file="/WEB-INF/include/library.jsp" %>
         <title>Sửa thú cưng</title>
     </head>
     <body class="bg-gray-100 text-gray-800 min-h-screen">
