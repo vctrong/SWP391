@@ -11,7 +11,7 @@
 <div id="page-loader" aria-hidden="false" class="fixed inset-0 bg-white z-50 flex items-center justify-center" style="transition:opacity .25s ease;">
     <div class="flex items-center space-x-3">
         <i class="fa-solid fa-circle-notch fa-2x animate-spin text-blue-600"></i>
-        <span class="text-gray-700 font-medium">Đang tải…</span>
+        <span class="text-gray-700 font-medium">Đang tải...</span>
     </div>
     <span class="sr-only">Loading</span>
 </div>
