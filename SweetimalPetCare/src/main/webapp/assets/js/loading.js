@@ -8,7 +8,7 @@
         if (!l) return;
         l.style.opacity = '0';
         l.setAttribute('aria-hidden', 'true');
-        setTimeout(function () { try { l.style.display = 'none'; } catch (e) {} }, 300);
+        setTimeout(function () { try { l.style.display = 'none'; } catch (e) { console.error('Failed to hide loader:', e); } }, 300);
     }
 
     function showLoader() {
