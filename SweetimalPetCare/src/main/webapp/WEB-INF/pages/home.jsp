@@ -12,25 +12,73 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Sweetimal Pet Care</title>
         <%@include file="/WEB-INF/include/library.jsp" %>
+        <style>
+            html {
+                scroll-behavior: smooth;
+            }
+        </style>
     </head>
     <body class="bg-white text-gray-800">
         <!-- Navbar -->
         <%@include file="/WEB-INF/include/header.jsp" %>
         <%@include file="/WEB-INF/toast/loginOk.jsp" %>
         <!-- Phần giới thiệu -->
-        <section class="relative bg-blue-100">
-            <div class="container mx-auto flex flex-col md:flex-row items-center py-20 px-6">
+        <section class="relative bg-gradient-to-br from-sky-50 via-cyan-50 to-white overflow-hidden">
+            <!-- Decorative circles -->
+            <div class="absolute top-0 right-0 w-72 h-72 bg-sky-200 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-cyan-200 rounded-full blur-3xl opacity-20"></div>
+
+            <div class="container mx-auto flex flex-col md:flex-row items-center py-20 px-6 relative z-10">
+                <!-- Content -->
                 <div class="md:w-1/2">
-                    <h2 class="text-4xl md:text-5xl font-bold mb-6 text-blue-800 fade-on-scroll" data-delay="150ms">
-                        Chăm sóc thú cưng của bạn với tình yêu & đam mê
+                    <div class="inline-flex items-center bg-white rounded-full shadow-sm px-4 py-2 text-sm text-sky-600 font-medium mb-6 hover:shadow-md transition-shadow duration-300">
+                        <i class="fa-solid fa-paw mr-2 animate-bounce"></i>
+                        <span>Chăm sóc chuyên nghiệp</span>
+                    </div>
+
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6 text-gray-800 leading-tight">
+                        Chăm sóc thú cưng của bạn với 
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-cyan-600">tình yêu & đam mê</span>
                     </h2>
-                    <p class="text-lg mb-6">
+
+                    <p class="text-lg text-gray-600 mb-8 leading-relaxed">
                         Khám phá các dịch vụ và sản phẩm chất lượng cho thú cưng. Từ làm đẹp đến bữa ăn dinh dưỡng, chúng tôi đều có.
                     </p>
-                    <a href="#services" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Khám phá dịch vụ</a>
+
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#services" 
+                           class="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-cyan-600 hover:-translate-y-0.5 transition-all duration-300">
+                            <i class="fa-solid fa-rocket mr-2"></i>Khám phá dịch vụ
+                        </a>
+                        <a href="#contact" 
+                           class="inline-flex items-center justify-center px-6 py-3 bg-white text-sky-600 rounded-xl font-semibold shadow hover:shadow-lg border-2 border-sky-100 hover:border-sky-300 hover:-translate-y-0.5 transition-all duration-300">
+                            <i class="fa-solid fa-phone mr-2"></i>Liên hệ ngay
+                        </a>
+                    </div>
                 </div>
-                <div class="md:w-1/2 mt-10 md:mt-0">
-                    <img src="https://cdn.pixabay.com/photo/2017/09/25/13/12/dog-2785074_1280.jpg" alt="Chăm sóc thú cưng" class="rounded-2xl shadow-lg">
+
+                <!-- Image -->
+                <div class="md:w-1/2 mt-10 md:mt-0 md:pl-12">
+                    <div class="relative group">
+                        <!-- Glow effect -->
+                        <div class="absolute inset-0 bg-gradient-to-br from-sky-300 to-cyan-300 rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
+
+                        <!-- Main image -->
+                        <img src="https://cdn.pixabay.com/photo/2017/09/25/13/12/dog-2785074_1280.jpg" 
+                             alt="Chăm sóc thú cưng" 
+                             class="relative rounded-3xl shadow-2xl w-full transform group-hover:scale-105 transition-transform duration-500">
+
+                        <!-- Floating badge -->
+                        <div class="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl p-4 flex items-center gap-3 hover:scale-105 transition-transform duration-300">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-100 to-cyan-100 flex items-center justify-center">
+                                <i class="fa-solid fa-star text-sky-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-800">Tin cậy #1</p>
+                                <p class="text-xs text-gray-500">5000+ khách hàng</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -43,7 +91,7 @@
         </section>
 
         <!-- Dịch vụ nổi bật -->
-        <section id="services" class="py-16 bg-gray-50 px-6 text-center">
+        <section id="services" class="scroll-mt-24 py-16 bg-gray-50 px-6 text-center">
             <h2 class="text-3xl font-bold mb-8">Dịch vụ của chúng tôi</h2>
             <div class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
                 <div class="p-6 bg-white rounded-2xl shadow hover:shadow-lg">
@@ -89,7 +137,7 @@
         </section>
 
         <!-- Đăng ký tư vấn miễn phí -->
-        <section id="contact" class="py-16 bg-gray-100 px-6 text-center">
+        <section id="contact" class="scroll-mt-24 py-16 bg-gray-100 px-6 text-center">
             <h2 class="text-3xl font-bold mb-6">Đăng ký tư vấn miễn phí</h2>
             <form class="max-w-xl mx-auto space-y-4">
                 <input type="text" placeholder="Họ và tên" class="w-full border rounded-lg px-4 py-3" />
@@ -109,7 +157,7 @@
         <!-- Footer -->
         <%@include file="/WEB-INF/include/footer.jsp" %>
 
-        
+
     </body>
 </html>
 
