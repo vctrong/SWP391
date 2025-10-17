@@ -2,6 +2,9 @@
 <%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 <%@taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+
 
 <!doctype html>
 <html lang="vi">
@@ -11,9 +14,7 @@
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-gray-50 font-sans">
-
         <%@include file="/WEB-INF/include/header.jsp" %>
-
         <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-4 gap-6 mt-20">
 
             <!-- Sidebar -->
@@ -260,21 +261,33 @@
                         <!-- Price -->
                         <div>
                             <h2 class="font-semibold mb-2 mt-3">Giá</h2>
-                            <div class="flex items-center gap-2">
-                                <input type="number" name="minPrice" 
-                                       value="${param.minPrice}" 
-                                class="border rounded p-1 w-20 text-sm" placeholder="Từ" min="0" step="1000"
-                                oninput="this.value = this.value.trim() === '' ? '' : this.value">
-                            ₫
-                            <input type="number" name="maxPrice" 
-                                   value="${param.maxPrice}" 
-                                   class="border rounded p-1 w-20 text-sm" placeholder="Đến" min="0" step="1000"
-                                   oninput="this.value = this.value.trim() === '' ? '' : this.value">
-                            ₫
+                            <div class="px-2 space-y-3">
+                                <!-- Thanh kéo 2 đầu -->
+                                <div id="priceSlider" class="mt-2"></div>
+
+                                <!-- Hai ô nhập giá -->
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center border rounded px-2 py-1 text-sm w-24">
+                                        <input type="number" id="minPriceInput" name="minPrice"
+                                                class="w-full text-center outline-none"
+                                                min="0" step="1000"
+                                                value="${empty param.minPrice ? 0 : param.minPrice}">₫
+                                </div>
+                                <span class="mx-2">—</span>
+                                <div class="flex items-center border rounded px-2 py-1 text-sm w-24">
+                                    <input type="number" id="maxPriceInput" name="maxPrice"
+                                            class="w-full text-center outline-none"
+                                            min="0" step="1000"
+                                            value="${empty param.maxPrice ? 1000000 : param.maxPrice}">₫
+                                </div>
+                            </div>
+
+                            <button type="submit"
+                                    onclick="removeEmptyPrices(this.form)"
+                                    class="w-full border border-gray-400 text-gray-800 font-medium rounded-lg mt-2 py-1 hover:bg-gray-100 transition">
+                                Apply
+                            </button>
                         </div>
-                        <button type="submit" 
-                                onclick="removeEmptyPrices(this.form)" 
-                                class="bg-blue-500 text-white px-2 py-1 rounded text-sm mt-2">Áp dụng</button>
                     </div>
 
                     <script>
@@ -284,7 +297,44 @@
                             if (!form.maxPrice.value)
                                 form.maxPrice.removeAttribute("name");
                         }
+
+                        const slider = document.getElementById('priceSlider');
+                        const minInput = document.getElementById('minPriceInput');
+                        const maxInput = document.getElementById('maxPriceInput');
+
+                        // Tạo slider
+                        noUiSlider.create(slider, {
+                            start: [${empty param.minPrice ? 0 : param.minPrice}, ${empty param.maxPrice ? 1000000 : param.maxPrice}],
+                            connect: true,
+                            step: 1000,
+                            range: {
+                                'min': 0,
+                                'max': 1000000
+                            },
+                            tooltips: [true, true],
+                            format: {
+                                to: value => Math.round(value).toLocaleString('vi-VN'),
+                                from: value => Number(value.replace(/\./g, ''))
+                            }
+                        });
+
+                        // Đồng bộ slider <-> input
+                        slider.noUiSlider.on('update', (values, handle) => {
+                            const min = parseInt(values[0].replace(/\./g, ''));
+                            const max = parseInt(values[1].replace(/\./g, ''));
+                            minInput.value = min;
+                            maxInput.value = max;
+                        });
+
+                        minInput.addEventListener('change', () => {
+                            slider.noUiSlider.set([minInput.value, null]);
+                        });
+
+                        maxInput.addEventListener('change', () => {
+                            slider.noUiSlider.set([null, maxInput.value]);
+                        });
                     </script>
+
                 </form>
 
                 <script>
@@ -321,32 +371,32 @@
                                     <span class="absolute top-2 left-2 bg-gray-300 text-xs px-2 py-1 rounded">Đã bán hết</span>
                                 </c:if>
 
-<div class="h-36 overflow-hidden rounded mb-3">
-    <a href="product?id=${p.productId}">
-        <c:choose>
-            <c:when test="${not empty p.mainVariant and not empty p.mainVariant.imageUrl}">
-                <c:choose>
-                    <c:when test="${fn:startsWith(p.mainVariant.imageUrl, 'http')}">
-                        <img src="${p.mainVariant.imageUrl}"
-                             class="w-full h-full object-cover"
-                             alt="${p.productName} - Hình ảnh chính">
-                    </c:when>
-                    <c:otherwise>
-                        <img src="${pageContext.request.contextPath}${p.mainVariant.imageUrl}"
-                             class="w-full h-full object-cover"
-                             alt="${p.productName} - Hình ảnh chính">
-                    </c:otherwise>
-                </c:choose>
-            </c:when>
+                                <div class="h-36 overflow-hidden rounded mb-3">
+                                    <a href="product?id=${p.productId}">
+                                        <c:choose>
+                                            <c:when test="${not empty p.mainVariant and not empty p.mainVariant.imageUrl}">
+                                                <c:choose>
+                                                    <c:when test="${fn:startsWith(p.mainVariant.imageUrl, 'http')}">
+                                                        <img src="${p.mainVariant.imageUrl}"
+                                                             class="w-full h-full object-cover"
+                                                             alt="${p.productName} - Hình ảnh chính">
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <img src="${pageContext.request.contextPath}${p.mainVariant.imageUrl}"
+                                                             class="w-full h-full object-cover"
+                                                             alt="${p.productName} - Hình ảnh chính">
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </c:when>
 
-            <c:otherwise>
-                <img src="${pageContext.request.contextPath}/images/no-image.png"
-                     class="w-full h-full object-cover"
-                     alt="Không có hình ảnh cho ${p.productName}">
-            </c:otherwise>
-        </c:choose>
-    </a>
-</div>
+                                            <c:otherwise>
+                                                <img src="${pageContext.request.contextPath}/images/no-image.png"
+                                                     class="w-full h-full object-cover"
+                                                     alt="Không có hình ảnh cho ${p.productName}">
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </a>
+                                </div>
 
 
                                 <h3 class="text-sm font-semibold">${p.productName}</h3>                            

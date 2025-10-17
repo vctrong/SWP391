@@ -2,9 +2,9 @@ package controller;
 
 import daos.BrandDAO;
 import daos.ProductDAO;
+import daos.ProductImgDAO;
 import daos.ReviewDAO;
 import java.io.IOException;
-import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -13,11 +13,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import model.Brand;
 import model.Product;
+import model.ProductImg;
 import model.ProductVariant;
 import model.Review;
 
@@ -32,17 +32,16 @@ public class productServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            // 🟢 Lấy id từ query string: /product?id=5
+            // 🟢 1. Lấy productId từ query string (VD: /product?id=3)
             String idParam = request.getParameter("id");
             if (idParam == null || idParam.isEmpty()) {
-                // ⚙️ Nếu không có id thì quay lại trang shop
                 response.sendRedirect("shop");
                 return;
             }
 
             int productId = Integer.parseInt(idParam);
 
-            // 🟢 Gọi DAO để lấy sản phẩm
+            // 🟢 2. Lấy thông tin sản phẩm chính
             ProductDAO productDAO = new ProductDAO();
             Product product = productDAO.getProductById(productId);
 
@@ -51,11 +50,16 @@ public class productServlet extends HttpServlet {
                 return;
             }
 
-            // 🟢 Lấy danh sách các biến thể (variants)
+            // 🟢 3. Lấy danh sách biến thể (variants)
             List<ProductVariant> variants = productDAO.getVariantsByProductId(productId);
             request.setAttribute("variants", variants);
 
-            // 🟢 Lấy brandName gián tiếp qua BrandDAO
+            // 🟢 4. Lấy danh sách ảnh phụ (gallery) từ ProductImg
+            ProductImgDAO productImgDAO = new ProductImgDAO();
+            List<ProductImg> productImages = productImgDAO.findByProductId(productId);
+            request.setAttribute("productImages", productImages);
+
+            // 🟢 5. Lấy tên thương hiệu (Brand) cho sản phẩm
             BrandDAO brandDAO = new BrandDAO();
             List<Brand> brands = brandDAO.getAllBrands();
 
@@ -68,17 +72,17 @@ public class productServlet extends HttpServlet {
                 product.setBrandName(brandMap.get(product.getBrandId()));
             }
 
-            // 🟢 Lấy danh sách reviews + trung bình rating
+            // 🟢 6. Lấy danh sách review + điểm trung bình đánh giá
             ReviewDAO reviewDAO = new ReviewDAO();
             List<Review> reviews = reviewDAO.getReviewsByProduct(productId);
             double avgRating = reviewDAO.getAverageRatingByProduct(productId);
 
-            // 🟢 Gắn product, variants, reviews, avgRating vào request
+            // 🟢 7. Gắn các thuộc tính cần thiết lên request
             request.setAttribute("product", product);
             request.setAttribute("reviews", reviews);
             request.setAttribute("avgRating", avgRating);
 
-            // 🟢 Forward sang trang product.jsp
+            // 🟢 8. Forward sang JSP hiển thị
             request.getRequestDispatcher("/WEB-INF/pages/product.jsp").forward(request, response);
 
         } catch (NumberFormatException e) {
