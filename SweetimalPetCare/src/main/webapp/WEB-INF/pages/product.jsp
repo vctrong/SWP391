@@ -22,14 +22,37 @@
         defaultPrice = product.getMainVariant().getPrice();
     }
     double minPrice = defaultPrice;
+    ProductVariant minPriceVariant = null;
     if (variants != null && !variants.isEmpty()) {
         minPrice = Double.MAX_VALUE;
         for (ProductVariant v : variants) {
             if (v.getPrice() < minPrice) {
                 minPrice = v.getPrice();
+                minPriceVariant = v;
             }
         }
         defaultPrice = minPrice;
+    }
+
+    // Prepare initial selected attributes based on the variant that has the minimum price.
+    // We'll extract its attribute JSON (if present) into a map for initial highlighting.
+    Map<String, String> initialSelected = new HashMap<>();
+    if (minPriceVariant != null) {
+        String attrJson = minPriceVariant.getAttributeJson();
+        if (attrJson != null && !attrJson.trim().isEmpty()) {
+            try {
+                // simple parse like before: {"size":"M"} -> size:M
+                String cleaned = attrJson.replaceAll("[{}\"]", "");
+                String[] parts = cleaned.split(":");
+                if (parts.length == 2) {
+                    String key = parts[0].trim();
+                    String val = parts[1].trim();
+                    initialSelected.put(key.toLowerCase(), val);
+                }
+            } catch (Exception e) {
+                // ignore parse problems
+            }
+        }
     }
 %>
 
@@ -197,11 +220,14 @@
                     <% for (Map.Entry<String, List<String>> entry : attrMap.entrySet()) {
                             String attrName = entry.getKey();
                             List<String> values = entry.getValue();
+                            String attrKeyLower = attrName.toLowerCase();
+                            // initial selected value from minPriceVariant if available
+                            String initSelectedVal = initialSelected.getOrDefault(attrKeyLower, null);
                     %>
                     <div class="mb-4">
                         <p class="font-semibold text-gray-700 text-lg mb-2">
                             <%= attrName%>: 
-                            <span id="selected-<%= attrName.toLowerCase()%>" class="text-red-500 font-medium"><%= values.get(0)%></span>
+                            <span id="selected-<%= attrKeyLower%>" class="text-red-500 font-medium"><%= (initSelectedVal != null) ? initSelectedVal : values.get(0)%></span>
                         </p>
 
                         <div class="flex flex-wrap gap-3">
@@ -209,22 +235,31 @@
                                     String key = attrName + ":" + val;
                                     boolean outOfStock = stockMap.getOrDefault(key, 1) <= 0;
                                     double priceForVal = priceMap.getOrDefault(key, minPrice);
+                                    // determine if this button should be initially selected (red)
+                                    boolean isInitiallySelected = false;
+                                    if (initSelectedVal != null) {
+                                        if (val.equals(initSelectedVal)) isInitiallySelected = true;
+                                    } else {
+                                        // fallback: if no min-price variant provided this attr, do not auto-select any
+                                        isInitiallySelected = false;
+                                    }
                             %>
-                            <%-- Tạo biến đã escape ký tự ' --%>
 <%
-    String safeAttrName = attrName.toLowerCase().replace("'", "\\'");
+    String safeAttrName = attrKeyLower.replace("'", "\\'");
     String safeVal = val.replace("'", "\\'");
 %>
 
 <button type="button"
         class="attr-btn relative border rounded-lg px-4 py-2 hover:bg-gray-100 transition select-none
         <% if (outOfStock) { %> opacity-50 border-gray-300 cursor-not-allowed out-of-stock <% } %>
-        <% if (val.equals(values.get(0))) { %> border-red-500 text-red-600 <% }%>"
+        <% if (isInitiallySelected) { %> border-red-500 text-red-600 <% }%>"
+        data-attr-name="<%= safeAttrName %>"
+        data-attr-value="<%= safeVal %>"
+        data-price="<%= priceForVal%>"
         onclick="selectAttr(event, '<%= safeAttrName %>', '<%= safeVal %>', <%= priceForVal%>)"
         <%= outOfStock ? "disabled" : ""%>>
     <%= val %>
 </button>
-
 
                             <% } %>
                         </div>
@@ -436,10 +471,12 @@
         }, 1400);
     }
 
+    // Cập nhật nút +/- (disable nếu cần)
     function updateButtonsState() {
         let qty = parseInt(qtyEl.value, 10);
-        if (isNaN(qty)) qty = 0; // cho phép rỗng khi nhập
+        if (isNaN(qty)) qty = 0; // allow empty input
         if (qty > maxQty) qty = maxQty;
+        qtyEl.value = (qty === 0 && maxQty !== 0) ? "" : qty; // keep empty if user deleted and not out of stock
 
         btnDec.disabled = qty <= 1;
         btnInc.disabled = (maxQty === 0) || (qty >= maxQty);
@@ -448,9 +485,10 @@
         if (btnInc.disabled) btnInc.classList.add('opacity-50', 'cursor-not-allowed'); else btnInc.classList.remove('opacity-50', 'cursor-not-allowed');
     }
 
+    // Cập nhật tổng tiền hiển thị dựa trên giá hiện tại và qty.value
     function updateTotalFromInput(animate = true) {
         let qty = parseInt(qtyEl.value, 10);
-        if (isNaN(qty)) {
+        if (isNaN(qty) || qty === 0) {
             totalPrice.textContent = formatVND(0);
         } else {
             if (qty < 1) qty = 1;
@@ -467,9 +505,10 @@
         updateButtonsState();
     }
 
+    // changeQty: nếu input rỗng thì coi là 0, nhấn + => thành 1
     window.changeQty = function(n) {
         let qty = parseInt(qtyEl.value, 10);
-        if (isNaN(qty)) qty = 0; // cho phép tăng từ 0 -> 1 khi ô rỗng
+        if (isNaN(qty)) qty = 0; // allow increase from 0 -> 1
         let target = qty + n;
 
         if (target < 1) {
@@ -494,7 +533,6 @@
 
     window.handleQtyInput = function(event) {
         const input = event.target;
-        // remove non-digits, allow empty
         const digits = input.value.replace(/\D/g, "");
         input.value = digits;
 
@@ -581,32 +619,45 @@
         });
     }
 
-    /* -------- selectAttr: khi chọn variant cập nhật maxQty, price, ảnh, buyBtn, ... -------- */
+    /* -------- selectAttr: dùng data-* để reset/hi-light và tìm variant -------- */
     window.selectAttr = function (event, name, value, price) {
         if (!event || !event.target) return;
 
-        selectedAttrs[name.toLowerCase()] = value;
-        const label = document.getElementById('selected-' + name);
+        const key = name.toLowerCase();
+
+        // cập nhật lựa chọn nội bộ
+        selectedAttrs[key] = value;
+        const label = document.getElementById('selected-' + key);
         if (label) label.textContent = value;
 
-        document.querySelectorAll(`.attr-btn[onclick*="'${name}'"]`).forEach(btn => {
+        // Reset style cho các nút cùng nhóm (dựa vào data-attr-name)
+        document.querySelectorAll(`.attr-btn[data-attr-name="${key}"]`).forEach(btn => {
             btn.classList.remove("border-red-500", "text-red-600");
         });
+        // highlight nút vừa chọn
         event.target.classList.add("border-red-500", "text-red-600");
 
+        // tìm variant khớp với mọi thuộc tính đã chọn
         let matchedVariant = null;
         for (const v of variantsData) {
             try {
                 const obj = v.attr ? JSON.parse(v.attr) : {};
                 let match = true;
-                for (const key in selectedAttrs) {
-                    if ((obj[key] !== selectedAttrs[key]) && (obj[key.toLowerCase()] !== selectedAttrs[key])) {
-                        match = false;
-                        break;
+                for (const selKey in selectedAttrs) {
+                    const want = String(selectedAttrs[selKey]);
+                    // tìm giá trị trong obj, so sánh lowercase keys
+                    let found = false;
+                    for (const k in obj) {
+                        if (k.toLowerCase() === selKey) {
+                            if (String(obj[k]) === want) found = true;
+                        }
                     }
+                    if (!found) { match = false; break; }
                 }
                 if (match) { matchedVariant = v; break; }
-            } catch (e) {}
+            } catch (e) {
+                // ignore JSON parse errors
+            }
         }
 
         if (matchedVariant) {
@@ -636,6 +687,7 @@
                 setTimeout(() => { mainImg.src = matchedVariant.img; mainImg.style.opacity = 1; }, 200);
             }
         } else {
+            // chưa đủ lựa chọn -> chỉ hiển thị price param (tạm)
             currentUnitPrice = price;
             priceDisplay.textContent = formatVND(price);
             maxQty = 99;
@@ -646,55 +698,62 @@
         }
     };
 
-    /* -------- New: restore initial variant state (stock + image) --------
-       - Nếu có nút attr mặc định (class border-red-500 / text-red-600) hãy gọi selectAttr cho từng nút đó.
-       - Nếu không có, fallback về variant đầu tiên trong variantsData.
-    */
-    function parseOnclickParams(btn) {
-        const oc = btn.getAttribute('onclick') || "";
-        // pattern: selectAttr(event, 'name', 'value', 123.45)
-        const re = /selectAttr\(\s*event\s*,\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*([0-9.]+)\s*\)/;
-        const m = oc.match(re);
-        if (m) {
-            return { name: m[1], value: m[2], price: Number(m[3]) };
-        }
-        return null;
-    }
-
+    /* -------- initialize: highlight only attributes from min-price variant (if exists), then call selectAttr for them -------- */
     function initializeSelectedAttributes() {
-        // tìm các nút đã được highlight mặc định server-side
-        const selectedBtns = document.querySelectorAll('.attr-btn.border-red-500, .attr-btn.text-red-600');
+        // find attr buttons that were server-marked as selected (we added border-red class server-side)
+        const preselectedBtns = document.querySelectorAll('.attr-btn.border-red-500, .attr-btn.text-red-600');
         let applied = false;
-        selectedBtns.forEach(btn => {
-            const p = parseOnclickParams(btn);
-            if (p) {
-                // tạo event-like object chỉ dùng .target
-                selectAttr({ target: btn }, p.name, p.value, p.price);
+        preselectedBtns.forEach(btn => {
+            // prefer dataset if available
+            const name = btn.dataset && btn.dataset.attrName;
+            const value = btn.dataset && btn.dataset.attrValue;
+            const price = btn.dataset && btn.dataset.price ? Number(btn.dataset.price) : undefined;
+            if (name && value) {
+                // call selectAttr with a fake event target to ensure consistency
+                selectAttr({ target: btn }, name, value, price);
                 applied = true;
             }
         });
 
-        // fallback: nếu không có nút nào mặc định, lấy variant đầu tiên
+        // fallback: if nothing preselected but variantsData exists, use first variant's attributes to set UI
         if (!applied && Array.isArray(variantsData) && variantsData.length > 0) {
             const v = variantsData[0];
-            currentUnitPrice = v.price;
-            priceDisplay.textContent = formatVND(currentUnitPrice);
-            maxQty = (typeof v.stock === 'number' && v.stock >= 0) ? v.stock : 99;
-
-            if (maxQty <= 0) {
-                stockInfo.textContent = "Tạm thời hết hàng";
-                buyBtn.disabled = true;
-                buyBtn.classList.add('opacity-50','cursor-not-allowed');
-                qtyEl.value = 0;
+            // try parse v.attr and apply
+            if (v.attr) {
+                try {
+                    const obj = JSON.parse(v.attr);
+                    for (const k in obj) {
+                        if (!obj.hasOwnProperty(k)) continue;
+                        const normKey = k.toLowerCase();
+                        const normVal = String(obj[k]);
+                        // find button that matches data-attr-name and data-attr-value
+                        const btn = document.querySelector(`.attr-btn[data-attr-name="${normKey}"][data-attr-value="${normVal}"]`);
+                        if (btn) {
+                            selectAttr({ target: btn }, normKey, normVal, btn.dataset && btn.dataset.price ? Number(btn.dataset.price) : v.price);
+                        }
+                    }
+                } catch (e) {
+                    // ignore
+                }
             } else {
-                stockInfo.textContent = "Còn " + maxQty + " sản phẩm";
-                buyBtn.disabled = false;
-                buyBtn.classList.remove('opacity-50','cursor-not-allowed');
-            }
-
-            if (v.img) {
-                mainImg.style.opacity = 0;
-                setTimeout(() => { mainImg.src = v.img; mainImg.style.opacity = 1; }, 200);
+                // set price & stock fallback
+                currentUnitPrice = v.price;
+                priceDisplay.textContent = formatVND(currentUnitPrice);
+                maxQty = (typeof v.stock === 'number' && v.stock >= 0) ? v.stock : 99;
+                if (maxQty <= 0) {
+                    stockInfo.textContent = "Tạm thời hết hàng";
+                    buyBtn.disabled = true;
+                    buyBtn.classList.add('opacity-50','cursor-not-allowed');
+                    qtyEl.value = 0;
+                } else {
+                    stockInfo.textContent = "Còn " + maxQty + " sản phẩm";
+                    buyBtn.disabled = false;
+                    buyBtn.classList.remove('opacity-50','cursor-not-allowed');
+                }
+                if (v.img) {
+                    mainImg.style.opacity = 0;
+                    setTimeout(() => { mainImg.src = v.img; mainImg.style.opacity = 1; }, 200);
+                }
             }
         }
 
@@ -702,13 +761,9 @@
         updateTotalFromInput();
     }
 
-    // gọi hàm khởi tạo trạng thái variant/stock/ảnh
+    // call init
     initializeSelectedAttributes();
 
-    // init rest (safety)
-    updateButtonsState();
-    updateTotalFromInput();
-    
     // 👉 Tabs (Mô tả - Phản hồi)
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -758,7 +813,7 @@
     const toggleBtn = document.getElementById("toggleReviewForm");
     if (toggleBtn)
         toggleBtn.addEventListener("click", () => {
-            document.getElementById("reviewForm").classList.toggle("hidden");
+            document.getElementById("reviewForm").classList.toggle('hidden');
         });
 });
             </script>
