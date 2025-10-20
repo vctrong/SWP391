@@ -10,17 +10,18 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>Đặt lịch hẹn</title>
-        <script src="https://cdn.tailwindcss.com"></script>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Đặt lịch hẹn</title>
+    <%@include file="/WEB-INF/include/library.jsp" %>
     </head>
     <body class="bg-gray-50 text-gray-800">
         <%@include file="/WEB-INF/include/header.jsp" %>
 
-        <main class="container mx-auto py-10">
-            <h2 class="text-2xl font-bold text-blue-700 mb-6">Đặt lịch dịch vụ cho thú cưng</h2>
+        <main class="container mx-auto min-h-screen flex items-center justify-center py-10">
+            <div class="w-full max-w-2xl px-4">
+                <h2 class="text-2xl font-bold text-blue-700 mb-6 text-center">Đặt lịch dịch vụ cho thú cưng</h2>
 
-            <form action="booking" method="post" class="bg-white shadow rounded-lg p-6 space-y-5 max-w-xl">
+                <form action="booking" method="post" class="bg-white shadow rounded-lg p-6 space-y-5 w-full mx-auto max-w-xl">
                 <!-- Chọn thú cưng -->
                 <div>
                     <label class="block font-semibold mb-1">Chọn thú cưng</label>
@@ -65,7 +66,8 @@
                         class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
                     Xác nhận đặt lịch
                 </button>
-            </form>
+                </form>
+            </div>
         </main>
 
         <%@include file="/WEB-INF/include/footer.jsp" %>

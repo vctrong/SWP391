@@ -21,7 +21,7 @@
         <section class="relative bg-blue-100">
             <div class="container mx-auto flex flex-col md:flex-row items-center py-20 px-6">
                 <div class="md:w-1/2">
-                    <h2 class="text-4xl md:text-5xl font-bold mb-6 text-blue-800">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6 text-blue-800 fade-on-scroll" data-delay="150ms">
                         Chăm sóc thú cưng của bạn với tình yêu & đam mê
                     </h2>
                     <p class="text-lg mb-6">
