@@ -29,12 +29,13 @@
         </div>
 
         <!-- Nav Links -->
-        <nav class="space-x-3 hidden md:flex items-center">
-            <a href="home" class="px-3 py-2 rounded-full border border-transparent transition-all transform hover:scale-105 hover:text-blue-600 hover:border-blue-400">Trang chủ</a>
-            <a href="services" class="px-3 py-2 rounded-full border border-transparent transition-all transform hover:scale-105 hover:text-blue-600 hover:border-blue-400">Dịch vụ</a>
-            <a href="#shop" class="px-3 py-2 rounded-full border border-transparent transition-all transform hover:scale-105 hover:text-blue-600 hover:border-blue-400">Cửa hàng</a>
-            <a href="contacts" class="px-3 py-2 rounded-full border border-transparent transition-all transform hover:scale-105 hover:text-blue-600 hover:border-blue-400">Liên hệ</a>
-            <a href="aboutUs" class="px-3 py-2 rounded-full border border-transparent transition-all transform hover:scale-105 hover:text-blue-600 hover:border-blue-400">Về chúng tôi</a>
+        <nav class="space-x-6 hidden md:flex">
+            <a href="home" class="hover:text-blue-500">Trang chủ</a>
+            <a href="#services" class="hover:text-blue-500">Dịch vụ</a>
+            <a href="#shop" class="hover:text-blue-500">Cửa hàng</a>
+            <a href="contacts" class="hover:text-blue-500">Liên hệ</a>
+            <a href="aboutUs" class="hover:text-blue-500">Về chúng tôi</a>
+            <a href="news" class="hover:text-blue-500">Tin tức</a>
             <c:if test="${not empty user}">
                 <a href="${pageContext.request.contextPath}/booking-history" class="px-3 py-2 rounded-full border border-transparent transition-all transform hover:scale-105 hover:text-blue-600 hover:border-blue-400">Lịch sử đặt lịch</a>
             </c:if>

@@ -12,6 +12,22 @@ import java.io.IOException;
 public class VerifyOTPServlet extends HttpServlet {
 
     @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            response.sendRedirect(request.getContextPath() + "/forgot-password");
+            return;
+        }
+        
+        Long exp = (Long) session.getAttribute("fp_otp_exp");
+        if (exp != null) {
+            request.setAttribute("otpExpiry", exp);
+        }
+        
+        request.getRequestDispatcher("WEB-INF/login/verify_otp.jsp").forward(request, response);
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null) {
@@ -31,12 +47,16 @@ public class VerifyOTPServlet extends HttpServlet {
 
         if (inputOtp == null || !inputOtp.equals(sessionOtp)) {
             request.setAttribute("error", "OTP không đúng.");
+            request.setAttribute("otpExpiry", exp);
             request.getRequestDispatcher("WEB-INF/login/verify_otp.jsp").forward(request, response);
             return;
         }
 
         // Mark OTP verified
         session.setAttribute("fp_verified", Boolean.TRUE);
+        // Clear OTP after successful verification
+        session.removeAttribute("fp_otp");
+        session.removeAttribute("fp_otp_exp");
         request.getRequestDispatcher("WEB-INF/login/reset_password.jsp").forward(request, response);
     }
 }
