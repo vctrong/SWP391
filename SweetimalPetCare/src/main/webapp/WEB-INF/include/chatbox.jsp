@@ -144,10 +144,19 @@
     const link = document.createElement('a');
     link.href = 'https://gemini.google.com/app?hl=vi';
     link.className = 'block text-center text-blue-600 hover:text-blue-700 underline text-sm mt-2';
-    link.textContent = 'Chat chuyên sâu với bác sĩ';
+    link.textContent = 'Chat chuyên sâu với bác sĩ AI';
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     wrap.appendChild(link);
+    body.appendChild(wrap);
+    body.scrollTop = body.scrollHeight;
+    const link1 = document.createElement('a');
+    link1.href = 'https://zalo.me/pc';
+    link1.className = 'block text-center text-blue-600 hover:text-blue-700 underline text-sm mt-1';
+    link1.textContent = 'Nói chuyện trực tiếp với bác sĩ Sweetimal';
+    link1.target = '_blank';
+    link1.rel = 'noopener noreferrer';
+    wrap.appendChild(link1);
     body.appendChild(wrap);
     body.scrollTop = body.scrollHeight;
   }
