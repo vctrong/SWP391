@@ -35,7 +35,10 @@
             <!-- Buttons -->
             <div class="space-x-4">
                 <a href="${pageContext.request.contextPath}/login" class="button px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Đăng nhập</a>
-                <button class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Đăng ký</button>
+                <a href="register" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                    Đăng ký
+                </a>
+
             </div>
         </c:if>
 

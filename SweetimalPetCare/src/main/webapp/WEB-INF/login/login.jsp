@@ -53,7 +53,7 @@
                 </div>
 
                 <div class="text-center">
-                    <a href="register.html" class="text-blue-600 hover:underline">Chưa có tài khoản? Đăng ký ngay</a>
+                    <a href="register" class="text-blue-600 hover:underline">Chưa có tài khoản? Đăng ký ngay</a>
                 </div>
             </div>
         </main>
