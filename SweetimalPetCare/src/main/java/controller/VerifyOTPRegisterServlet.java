@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
 @WebServlet(name = "VerifyOTPServlet", urlPatterns = {"/verifyOTP"})
-public class VerifyOTPServlet extends HttpServlet {
+public class VerifyOTPRegisterServlet extends HttpServlet {
 
     
     @Override

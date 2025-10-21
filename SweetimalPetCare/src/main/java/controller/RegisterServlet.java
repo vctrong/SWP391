@@ -27,7 +27,6 @@ public class RegisterServlet extends HttpServlet {
         String gender = request.getParameter("gender");
         String birthday = request.getParameter("birthday");
 
-        // Kiểm tra cơ bản
         if (password == null || password.length() < 6) {
             request.setAttribute("error", "Mật khẩu phải có ít nhất 6 ký tự!");
             request.getRequestDispatcher("WEB-INF/register/register.jsp").forward(request, response);
@@ -42,19 +41,18 @@ public class RegisterServlet extends HttpServlet {
 
         RegisterDAO rdao = new RegisterDAO();
         try {
-            // Kiểm tra username tồn tại
+
             if (rdao.isUsernameExist(username)) {
                 request.setAttribute("error", "Tên đăng nhập đã tồn tại!");
                 request.getRequestDispatcher("WEB-INF/register/register.jsp").forward(request, response);
                 return;
             }
 
-            // Tạo người dùng mới (lưu password đã mã hóa trong DAO)
             boolean created = rdao.createUser(username, password, email, phone, fullname, gender, birthday);
 
             if (created) {
-                // Tạo và gửi OTP như trước
-                HttpSession session = request.getSession(); // tạo session nếu chưa có
+
+                HttpSession session = request.getSession();
                 String otp = String.valueOf((int) (Math.random() * 900000) + 100000);
 
                 boolean sent = SendEmail.sendOTP(email, otp);
@@ -77,7 +75,7 @@ public class RegisterServlet extends HttpServlet {
                 return;
             }
         } catch (Exception e) {
-            // Log lỗi (tùy project bạn có logger hay không)
+
             throw new ServletException(e);
         }
     }

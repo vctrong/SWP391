@@ -9,7 +9,7 @@ import java.sql.ResultSet;
 
 public class RegisterDAO extends DBContext{
 
-    // Hàm mã hóa MD5 (giữ tương đồng với LoginDAO)
+    
     private String hashMd5(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -25,7 +25,7 @@ public class RegisterDAO extends DBContext{
         }
     }
 
-    // Kiểm tra username đã tồn tại hay chưa
+   
     public boolean isUsernameExist(String username) throws Exception {
         String sql = "SELECT 1 FROM users WHERE username = ?";
         try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -37,8 +37,7 @@ public class RegisterDAO extends DBContext{
         }
     }
 
-    // Tạo tài khoản mới: trả về true nếu thành công
-    // Lưu ý: dùng cột password_hash để nhất quán với LoginDAO
+ 
     public boolean createUser(String username, String rawPassword, String email,
                               String phone, String fullname, String gender, String birthday) throws Exception {
         String hashed = hashMd5(rawPassword);
@@ -53,7 +52,7 @@ public class RegisterDAO extends DBContext{
             ps.setString(3, email);
             ps.setString(4, phone);
             ps.setString(5, fullname);
-            // Nếu DB gender là int (0/1), hãy truyền parseInt(gender)
+           
             ps.setString(6, gender);
             ps.setString(7, birthday);
            
