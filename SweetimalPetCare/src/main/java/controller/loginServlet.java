@@ -83,20 +83,17 @@ public class loginServlet extends HttpServlet {
         HttpSession session = request.getSession(true); // always ensure a session exists
 
         if (user == null) {
-            // Wrong credentials
             session.setAttribute("loginFail", "Tên đăng nhập hoặc mật khẩu không đúng.");
             response.sendRedirect(request.getContextPath() + "/login?view=fail");
             return;
         }
 
-        // 🚫 Check if the account is inactive
         if (user.getActive() == 0) {
             session.setAttribute("loginFail", "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ hỗ trợ.");
             response.sendRedirect(request.getContextPath() + "/login?view=inactive");
             return;
         }
 
-        // ✅ Success: active account
         session.setAttribute("user", user);
         session.setAttribute("loginOk", Boolean.TRUE);
 

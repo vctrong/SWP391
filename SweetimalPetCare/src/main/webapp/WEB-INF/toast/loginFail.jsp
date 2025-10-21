@@ -16,14 +16,14 @@
     </svg>
     <div>
         <p class="m-0 text-sm font-semibold">Thất bại</p>
-        <p class="mt-1 text-xs opacity-90">Đăng nhập thất bại!</p>
+        <p class="mt-1 text-xs opacity-90">${loginFail}</p>
     </div>
     <button class="close-btn ml-1 inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-500 hover:bg-black/5">
         <span class="text-base">&times;</span>
     </button>
 </div>
 <script src="assets/js/loginNoti.js"></script>
-<c:if test="${loginFail}">
+<c:if test="${not empty loginFail}">
     <script>
         toastError();
     </script>
