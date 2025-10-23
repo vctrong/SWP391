@@ -41,7 +41,6 @@ public class RegisterServlet extends HttpServlet {
 
         RegisterDAO rdao = new RegisterDAO();
         try {
-
             if (rdao.isUsernameExist(username)) {
                 request.setAttribute("error", "Tên đăng nhập đã tồn tại!");
                 request.getRequestDispatcher("WEB-INF/register/register.jsp").forward(request, response);
@@ -51,12 +50,10 @@ public class RegisterServlet extends HttpServlet {
             boolean created = rdao.createUser(username, password, email, phone, fullname, gender, birthday);
 
             if (created) {
-
                 HttpSession session = request.getSession();
                 String otp = String.valueOf((int) (Math.random() * 900000) + 100000);
 
                 boolean sent = SendEmail.sendOTP(email, otp);
-
                 if (sent) {
                     session.setAttribute("otp", otp);
                     session.setAttribute("email", email);
@@ -66,17 +63,15 @@ public class RegisterServlet extends HttpServlet {
                     return;
                 } else {
                     request.setAttribute("error", "Không thể gửi OTP đến email. Vui lòng thử lại!");
-                    request.getRequestDispatcher("WEB-INF/register/register.jsp").forward(request, response);
-                    return;
                 }
             } else {
                 request.setAttribute("error", "Đăng ký thất bại!");
-                request.getRequestDispatcher("WEB-INF/register/register.jsp").forward(request, response);
-                return;
             }
-        } catch (Exception e) {
 
-            throw new ServletException(e);
+            request.getRequestDispatcher("WEB-INF/register/register.jsp").forward(request, response);
+
+        } catch (Exception e) {
+            throw new ServletException("Lỗi trong quá trình đăng ký: " + e.getMessage(), e);
         }
     }
 
