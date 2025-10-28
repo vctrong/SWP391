@@ -1,18 +1,13 @@
-<%-- 
-    Document   : product
-    Created on : Oct 2, 2025, 10:19:22 AM
-    Author     : Pham Nguyen Xuan Mai - CE190106
---%>
-
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt"%>
 <%@page import="model.Product, model.ProductVariant, model.ProductImg, java.util.*, java.text.NumberFormat, java.util.Locale"%>
 
 <%
     Product product = (Product) request.getAttribute("product");
     List<Product> relatedProducts = (List<Product>) request.getAttribute("relatedProducts");
     List<ProductVariant> variants = (List<ProductVariant>) request.getAttribute("variants");
-    // productImages được set trong servlet
     List<ProductImg> productImages = (List<ProductImg>) request.getAttribute("productImages");
 
     NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
@@ -34,14 +29,11 @@
         defaultPrice = minPrice;
     }
 
-    // Prepare initial selected attributes based on the variant that has the minimum price.
-    // We'll extract its attribute JSON (if present) into a map for initial highlighting.
     Map<String, String> initialSelected = new HashMap<>();
     if (minPriceVariant != null) {
         String attrJson = minPriceVariant.getAttributeJson();
         if (attrJson != null && !attrJson.trim().isEmpty()) {
             try {
-                // simple parse like before: {"size":"M"} -> size:M
                 String cleaned = attrJson.replaceAll("[{}\"]", "");
                 String[] parts = cleaned.split(":");
                 if (parts.length == 2) {
@@ -184,7 +176,6 @@
                             Map<String, Double> priceMap = new HashMap<>();
                             Map<String, Integer> stockMap = new HashMap<>();
 
-                            // Chuyển JSON {"weight":"3kg"} thành map key:value gọn gàng
                             for (ProductVariant v : variants) {
                                 String attrStr = v.getAttributeJson();
                                 int qty = v.getStockQuantity();
@@ -192,7 +183,7 @@
 
                                 if (attrStr != null && !attrStr.isEmpty()) {
                                     try {
-                                        attrStr = attrStr.replaceAll("[{}\"]", ""); // -> weight:3kg
+                                        attrStr = attrStr.replaceAll("[{}\"]", "");
                                         String[] parts = attrStr.split(":");
                                         if (parts.length == 2) {
                                             String key = parts[0].trim();
@@ -221,7 +212,6 @@
                             String attrName = entry.getKey();
                             List<String> values = entry.getValue();
                             String attrKeyLower = attrName.toLowerCase();
-                            // initial selected value from minPriceVariant if available
                             String initSelectedVal = initialSelected.getOrDefault(attrKeyLower, null);
                     %>
                     <div class="mb-4">
@@ -235,31 +225,31 @@
                                     String key = attrName + ":" + val;
                                     boolean outOfStock = stockMap.getOrDefault(key, 1) <= 0;
                                     double priceForVal = priceMap.getOrDefault(key, minPrice);
-                                    // determine if this button should be initially selected (red)
                                     boolean isInitiallySelected = false;
                                     if (initSelectedVal != null) {
-                                        if (val.equals(initSelectedVal)) isInitiallySelected = true;
+                                        if (val.equals(initSelectedVal)) {
+                                            isInitiallySelected = true;
+                                        }
                                     } else {
-                                        // fallback: if no min-price variant provided this attr, do not auto-select any
                                         isInitiallySelected = false;
                                     }
                             %>
-<%
-    String safeAttrName = attrKeyLower.replace("'", "\\'");
-    String safeVal = val.replace("'", "\\'");
-%>
+                            <%
+                                String safeAttrName = attrKeyLower.replace("'", "\\'");
+                                String safeVal = val.replace("'", "\\'");
+                            %>
 
-<button type="button"
-        class="attr-btn relative border rounded-lg px-4 py-2 hover:bg-gray-100 transition select-none
-        <% if (outOfStock) { %> opacity-50 border-gray-300 cursor-not-allowed out-of-stock <% } %>
-        <% if (isInitiallySelected) { %> border-red-500 text-red-600 <% }%>"
-        data-attr-name="<%= safeAttrName %>"
-        data-attr-value="<%= safeVal %>"
-        data-price="<%= priceForVal%>"
-        onclick="selectAttr(event, '<%= safeAttrName %>', '<%= safeVal %>', <%= priceForVal%>)"
-        <%= outOfStock ? "disabled" : ""%>>
-    <%= val %>
-</button>
+                            <button type="button"
+                                    class="attr-btn relative border rounded-lg px-4 py-2 hover:bg-gray-100 transition select-none
+                                    <% if (outOfStock) { %> opacity-50 border-gray-300 cursor-not-allowed out-of-stock <% } %>
+                                    <% if (isInitiallySelected) { %> border-red-500 text-red-600 <% }%>"
+                                    data-attr-name="<%= safeAttrName%>"
+                                    data-attr-value="<%= safeVal%>"
+                                    data-price="<%= priceForVal%>"
+                                    onclick="selectAttr(event, '<%= safeAttrName%>', '<%= safeVal%>', <%= priceForVal%>)"
+                                    <%= outOfStock ? "disabled" : ""%>>
+                                <%= val%>
+                            </button>
 
                             <% } %>
                         </div>
@@ -302,15 +292,15 @@
                     <div class="mt-6 space-y-4">
                         <div class="flex items-center gap-4">
                             <p class="font-semibold text-gray-700">Số lượng:</p>
-                            <div id="qtyWrap" class="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden">
-    <button id="btnDec" data-action="dec" class="px-4 py-2 font-bold hover:bg-gray-100 hover:text-red-500" type="button">−</button>
-    <input id="qty" type="text" value="1"
-           class="w-16 text-center font-bold text-lg border-0 focus:outline-none"
-           oninput="handleQtyInput(event)">
-    <button id="btnInc" data-action="inc" class="px-4 py-2 font-bold hover:bg-gray-100 hover:text-red-500" type="button">+</button>
-</div>
-<!-- thông báo ngắn khi đạt giới hạn -->
-<div id="qtyAlert" class="text-sm text-red-500 ml-3 hidden"></div>
+                            <!-- add relative z-index to ensure buttons are clickable if an overlay exists -->
+                            <div id="qtyWrap" class="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden relative z-10">
+                                <button id="btnDec" data-action="dec" class="px-4 py-2 font-bold hover:bg-gray-100 hover:text-red-500" type="button">−</button>
+                                <input id="qty" type="text" value="1"
+                                       class="w-16 text-center font-bold text-lg border-0 focus:outline-none"
+                                       oninput="handleQtyInput(event)">
+                                <button id="btnInc" data-action="inc" class="px-4 py-2 font-bold hover:bg-gray-100 hover:text-red-500" type="button">+</button>
+                            </div>
+                            <div id="qtyAlert" class="text-sm text-red-500 ml-3 hidden"></div>
 
                         </div>
 
@@ -320,11 +310,17 @@
                         </div>
                     </div>
 
-                    <div class="mt-8">
-                        <button id="buyBtn" class="w-full bg-blue-600 text-white py-4 rounded-full font-bold text-lg shadow-md hover:shadow-lg hover:bg-blue-700 transition">
-                            Đặt Hàng
-                        </button>
-                    </div>
+                    <!-- ADD TO CART FORM: submit variantId + quantity to /cart/add -->
+                    <form id="addToCartForm" method="post" action="<%= request.getContextPath() %>/cart/add">
+                        <input type="hidden" name="productId" value="<%= (product != null) ? product.getProductId() : 0 %>">
+                        <input type="hidden" name="variantId" id="hiddenVariantId" value="">
+                        <input type="hidden" name="quantity" id="hiddenQuantity" value="1">
+                        <div class="mt-8">
+                            <button id="buyBtn" type="submit" class="w-full bg-blue-600 text-white py-4 rounded-full font-bold text-lg shadow-md hover:shadow-lg hover:bg-blue-700 transition">
+                                Đặt Hàng
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -364,7 +360,14 @@
                         <p class="text-gray-500">Chưa có phản hồi nào.</p>
                     </c:if>
 
-                    <button id="toggleReviewForm" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mt-4">✍️ Viết đánh giá</button>
+                    <!-- ensure this toggle button will not act as form submit and is clickable even under overlays -->
+                    <button id="toggleReviewForm"
+                            type="button"
+                            style="position:relative; z-index:9999; pointer-events:auto;"
+                            onclick="(function(){ const rf = document.getElementById('reviewForm'); if(rf) rf.classList.toggle('hidden'); else console.warn('reviewForm not found'); })()"
+                            class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mt-4">
+                        ✍️ Viết đánh giá
+                    </button>
 
                     <!-- form -->
                     <div id="reviewForm" class="hidden bg-gray-50 p-4 rounded-lg border mt-4">
@@ -394,11 +397,6 @@
                                 <textarea name="comment" required class="w-full border p-2 rounded"></textarea>
                             </div>
 
-                            <div>
-                                <label class="block font-semibold mb-1">Video YouTube (tùy chọn)</label>
-                                <input type="url" name="youtubeUrl" placeholder="Dán link YouTube vào đây" class="w-full border p-2 rounded">
-                            </div>
-
                             <button type="submit" class="bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition">
                                 Gửi đánh giá
                             </button>
@@ -407,8 +405,59 @@
                 </div>
             </div>
 
+            <div class="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 class="text-xl font-bold mb-4">Sản phẩm liên quan</h3>
+
+                <c:if test="${not empty relatedProducts}">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <c:forEach var="rp" items="${relatedProducts}">
+                            <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col">
+                                <a href="product?id=${rp.productId}" class="block h-28 mb-3">
+                                    <c:choose>
+                                        <c:when test="${not empty rp.mainVariant and not empty rp.mainVariant.imageUrl}">
+                                            <c:choose>
+                                                <c:when test="${fn:startsWith(rp.mainVariant.imageUrl, 'http')}">
+                                                    <img src="${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <img src="${pageContext.request.contextPath}${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <img src="${pageContext.request.contextPath}/images/no-image.png" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
+                                        </c:otherwise>
+                                    </c:choose>
+                                </a>
+
+                                <div class="flex-1">
+                                    <a href="product?id=${rp.productId}" class="text-sm font-semibold hover:text-red-500 block mb-1">${rp.productName}</a>
+                                    <p class="text-xs text-gray-500">Thương hiệu: ${rp.brandName}</p>
+                                    <div class="mt-2">
+                                        <c:choose>
+                                            <c:when test="${not empty rp.mainVariant and rp.mainVariant.price ne 0}">
+                                                <p class="text-red-600 font-bold text-sm">
+                                                    <fmt:formatNumber value="${rp.mainVariant.price}" type="number" groupingUsed="true"/>₫
+                                                </p>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <p class="text-gray-500 italic text-sm">Liên hệ</p>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </div>
+                                </div>
+                            </div>
+                        </c:forEach>
+                    </div>
+                </c:if>
+
+                <c:if test="${empty relatedProducts}">
+                    <p class="text-gray-500">Không có sản phẩm liên quan.</p>
+                </c:if>
+            </div>
+
             <script>
-                // Danh sách variant (attribute_json + price + image + stock)
+                // Danh sách variant (attribute_json + price + image + stock + id)
                 const variantsData = [
                 <% if (variants != null) {
                         for (int i = 0; i < variants.size(); i++) {
@@ -417,405 +466,419 @@
                             double price = v.getPrice();
                             String img = v.getImageUrl();
                             int stock = v.getStockQuantity();
+                            long vid = v.getVariantId();
                             if (img == null || img.isEmpty()) {
                                 img = "/assets/img/no-image.png";
                             }
                 %>
                 {
-                attr: '<%= attr != null ? attr.replaceAll("'", "\\\\'") : ""%>',
-                        price: <%= price%>,
-                        img: '<%= request.getContextPath() + img%>',
-                        stock: <%= stock %>
+                    id: <%= vid %>,
+                    attr: '<%= attr != null ? attr.replaceAll("'", "\\\\'") : ""%>',
+                    price: <%= price%>,
+                    img: '<%= request.getContextPath() + img%>',
+                    stock: <%= stock%>
                 }<%= (i < variants.size() - 1) ? "," : ""%>
                 <% }
                     }%>
                 ];
 
-   document.addEventListener("DOMContentLoaded", () => {
-    const mainImg = document.getElementById('mainImg');
-    const priceDisplay = document.getElementById('priceDisplay');
-    const totalPrice = document.getElementById('totalPrice');
-    const qtyEl = document.getElementById('qty');
-    const btnInc = document.getElementById('btnInc');
-    const btnDec = document.getElementById('btnDec');
-    const buyBtn = document.getElementById('buyBtn');
-    const stockInfo = document.getElementById('stockInfo');
-    const qtyAlert = document.getElementById('qtyAlert');
+                // selectedVariantId sẽ được set khi tìm thấy variant khớp
+                window.selectedVariantId = null;
 
-    let currentUnitPrice = <%= Double.toString(defaultPrice)%>;
-    let maxQty = 99;
-    const selectedAttrs = {};
+                document.addEventListener("DOMContentLoaded", () => {
+                    const mainImg = document.getElementById('mainImg');
+                    const priceDisplay = document.getElementById('priceDisplay');
+                    const totalPrice = document.getElementById('totalPrice');
+                    const qtyEl = document.getElementById('qty');
+                    const btnInc = document.getElementById('btnInc');
+                    const btnDec = document.getElementById('btnDec');
+                    const buyBtn = document.getElementById('buyBtn');
+                    const stockInfo = document.getElementById('stockInfo');
+                    const qtyAlert = document.getElementById('qtyAlert');
 
-    // flags để tránh double-call khi mousedown + click
-    let ignoreClickInc = false;
-    let ignoreClickDec = false;
+                    let currentUnitPrice = <%= Double.toString(defaultPrice)%>;
+                    let maxQty = 99;
+                    const selectedAttrs = {};
 
-    function formatVND(n) {
-        const num = Number(n) || 0;
-        return num.toLocaleString('vi-VN') + "₫";
-    }
+                    // flags để tránh double-call khi mousedown + click
+                    let ignoreClickInc = false;
+                    let ignoreClickDec = false;
 
-    function showQtyAlert(msg) {
-        if (!qtyAlert) return;
-        qtyAlert.textContent = msg;
-        qtyAlert.classList.remove('hidden');
-        qtyAlert.style.opacity = 1;
-        clearTimeout(qtyAlert._hideTimer);
-        qtyAlert._hideTimer = setTimeout(() => {
-            qtyAlert.style.transition = 'opacity 240ms';
-            qtyAlert.style.opacity = 0;
-            setTimeout(() => {
-                qtyAlert.classList.add('hidden');
-                qtyAlert.style.transition = '';
-            }, 250);
-        }, 1400);
-    }
+                    function formatVND(n) {
+                        const num = Number(n) || 0;
+                        return num.toLocaleString('vi-VN') + "₫";
+                    }
 
-    // Cập nhật nút +/- (disable nếu cần)
-    function updateButtonsState() {
-        let qty = parseInt(qtyEl.value, 10);
-        if (isNaN(qty)) qty = 0; // allow empty input
-        if (qty > maxQty) qty = maxQty;
-        qtyEl.value = (qty === 0 && maxQty !== 0) ? "" : qty; // keep empty if user deleted and not out of stock
+                    function showQtyAlert(msg) {
+                        if (!qtyAlert)
+                            return;
+                        qtyAlert.textContent = msg;
+                        qtyAlert.classList.remove('hidden');
+                        qtyAlert.style.opacity = 1;
+                        clearTimeout(qtyAlert._hideTimer);
+                        qtyAlert._hideTimer = setTimeout(() => {
+                            qtyAlert.style.transition = 'opacity 240ms';
+                            qtyAlert.style.opacity = 0;
+                            setTimeout(() => {
+                                qtyAlert.classList.add('hidden');
+                                qtyAlert.style.transition = '';
+                            }, 250);
+                        }, 1400);
+                    }
 
-        btnDec.disabled = qty <= 1;
-        btnInc.disabled = (maxQty === 0) || (qty >= maxQty);
+                    function updateButtonsState() {
+                        let qty = parseInt(qtyEl.value, 10);
+                        if (isNaN(qty))
+                            qty = 0;
+                        if (qty > maxQty)
+                            qty = maxQty;
+                        qtyEl.value = (qty === 0 && maxQty !== 0) ? "" : qty;
 
-        if (btnDec.disabled) btnDec.classList.add('opacity-50', 'cursor-not-allowed'); else btnDec.classList.remove('opacity-50', 'cursor-not-allowed');
-        if (btnInc.disabled) btnInc.classList.add('opacity-50', 'cursor-not-allowed'); else btnInc.classList.remove('opacity-50', 'cursor-not-allowed');
-    }
+                        btnDec.disabled = qty <= 1;
+                        btnInc.disabled = (maxQty === 0) || (qty >= maxQty);
 
-    // Cập nhật tổng tiền hiển thị dựa trên giá hiện tại và qty.value
-    function updateTotalFromInput(animate = true) {
-        let qty = parseInt(qtyEl.value, 10);
-        if (isNaN(qty) || qty === 0) {
-            totalPrice.textContent = formatVND(0);
-        } else {
-            if (qty < 1) qty = 1;
-            if (qty > maxQty) qty = maxQty;
-            totalPrice.textContent = formatVND(currentUnitPrice * qty);
-        }
+                        if (btnDec.disabled)
+                            btnDec.classList.add('opacity-50', 'cursor-not-allowed');
+                        else
+                            btnDec.classList.remove('opacity-50', 'cursor-not-allowed');
+                        if (btnInc.disabled)
+                            btnInc.classList.add('opacity-50', 'cursor-not-allowed');
+                        else
+                            btnInc.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
 
-        if (animate && !isNaN(parseInt(qtyEl.value, 10))) {
-            totalPrice.style.transition = "transform 0.08s";
-            totalPrice.style.transform = "scale(1.05)";
-            setTimeout(() => totalPrice.style.transform = "scale(1)", 90);
-        }
+                    function updateTotalFromInput(animate = true) {
+                        let qty = parseInt(qtyEl.value, 10);
+                        if (isNaN(qty) || qty === 0) {
+                            totalPrice.textContent = formatVND(0);
+                        } else {
+                            if (qty < 1)
+                                qty = 1;
+                            if (qty > maxQty)
+                                qty = maxQty;
+                            totalPrice.textContent = formatVND(currentUnitPrice * qty);
+                        }
 
-        updateButtonsState();
-    }
+                        if (animate && !isNaN(parseInt(qtyEl.value, 10))) {
+                            totalPrice.style.transition = "transform 0.08s";
+                            totalPrice.style.transform = "scale(1.05)";
+                            setTimeout(() => totalPrice.style.transform = "scale(1)", 90);
+                        }
 
-    // changeQty: nếu input rỗng thì coi là 0, nhấn + => thành 1
-    window.changeQty = function(n) {
-        let qty = parseInt(qtyEl.value, 10);
-        if (isNaN(qty)) qty = 0; // allow increase from 0 -> 1
-        let target = qty + n;
+                        updateButtonsState();
+                    }
 
-        if (target < 1) {
-            target = 1;
-            showQtyAlert("Số lượng tối thiểu là 1");
-        }
-        if (target > maxQty) {
-            if (maxQty === 0) {
-                showQtyAlert("Sản phẩm tạm hết hàng");
-                qtyEl.value = maxQty;
-                updateTotalFromInput();
-                return;
-            } else {
-                showQtyAlert("Bạn đã đạt giới hạn: " + maxQty);
-                target = maxQty;
-            }
-        }
+                    window.changeQty = function (n) {
+                        let qty = parseInt(qtyEl.value, 10);
+                        if (isNaN(qty))
+                            qty = 0;
+                        let target = qty + n;
 
-        qtyEl.value = target;
-        updateTotalFromInput();
-    };
+                        if (target < 1) {
+                            target = 1;
+                            showQtyAlert("Số lượng tối thiểu là 1");
+                        }
+                        if (target > maxQty) {
+                            if (maxQty === 0) {
+                                showQtyAlert("Sản phẩm tạm hết hàng");
+                                qtyEl.value = maxQty;
+                                updateTotalFromInput();
+                                return;
+                            } else {
+                                showQtyAlert("Bạn đã đạt giới hạn: " + maxQty);
+                                target = maxQty;
+                            }
+                        }
 
-    window.handleQtyInput = function(event) {
-        const input = event.target;
-        const digits = input.value.replace(/\D/g, "");
-        input.value = digits;
+                        qtyEl.value = target;
+                        updateTotalFromInput();
+                    };
 
-        const val = parseInt(digits, 10);
-        if (!isNaN(val) && val > maxQty) {
-            showQtyAlert("Bạn đã đạt giới hạn: " + maxQty);
-        }
+                    window.handleQtyInput = function (event) {
+                        const input = event.target;
+                        const digits = input.value.replace(/\D/g, "");
+                        input.value = digits;
 
-        updateTotalFromInput(false);
+                        const val = parseInt(digits, 10);
+                        if (!isNaN(val) && val > maxQty) {
+                            showQtyAlert("Bạn đã đạt giới hạn: " + maxQty);
+                        }
 
-        if (event.key === "Enter") {
-            input.blur();
-        }
-    };
+                        updateTotalFromInput(false);
 
-    // Long-press support
-    let holdTimer = null;
-    let holdInterval = null;
-    const HOLD_DELAY = 350;
-    const HOLD_INTERVAL = 120;
+                        // note: oninput does not provide event.key; keep this safe
+                        if (event instanceof KeyboardEvent && event.key === "Enter") {
+                            input.blur();
+                        }
+                    };
 
-    function startHold(increment, btn) {
-        if (btn === btnInc) ignoreClickInc = true;
-        if (btn === btnDec) ignoreClickDec = true;
+                    // attach click listeners to +/- buttons to ensure they always work
+                    if (btnInc) {
+                        btnInc.addEventListener('click', (ev) => {
+                            // prevent accidental form submit or propagation
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            changeQty(1);
+                        });
+                    }
+                    if (btnDec) {
+                        btnDec.addEventListener('click', (ev) => {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            changeQty(-1);
+                        });
+                    }
 
-        changeQty(increment);
+                    // long press support omitted here (kept earlier behaviour)
+                    // ---- selectAttr logic ----
+                    window.selectAttr = function (event, name, value, price) {
+                        if (!event || !event.target)
+                            return;
 
-        holdTimer = setTimeout(() => {
-            holdInterval = setInterval(() => {
-                changeQty(increment);
-            }, HOLD_INTERVAL);
-        }, HOLD_DELAY);
-    }
+                        const key = name.toLowerCase();
 
-    function stopHold() {
-        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
-        if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
-    }
+                        selectedAttrs[key] = value;
+                        const label = document.getElementById('selected-' + key);
+                        if (label)
+                            label.textContent = value;
 
-    if (btnInc) {
-        btnInc.addEventListener('click', (e) => {
-            if (ignoreClickInc) { ignoreClickInc = false; return; }
-            changeQty(1);
-        });
-        btnInc.addEventListener('mousedown', (e) => startHold(1, btnInc));
-        btnInc.addEventListener('touchstart', (e) => startHold(1, btnInc), {passive:true});
-        btnInc.addEventListener('mouseup', stopHold);
-        btnInc.addEventListener('mouseleave', stopHold);
-        btnInc.addEventListener('touchend', stopHold);
-    }
+                        document.querySelectorAll(`.attr-btn[data-attr-name="${key}"]`).forEach(btn => {
+                            btn.classList.remove("border-red-500", "text-red-600");
+                        });
+                        event.target.classList.add("border-red-500", "text-red-600");
 
-    if (btnDec) {
-        btnDec.addEventListener('click', (e) => {
-            if (ignoreClickDec) { ignoreClickDec = false; return; }
-            changeQty(-1);
-        });
-        btnDec.addEventListener('mousedown', (e) => startHold(-1, btnDec));
-        btnDec.addEventListener('touchstart', (e) => startHold(-1, btnDec), {passive:true});
-        btnDec.addEventListener('mouseup', stopHold);
-        btnDec.addEventListener('mouseleave', stopHold);
-        btnDec.addEventListener('touchend', stopHold);
-    }
+                        // tìm variant khớp với mọi thuộc tính đã chọn
+                        let matchedVariant = null;
+                        for (const v of variantsData) {
+                            try {
+                                const obj = v.attr ? JSON.parse(v.attr) : {};
+                                let match = true;
+                                for (const selKey in selectedAttrs) {
+                                    const want = String(selectedAttrs[selKey]);
+                                    let found = false;
+                                    for (const k in obj) {
+                                        if (k.toLowerCase() === selKey) {
+                                            if (String(obj[k]) === want)
+                                                found = true;
+                                        }
+                                    }
+                                    if (!found) {
+                                        match = false;
+                                        break;
+                                    }
+                                }
+                                if (match) {
+                                    matchedVariant = v;
+                                    break;
+                                }
+                            } catch (e) {
+                                // ignore parse problems
+                            }
+                        }
 
-    if (qtyEl) {
-        qtyEl.addEventListener('blur', () => {
-            let val = parseInt(qtyEl.value, 10);
-            if (isNaN(val) || val < 1) {
-                if (maxQty === 0) {
-                    qtyEl.value = 0;
-                    totalPrice.textContent = formatVND(0);
-                } else {
-                    qtyEl.value = 1;
-                }
-            } else if (val > maxQty) {
-                qtyEl.value = maxQty;
-                showQtyAlert("Bạn đã đạt giới hạn: " + maxQty);
-            }
-            updateTotalFromInput();
-        });
+                        if (matchedVariant) {
+                            // set global selectedVariantId for form submit
+                            window.selectedVariantId = matchedVariant.id;
 
-        qtyEl.addEventListener('input', handleQtyInput);
-        qtyEl.addEventListener('keydown', function(e){
-            if (e.key === "Enter") { qtyEl.blur(); }
-        });
-    }
+                            currentUnitPrice = matchedVariant.price;
+                            priceDisplay.textContent = formatVND(currentUnitPrice);
 
-    /* -------- selectAttr: dùng data-* để reset/hi-light và tìm variant -------- */
-    window.selectAttr = function (event, name, value, price) {
-        if (!event || !event.target) return;
+                            maxQty = (typeof matchedVariant.stock === 'number' && matchedVariant.stock >= 0) ? matchedVariant.stock : 99;
 
-        const key = name.toLowerCase();
+                            if (maxQty <= 0) {
+                                stockInfo.textContent = "Tạm thời hết hàng";
+                                buyBtn.disabled = true;
+                                buyBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                                qtyEl.value = 0;
+                                updateTotalFromInput();
+                                updateButtonsState();
+                            } else {
+                                stockInfo.textContent = "Còn " + maxQty + " sản phẩm";
+                                buyBtn.disabled = false;
+                                buyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                                let q = parseInt(qtyEl.value, 10);
+                                if (!isNaN(q) && q > maxQty)
+                                    qtyEl.value = maxQty;
+                                updateTotalFromInput();
+                            }
 
-        // cập nhật lựa chọn nội bộ
-        selectedAttrs[key] = value;
-        const label = document.getElementById('selected-' + key);
-        if (label) label.textContent = value;
+                            if (matchedVariant.img) {
+                                mainImg.style.opacity = 0;
+                                setTimeout(() => {
+                                    mainImg.src = matchedVariant.img;
+                                    mainImg.style.opacity = 1;
+                                }, 200);
+                            }
+                        } else {
+                            // chưa đủ lựa chọn -> reset selectedVariantId
+                            window.selectedVariantId = null;
 
-        // Reset style cho các nút cùng nhóm (dựa vào data-attr-name)
-        document.querySelectorAll(`.attr-btn[data-attr-name="${key}"]`).forEach(btn => {
-            btn.classList.remove("border-red-500", "text-red-600");
-        });
-        // highlight nút vừa chọn
-        event.target.classList.add("border-red-500", "text-red-600");
+                            currentUnitPrice = price;
+                            priceDisplay.textContent = formatVND(price);
+                            maxQty = 99;
+                            stockInfo.textContent = "";
+                            buyBtn.disabled = false;
+                            buyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                            updateTotalFromInput();
+                        }
+                    };
 
-        // tìm variant khớp với mọi thuộc tính đã chọn
-        let matchedVariant = null;
-        for (const v of variantsData) {
-            try {
-                const obj = v.attr ? JSON.parse(v.attr) : {};
-                let match = true;
-                for (const selKey in selectedAttrs) {
-                    const want = String(selectedAttrs[selKey]);
-                    // tìm giá trị trong obj, so sánh lowercase keys
-                    let found = false;
-                    for (const k in obj) {
-                        if (k.toLowerCase() === selKey) {
-                            if (String(obj[k]) === want) found = true;
+                    // initialize selection from server-side preselected buttons
+                    function initializeSelectedAttributes() {
+                        const preselectedBtns = document.querySelectorAll('.attr-btn.border-red-500, .attr-btn.text-red-600');
+                        let applied = false;
+                        preselectedBtns.forEach(btn => {
+                            const name = btn.dataset && btn.dataset.attrName;
+                            const value = btn.dataset && btn.dataset.attrValue;
+                            const price = btn.dataset && btn.dataset.price ? Number(btn.dataset.price) : undefined;
+                            if (name && value) {
+                                selectAttr({target: btn}, name, value, price);
+                                applied = true;
+                            }
+                        });
+
+                        if (!applied && Array.isArray(variantsData) && variantsData.length > 0) {
+                            const v = variantsData[0];
+                            if (v.attr) {
+                                try {
+                                    const obj = JSON.parse(v.attr);
+                                    for (const k in obj) {
+                                        if (!obj.hasOwnProperty(k)) continue;
+                                        const normKey = k.toLowerCase();
+                                        const normVal = String(obj[k]);
+                                        const btn = document.querySelector(`.attr-btn[data-attr-name="${normKey}"][data-attr-value="${normVal}"]`);
+                                        if (btn) {
+                                            selectAttr({target: btn}, normKey, normVal, btn.dataset && btn.dataset.price ? Number(btn.dataset.price) : v.price);
+                                        }
+                                    }
+                                } catch (e) {
+                                    // ignore
+                                }
+                            } else {
+                                currentUnitPrice = v.price;
+                                priceDisplay.textContent = formatVND(currentUnitPrice);
+                                maxQty = (typeof v.stock === 'number' && v.stock >= 0) ? v.stock : 99;
+                                if (maxQty <= 0) {
+                                    stockInfo.textContent = "Tạm thời hết hàng";
+                                    buyBtn.disabled = true;
+                                    buyBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                                    qtyEl.value = 0;
+                                } else {
+                                    stockInfo.textContent = "Còn " + maxQty + " sản phẩm";
+                                    buyBtn.disabled = false;
+                                    buyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                                }
+                                if (v.img) {
+                                    mainImg.style.opacity = 0;
+                                    setTimeout(() => { mainImg.src = v.img; mainImg.style.opacity = 1; }, 200);
+                                }
+                                // set selectedVariantId to first variant id for fallback
+                                window.selectedVariantId = v.id;
+                            }
+                        }
+
+                        updateButtonsState();
+                        updateTotalFromInput();
+                    }
+
+                    initializeSelectedAttributes();
+
+                    // Hook form submit: set hidden inputs and validate selection
+                    const addForm = document.getElementById('addToCartForm');
+                    if (addForm) {
+                        addForm.addEventListener('submit', function (e) {
+                            // set quantity
+                            const qtyVal = parseInt(qtyEl.value, 10);
+                            const q = isNaN(qtyVal) || qtyVal < 1 ? 1 : qtyVal;
+                            document.getElementById('hiddenQuantity').value = q;
+
+                            // variant selection required when variants exist
+                            if (Array.isArray(variantsData) && variantsData.length > 0) {
+                                if (!window.selectedVariantId) {
+                                    e.preventDefault();
+                                    alert('Vui lòng chọn đầy đủ thuộc tính sản phẩm (kích thước, màu, ...).');
+                                    return false;
+                                }
+                            } else {
+                                // no variants -> try to set first main variant if available by server (product.mainVariant)
+                                // if no variant info we can't add -> show message
+                                // attempt to use product.mainVariant id from server if injected
+                                <% if (product != null && product.getMainVariant() != null) { %>
+                                    document.getElementById('hiddenVariantId').value = '<%= product.getMainVariant().getVariantId() %>';
+                                <% } else { %>
+                                    // leave as-is; backend may reject if variantId missing
+                                <% } %>
+                            }
+
+                            // set hidden variant id if selected
+                            if (window.selectedVariantId) {
+                                document.getElementById('hiddenVariantId').value = window.selectedVariantId;
+                            }
+
+                            // allow submit
+                        });
+                    } else {
+                        console.warn('addToCartForm not found on page');
+                    }
+
+                    // Tabs, rating, other handlers (unchanged)
+                    const tabBtns = document.querySelectorAll('.tab-btn');
+                    const tabContents = document.querySelectorAll('.tab-content');
+                    tabBtns.forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            tabBtns.forEach(b => b.classList.remove('text-red-500', 'border-red-500'));
+                            tabContents.forEach(c => c.classList.add('hidden'));
+                            btn.classList.add('text-red-500', 'border-red-500');
+                            document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+                        });
+                    });
+
+                    // star rating and toggle review form (robust to missing reviewForm)
+                    const stars = document.querySelectorAll("#starRating .star");
+                    const ratingInput = document.getElementById("ratingInput");
+                    if (stars.length > 0) {
+                        stars.forEach(star => {
+                            star.addEventListener("mouseover", () => {
+                                resetStars();
+                                highlight(star.dataset.value);
+                            });
+                            star.addEventListener("click", () => {
+                                if (ratingInput) ratingInput.value = star.dataset.value;
+                            });
+                            star.addEventListener("mouseout", () => {
+                                resetStars();
+                                if (ratingInput) highlight(ratingInput.value);
+                            });
+                        });
+
+                        function highlight(count) {
+                            for (let i = 0; i < count; i++) {
+                                stars[i].textContent = "★";
+                                stars[i].classList.add("text-yellow-400");
+                            }
+                        }
+
+                        function resetStars() {
+                            stars.forEach(s => {
+                                s.textContent = "☆";
+                                s.classList.remove("text-yellow-400");
+                            });
                         }
                     }
-                    if (!found) { match = false; break; }
-                }
-                if (match) { matchedVariant = v; break; }
-            } catch (e) {
-                // ignore JSON parse errors
-            }
-        }
 
-        if (matchedVariant) {
-            currentUnitPrice = matchedVariant.price;
-            priceDisplay.textContent = formatVND(currentUnitPrice);
-
-            maxQty = (typeof matchedVariant.stock === 'number' && matchedVariant.stock >= 0) ? matchedVariant.stock : 99;
-
-            if (maxQty <= 0) {
-                stockInfo.textContent = "Tạm thời hết hàng";
-                buyBtn.disabled = true;
-                buyBtn.classList.add('opacity-50','cursor-not-allowed');
-                qtyEl.value = 0;
-                updateTotalFromInput();
-                updateButtonsState();
-            } else {
-                stockInfo.textContent = "Còn " + maxQty + " sản phẩm";
-                buyBtn.disabled = false;
-                buyBtn.classList.remove('opacity-50','cursor-not-allowed');
-                let q = parseInt(qtyEl.value, 10);
-                if (!isNaN(q) && q > maxQty) qtyEl.value = maxQty;
-                updateTotalFromInput();
-            }
-
-            if (matchedVariant.img) {
-                mainImg.style.opacity = 0;
-                setTimeout(() => { mainImg.src = matchedVariant.img; mainImg.style.opacity = 1; }, 200);
-            }
-        } else {
-            // chưa đủ lựa chọn -> chỉ hiển thị price param (tạm)
-            currentUnitPrice = price;
-            priceDisplay.textContent = formatVND(price);
-            maxQty = 99;
-            stockInfo.textContent = "";
-            buyBtn.disabled = false;
-            buyBtn.classList.remove('opacity-50','cursor-not-allowed');
-            updateTotalFromInput();
-        }
-    };
-
-    /* -------- initialize: highlight only attributes from min-price variant (if exists), then call selectAttr for them -------- */
-    function initializeSelectedAttributes() {
-        // find attr buttons that were server-marked as selected (we added border-red class server-side)
-        const preselectedBtns = document.querySelectorAll('.attr-btn.border-red-500, .attr-btn.text-red-600');
-        let applied = false;
-        preselectedBtns.forEach(btn => {
-            // prefer dataset if available
-            const name = btn.dataset && btn.dataset.attrName;
-            const value = btn.dataset && btn.dataset.attrValue;
-            const price = btn.dataset && btn.dataset.price ? Number(btn.dataset.price) : undefined;
-            if (name && value) {
-                // call selectAttr with a fake event target to ensure consistency
-                selectAttr({ target: btn }, name, value, price);
-                applied = true;
-            }
-        });
-
-        // fallback: if nothing preselected but variantsData exists, use first variant's attributes to set UI
-        if (!applied && Array.isArray(variantsData) && variantsData.length > 0) {
-            const v = variantsData[0];
-            // try parse v.attr and apply
-            if (v.attr) {
-                try {
-                    const obj = JSON.parse(v.attr);
-                    for (const k in obj) {
-                        if (!obj.hasOwnProperty(k)) continue;
-                        const normKey = k.toLowerCase();
-                        const normVal = String(obj[k]);
-                        // find button that matches data-attr-name and data-attr-value
-                        const btn = document.querySelector(`.attr-btn[data-attr-name="${normKey}"][data-attr-value="${normVal}"]`);
-                        if (btn) {
-                            selectAttr({ target: btn }, normKey, normVal, btn.dataset && btn.dataset.price ? Number(btn.dataset.price) : v.price);
+                    const toggleBtn = document.getElementById("toggleReviewForm");
+                    if (toggleBtn) {
+                        // keep JS listener as well (inline onclick is the fallback)
+                        try {
+                            toggleBtn.addEventListener("click", () => {
+                                const rf = document.getElementById("reviewForm");
+                                if (rf) rf.classList.toggle('hidden');
+                            });
+                        } catch (err) {
+                            console.error('Failed to attach toggleReviewForm listener', err);
                         }
                     }
-                } catch (e) {
-                    // ignore
-                }
-            } else {
-                // set price & stock fallback
-                currentUnitPrice = v.price;
-                priceDisplay.textContent = formatVND(currentUnitPrice);
-                maxQty = (typeof v.stock === 'number' && v.stock >= 0) ? v.stock : 99;
-                if (maxQty <= 0) {
-                    stockInfo.textContent = "Tạm thời hết hàng";
-                    buyBtn.disabled = true;
-                    buyBtn.classList.add('opacity-50','cursor-not-allowed');
-                    qtyEl.value = 0;
-                } else {
-                    stockInfo.textContent = "Còn " + maxQty + " sản phẩm";
-                    buyBtn.disabled = false;
-                    buyBtn.classList.remove('opacity-50','cursor-not-allowed');
-                }
-                if (v.img) {
-                    mainImg.style.opacity = 0;
-                    setTimeout(() => { mainImg.src = v.img; mainImg.style.opacity = 1; }, 200);
-                }
-            }
-        }
-
-        updateButtonsState();
-        updateTotalFromInput();
-    }
-
-    // call init
-    initializeSelectedAttributes();
-
-    // 👉 Tabs (Mô tả - Phản hồi)
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            tabBtns.forEach(b => b.classList.remove('text-red-500', 'border-red-500'));
-            tabContents.forEach(c => c.classList.add('hidden'));
-            btn.classList.add('text-red-500', 'border-red-500');
-            document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
-        });
-    });
-
-    // 👉 Xếp hạng sao
-    const stars = document.querySelectorAll("#starRating .star");
-    const ratingInput = document.getElementById("ratingInput");
-    if (stars.length > 0) {
-        stars.forEach(star => {
-            star.addEventListener("mouseover", () => {
-                resetStars();
-                highlight(star.dataset.value);
-            });
-            star.addEventListener("click", () => {
-                ratingInput.value = star.dataset.value;
-            });
-            star.addEventListener("mouseout", () => {
-                resetStars();
-                highlight(ratingInput.value);
-            });
-        });
-
-        function highlight(count) {
-            for (let i = 0; i < count; i++) {
-                stars[i].textContent = "★";
-                stars[i].classList.add("text-yellow-400");
-            }
-        }
-
-        function resetStars() {
-            stars.forEach(s => {
-                s.textContent = "☆";
-                s.classList.remove("text-yellow-400");
-            });
-        }
-    }
-
-    // 👉 Toggle form phản hồi
-    const toggleBtn = document.getElementById("toggleReviewForm");
-    if (toggleBtn)
-        toggleBtn.addEventListener("click", () => {
-            document.getElementById("reviewForm").classList.toggle('hidden');
-        });
-});
+                });
             </script>
 
 

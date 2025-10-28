@@ -141,4 +141,22 @@ public class ProductVariant {
         this.discount = discount;
     }
     
+    public String getAttributeText() {
+        if (attributeJson == null || attributeJson.trim().isEmpty()) return null;
+        // naive conversion: remove braces and quotes
+        String pretty = attributeJson.replaceAll("\\{\\s*","")
+                                     .replaceAll("\\s*\\}","")
+                                     .replaceAll("\"","")
+                                     .trim();
+        // replace commas without space
+        pretty = pretty.replaceAll("\\s*,\\s*", ", ");
+        return pretty;
+    }
+
+    // toString (optional)
+    @Override
+    public String toString() {
+        return "ProductVariant{id=" + variantId + ", sku=" + sku + ", price=" + price + ", attr=" + attributeJson + "}";
+    }
+    
 }

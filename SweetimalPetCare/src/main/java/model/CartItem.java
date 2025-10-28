@@ -1,11 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.util.Date;
-
 
 /**
  *
@@ -20,6 +15,14 @@ public class CartItem {
     private Date addedAt;
 
     private ProductVariant variant; // để join hiển thị chi tiết
+
+    // Convenience fields for JSP rendering (populated by DAO)
+    private String productName;
+    private String imageUrl;
+
+    public CartItem() {
+        // no-arg
+    }
 
     public CartItem(int cartItemId, int customerId, int variantId, int quantity, Date addedAt) {
         this.cartItemId = cartItemId;
@@ -76,5 +79,52 @@ public class CartItem {
 
     public void setVariant(ProductVariant variant) {
         this.variant = variant;
+    }
+
+    public String getProductName() {
+        return productName;
+    }
+
+    public void setProductName(String productName) {
+        this.productName = productName;
+    }
+
+    public String getImageUrl() {
+        // prefer explicit imageUrl, else variant image
+        if (imageUrl != null && !imageUrl.isEmpty()) return imageUrl;
+        if (variant != null && variant.getImageUrl() != null && !variant.getImageUrl().isEmpty())
+            return variant.getImageUrl();
+        return null;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    // Convenience helpers
+
+    /**
+     * Trả giá đơn vị của variant (nếu variant null thì trả 0)
+     */
+    public double getUnitPrice() {
+        return (variant != null) ? variant.getPrice() : 0.0;
+    }
+
+    /**
+     * Tổng tiền của dòng: unitPrice * quantity
+     */
+    public double getLineTotal() {
+        return getUnitPrice() * quantity;
+    }
+
+    @Override
+    public String toString() {
+        return "CartItem{" +
+                "cartItemId=" + cartItemId +
+                ", customerId=" + customerId +
+                ", variantId=" + variantId +
+                ", quantity=" + quantity +
+                ", addedAt=" + addedAt +
+                '}';
     }
 }

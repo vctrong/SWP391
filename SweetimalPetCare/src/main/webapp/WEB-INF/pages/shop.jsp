@@ -237,6 +237,11 @@
                     <!-- Stock -->
                     <div>
                         <h2 class="font-semibold mb-2 mt-3">Tình trạng</h2>
+
+                        <!-- Nhận counts từ servlet (variant-level). Mặc định 0 nếu không set -->
+                        <c:set var="inStockCount" value="${empty inStockCount ? 0 : inStockCount}" />
+                        <c:set var="outStockCount" value="${empty outStockCount ? 0 : outStockCount}" />
+
                         <ul class="space-y-1 text-sm">
                             <c:set var="isInStockChecked" value="${false}" />
                             <c:set var="isOutStockChecked" value="${false}" />
@@ -249,42 +254,50 @@
                                 <label class="flex items-center gap-2" for="stock-in">
                                     <input type="checkbox" id="stock-in" name="stock" value="inStock"
                                            <c:if test="${isInStockChecked}">checked</c:if>
+                                           <c:if test="${inStockCount == 0}">disabled</c:if>
                                                onchange="this.form.submit()" />
-                                           <span>Còn hàng</span>
-                                    </label>
-                                </li>
-                                <li>
-                                    <label class="flex items-center gap-2" for="stock-out">
-                                        <input type="checkbox" id="stock-out" name="stock" value="outOfStock"
-                                        <c:if test="${isOutStockChecked}">checked</c:if>
-                                            onchange="this.form.submit()" />
-                                        <span>Hết hàng</span>
-                                    </label>
-                                </li>
-                            </ul>
-                        </div>
+                                           <span>
+                                               Còn hàng
+                                               <span class="text-gray-500 ml-1">(${inStockCount})</span>
+                                    </span>
+                                </label>
+                            </li>
+                            <li>
+                                <label class="flex items-center gap-2" for="stock-out">
+                                    <input type="checkbox" id="stock-out" name="stock" value="outOfStock"
+                                           <c:if test="${isOutStockChecked}">checked</c:if>
+                                           <c:if test="${outStockCount == 0}">disabled</c:if>
+                                               onchange="this.form.submit()" />
+                                           <span>
+                                               Hết hàng
+                                               <span class="text-gray-500 ml-1">(${outStockCount})</span>
+                                    </span>
+                                </label>
+                            </li>
+                        </ul>
+                    </div>
 
-                        <!-- Price -->
-                        <div>
-                            <h2 class="font-semibold mb-2 mt-3">Giá</h2>
-                            <div class="px-2 space-y-3">
-                                <!-- Thanh kéo 2 đầu -->
-                                <div id="priceSlider" class="mt-2"></div>
+                    <!-- Price -->
+                    <div>
+                        <h2 class="font-semibold mb-2 mt-3">Giá</h2>
+                        <div class="px-2 space-y-3">
+                            <!-- Thanh kéo 2 đầu -->
+                            <div id="priceSlider" class="mt-2"></div>
 
-                                <!-- Hai ô nhập giá -->
-                                <div class="flex justify-between items-center">
-                                    <div class="flex items-center border rounded px-2 py-1 text-sm w-24">
-                                        <input type="number" id="minPriceInput" name="minPrice"
-                                                class="w-full text-center outline-none"
-                                                min="0" step="1000"
-                                                value="${empty param.minPrice ? 0 : param.minPrice}">₫
+                            <!-- Hai ô nhập giá -->
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center border rounded px-2 py-1 text-sm w-24">
+                                    <input type="number" id="minPriceInput" name="minPrice"
+                                           class="w-full text-center outline-none"
+                                           min="0" step="1000"
+                                           value="${empty param.minPrice ? 0 : param.minPrice}">₫
                                 </div>
                                 <span class="mx-2">—</span>
                                 <div class="flex items-center border rounded px-2 py-1 text-sm w-24">
                                     <input type="number" id="maxPriceInput" name="maxPrice"
-                                            class="w-full text-center outline-none"
-                                            min="0" step="1000"
-                                            value="${empty param.maxPrice ? 1000000 : param.maxPrice}">₫
+                                           class="w-full text-center outline-none"
+                                           min="0" step="1000"
+                                           value="${empty param.maxPrice ? 1000000 : param.maxPrice}">₫
                                 </div>
                             </div>
 
@@ -362,9 +375,57 @@
 
             <!-- Product grid -->
             <section class="md:col-span-3">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-bold">Sản phẩm</h2>
-                </div>
+<div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-bold">Sản phẩm</h2>
+
+    <!-- Sort form: preserve existing filters -->
+    <form id="sortForm" method="get" action="shop" class="flex items-center gap-3">
+        <!-- preserve category filters -->
+        <c:forEach var="c" items="${paramValues.category}">
+            <input type="hidden" name="category" value="${c}" />
+        </c:forEach>
+
+        <!-- preserve brand filters -->
+        <c:forEach var="b" items="${paramValues.brand}">
+            <input type="hidden" name="brand" value="${b}" />
+        </c:forEach>
+
+        <!-- preserve stock filters -->
+        <c:forEach var="s" items="${paramValues.stock}">
+            <input type="hidden" name="stock" value="${s}" />
+        </c:forEach>
+
+        <!-- preserve price filters -->
+        <c:if test="${not empty param.minPrice}">
+            <input type="hidden" name="minPrice" value="${param.minPrice}" />
+        </c:if>
+        <c:if test="${not empty param.maxPrice}">
+            <input type="hidden" name="maxPrice" value="${param.maxPrice}" />
+        </c:if>
+
+        <!-- show a small label indicating current sort -->
+        <div class="hidden md:flex items-baseline gap-2">
+            <label class="text-sm font-medium text-gray-600">SẮP XẾP THEO:</label>
+        </div>
+
+        <!-- Sort select -->
+        <select name="sort" onchange="document.getElementById('sortForm').submit()"
+                class="border rounded px-3 py-1 text-sm bg-white">
+            <option value="">Mặc định</option>
+
+            <option value="best_selling" <c:if test="${param.sort == 'best_selling'}">selected</c:if>>Bán chạy nhất</option>
+
+            <option value="name_asc" <c:if test="${param.sort == 'name_asc'}">selected</c:if>>Thứ tự chữ cái (A-Z)</option>
+            <option value="name_desc" <c:if test="${param.sort == 'name_desc'}">selected</c:if>>Thứ tự chữ cái (Z-A)</option>
+
+            <option value="price_asc" <c:if test="${param.sort == 'price_asc'}">selected</c:if>>Giá (từ thấp đến cao)</option>
+            <option value="price_desc" <c:if test="${param.sort == 'price_desc'}">selected</c:if>>Giá (từ cao xuống thấp)</option>
+
+            <option value="date_asc" <c:if test="${param.sort == 'date_asc'}">selected</c:if>>Ngày (cũ → mới)</option>
+            <option value="date_desc" <c:if test="${param.sort == 'date_desc'}">selected</c:if>>Ngày (mới → cũ)</option>
+        </select>
+    </form>
+</div>
 
                 <c:if test="${not empty products}">
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -377,44 +438,44 @@
                         </c:forEach>
 
                         <c:forEach var="p" items="${products}">
-    <%-- Decide whether to show this product given the stock filter --%>
-    <c:set var="showProduct" value="${true}" />
-    <c:choose>
-        <%-- If only outOfStock is checked (and inStock not checked) => show only stockQuantity == 0 --%>
-        <c:when test="${isOutFilter and not isInFilter}">
-            <c:choose>
-                <c:when test="${not empty p.mainVariant}">
-                    <c:if test="${p.mainVariant.stockQuantity != 0}">
-                        <c:set var="showProduct" value="${false}" />
-                    </c:if>
-                </c:when>
-                <c:when test="${empty p.mainVariant}">
-                    <%-- If no variant info, hide by default in outOfStock filter --%>
-                    <c:set var="showProduct" value="${false}" />
-                </c:when>
-            </c:choose>
-        </c:when>
+                            <%-- Decide whether to show this product given the stock filter --%>
+                            <c:set var="showProduct" value="${true}" />
+                            <c:choose>
+                                <%-- If only outOfStock is checked (and inStock not checked) => show only stockQuantity == 0 --%>
+                                <c:when test="${isOutFilter and not isInFilter}">
+                                    <c:choose>
+                                        <c:when test="${not empty p.mainVariant}">
+                                            <c:if test="${p.mainVariant.stockQuantity != 0}">
+                                                <c:set var="showProduct" value="${false}" />
+                                            </c:if>
+                                        </c:when>
+                                        <c:when test="${empty p.mainVariant}">
+                                            <%-- If no variant info, hide by default in outOfStock filter --%>
+                                            <c:set var="showProduct" value="${false}" />
+                                        </c:when>
+                                    </c:choose>
+                                </c:when>
 
-        <%-- If only inStock is checked (and outOfStock not checked) => show only stockQuantity > 0 --%>
-        <c:when test="${isInFilter and not isOutFilter}">
-            <c:choose>
-                <c:when test="${not empty p.mainVariant}">
-                    <c:if test="${p.mainVariant.stockQuantity == 0}">
-                        <c:set var="showProduct" value="${false}" />
-                    </c:if>
-                </c:when>
-                <c:when test="${empty p.mainVariant}">
-                    <%-- If no variant info, hide by default in inStock filter --%>
-                    <c:set var="showProduct" value="${false}" />
-                </c:when>
-            </c:choose>
-        </c:when>
+                                <%-- If only inStock is checked (and outOfStock not checked) => show only stockQuantity > 0 --%>
+                                <c:when test="${isInFilter and not isOutFilter}">
+                                    <c:choose>
+                                        <c:when test="${not empty p.mainVariant}">
+                                            <c:if test="${p.mainVariant.stockQuantity == 0}">
+                                                <c:set var="showProduct" value="${false}" />
+                                            </c:if>
+                                        </c:when>
+                                        <c:when test="${empty p.mainVariant}">
+                                            <%-- If no variant info, hide by default in inStock filter --%>
+                                            <c:set var="showProduct" value="${false}" />
+                                        </c:when>
+                                    </c:choose>
+                                </c:when>
 
-        <%-- otherwise show all (both checked or none checked) --%>
-        <c:otherwise>
-            <%-- leave showProduct true --%>
-        </c:otherwise>
-    </c:choose>
+                                <%-- otherwise show all (both checked or none checked) --%>
+                                <c:otherwise>
+                                    <%-- leave showProduct true --%>
+                                </c:otherwise>
+                            </c:choose>
 
                             <c:if test="${showProduct}">
                                 <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col relative">

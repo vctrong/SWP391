@@ -77,12 +77,25 @@ public class productServlet extends HttpServlet {
             List<Review> reviews = reviewDAO.getReviewsByProduct(productId);
             double avgRating = reviewDAO.getAverageRatingByProduct(productId);
 
-            // 🟢 7. Gắn các thuộc tính cần thiết lên request
+            // 🟢 7. Lấy sản phẩm liên quan theo cùng category (loại sản phẩm)
+            //      - Lấy tối đa 6 sản phẩm, loại trừ chính sản phẩm hiện tại
+            List<Product> relatedProducts = null;
+            try {
+                int categoryId = product.getProductCategoryId();
+                relatedProducts = productDAO.getRelatedProductsByCategory(categoryId, productId, 6);
+            } catch (Exception ex) {
+                Logger.getLogger(productServlet.class.getName()).log(Level.WARNING, "Cannot load related products", ex);
+                // fallback: empty list
+                relatedProducts = java.util.Collections.emptyList();
+            }
+
+            // 🟢 8. Gắn các thuộc tính cần thiết lên request
             request.setAttribute("product", product);
             request.setAttribute("reviews", reviews);
             request.setAttribute("avgRating", avgRating);
+            request.setAttribute("relatedProducts", relatedProducts);
 
-            // 🟢 8. Forward sang JSP hiển thị
+            // 🟢 9. Forward sang JSP hiển thị
             request.getRequestDispatcher("/WEB-INF/pages/product.jsp").forward(request, response);
 
         } catch (NumberFormatException e) {
@@ -117,6 +130,6 @@ public class productServlet extends HttpServlet {
 
     @Override
     public String getServletInfo() {
-        return "Product detail controller with variants and reviews";
+        return "Product detail controller with variants and reviews and related products";
     }
 }

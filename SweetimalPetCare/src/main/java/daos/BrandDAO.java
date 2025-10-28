@@ -96,70 +96,78 @@ public class BrandDAO extends db.DBContext {
         return null;
     }
 
- // 🟢 Lấy danh sách thương hiệu và đếm số sản phẩm còn lại sau khi lọc (chuẩn xác)
-public List<Brand> getBrandsWithCountFiltered(List<Integer> categoryIds, Double minPrice, Double maxPrice, String stock) {
-    List<Brand> list = new ArrayList<>();
-    StringBuilder sql = new StringBuilder();
-    sql.append("SELECT b.brand_id, b.brand_name, b.description, ");
-    sql.append("COUNT(DISTINCT filtered.product_id) AS product_count ");
-    sql.append("FROM Brand b ");
-    sql.append("LEFT JOIN ( ");
-    sql.append("    SELECT DISTINCT p.product_id, p.brand_id ");
-    sql.append("    FROM Product p ");
-    sql.append("    JOIN ProductVariant v ON p.product_id = v.product_id ");
-    sql.append("    WHERE p.is_active = 1 AND v.is_active = 1 ");
+    // 🟢 Lấy danh sách thương hiệu và đếm số sản phẩm còn lại sau khi lọc (chuẩn xác)
+    public List<Brand> getBrandsWithCountFiltered(List<Integer> categoryIds, Double minPrice, Double maxPrice, String stock) {
+        List<Brand> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT b.brand_id, b.brand_name, b.description, ");
+        sql.append("COUNT(DISTINCT filtered.product_id) AS product_count ");
+        sql.append("FROM Brand b ");
+        sql.append("LEFT JOIN ( ");
+        sql.append("    SELECT DISTINCT p.product_id, p.brand_id ");
+        sql.append("    FROM Product p ");
+        sql.append("    JOIN ProductVariant v ON p.product_id = v.product_id ");
+        sql.append("    WHERE p.is_active = 1 AND v.is_active = 1 ");
 
-    if (categoryIds != null && !categoryIds.isEmpty()) {
-        sql.append("AND p.product_category_id IN (");
-        for (int i = 0; i < categoryIds.size(); i++) {
-            sql.append("?");
-            if (i < categoryIds.size() - 1) sql.append(",");
-        }
-        sql.append(") ");
-    }
-
-    if (minPrice != null) {
-        sql.append("AND v.price >= ? ");
-    }
-    if (maxPrice != null) {
-        sql.append("AND v.price <= ? ");
-    }
-
-    if (stock != null && !stock.isEmpty()) {
-        if (stock.equals("inStock")) {
-            sql.append("AND v.stock_quantity > 0 ");
-        } else if (stock.equals("outOfStock")) {
-            sql.append("AND v.stock_quantity = 0 ");
-        }
-    }
-
-    sql.append(") AS filtered ON b.brand_id = filtered.brand_id ");
-    sql.append("GROUP BY b.brand_id, b.brand_name, b.description ");
-    sql.append("ORDER BY b.brand_name");
-
-    try (PreparedStatement ps = getConnection().prepareStatement(sql.toString())) {
-        int index = 1;
         if (categoryIds != null && !categoryIds.isEmpty()) {
-            for (int id : categoryIds) ps.setInt(index++, id);
+            sql.append("AND p.product_category_id IN (");
+            for (int i = 0; i < categoryIds.size(); i++) {
+                sql.append("?");
+                if (i < categoryIds.size() - 1) {
+                    sql.append(",");
+                }
+            }
+            sql.append(") ");
         }
-        if (minPrice != null) ps.setDouble(index++, minPrice);
-        if (maxPrice != null) ps.setDouble(index++, maxPrice);
 
-        ResultSet rs = ps.executeQuery();
-        while (rs.next()) {
-            Brand b = new Brand();
-            b.setBrandId(rs.getInt("brand_id"));
-            b.setBrandName(rs.getString("brand_name"));
-            b.setDescription(rs.getString("description"));
-            b.setProductCount(rs.getInt("product_count"));
-            list.add(b);
+        if (minPrice != null) {
+            sql.append("AND v.price >= ? ");
         }
-        rs.close();
-        ps.close();
-    } catch (SQLException ex) {
-        Logger.getLogger(BrandDAO.class.getName()).log(Level.SEVERE, null, ex);
+        if (maxPrice != null) {
+            sql.append("AND v.price <= ? ");
+        }
+
+        if (stock != null && !stock.isEmpty()) {
+            if (stock.equals("inStock")) {
+                sql.append("AND v.stock_quantity > 0 ");
+            } else if (stock.equals("outOfStock")) {
+                sql.append("AND v.stock_quantity = 0 ");
+            }
+        }
+
+        sql.append(") AS filtered ON b.brand_id = filtered.brand_id ");
+        sql.append("GROUP BY b.brand_id, b.brand_name, b.description ");
+        sql.append("ORDER BY b.brand_name");
+
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql.toString())) {
+            int index = 1;
+            if (categoryIds != null && !categoryIds.isEmpty()) {
+                for (int id : categoryIds) {
+                    ps.setInt(index++, id);
+                }
+            }
+            if (minPrice != null) {
+                ps.setDouble(index++, minPrice);
+            }
+            if (maxPrice != null) {
+                ps.setDouble(index++, maxPrice);
+            }
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Brand b = new Brand();
+                b.setBrandId(rs.getInt("brand_id"));
+                b.setBrandName(rs.getString("brand_name"));
+                b.setDescription(rs.getString("description"));
+                b.setProductCount(rs.getInt("product_count"));
+                list.add(b);
+            }
+            rs.close();
+            ps.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(BrandDAO.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return list;
     }
-    return list;
-}
 
 }
