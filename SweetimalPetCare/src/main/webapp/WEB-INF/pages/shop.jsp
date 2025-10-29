@@ -1,5 +1,5 @@
 <%-- 
-    Document   : product
+    Document   : shop
     Created on : Oct 2, 2025, 10:19:22 AM
     Author     : Pham Nguyen Xuan Mai - CE190106
 --%>
@@ -515,7 +515,53 @@
 
 
                                     <h3 class="text-sm font-semibold">${p.productName}</h3>                            
-                                    <p class="text-xs text-gray-500">Thương hiệu: ${p.brandName}</p>
+                                    <%-- Make brand clickable: build shop URL that preserves other filters.
+                                         If the product's brand is already selected, clicking will remove it (toggle off).
+                                         Otherwise clicking will add it to the current brand filters. --%>
+
+                                    <c:set var="isThisBrandSelected" value="${false}" />
+                                    <c:forEach var="bid" items="${paramValues.brand}">
+                                        <c:if test="${bid == p.brandId}">
+                                            <c:set var="isThisBrandSelected" value="${true}" />
+                                        </c:if>
+                                    </c:forEach>
+
+                                    <c:url var="brandFilterUrl" value="shop">
+                                        <!-- preserve categories -->
+                                        <c:forEach var="existingCat" items="${paramValues.category}">
+                                            <c:param name="category" value="${existingCat}" />
+                                        </c:forEach>
+
+                                        <!-- preserve other brands, but skip current brand if we want to remove it -->
+                                        <c:forEach var="existingBrand" items="${paramValues.brand}">
+                                            <c:if test="${existingBrand != p.brandId}">
+                                                <c:param name="brand" value="${existingBrand}" />
+                                            </c:if>
+                                        </c:forEach>
+
+                                        <!-- if current brand not selected, add it -->
+                                        <c:if test="${not isThisBrandSelected}">
+                                            <c:param name="brand" value="${p.brandId}" />
+                                        </c:if>
+
+                                        <!-- preserve stock filters -->
+                                        <c:forEach var="existingStock" items="${paramValues.stock}">
+                                            <c:param name="stock" value="${existingStock}" />
+                                        </c:forEach>
+
+                                        <!-- preserve price -->
+                                        <c:if test="${not empty param.minPrice}">
+                                            <c:param name="minPrice" value="${param.minPrice}" />
+                                        </c:if>
+                                        <c:if test="${not empty param.maxPrice}">
+                                            <c:param name="maxPrice" value="${param.maxPrice}" />
+                                        </c:if>
+                                    </c:url>
+
+                                    <p class="text-xs text-gray-500">
+                                        Thương hiệu: 
+                                        <a href="${brandFilterUrl}" class="text-blue-600 hover:underline">${p.brandName}</a>
+                                    </p>
 
                                     <!-- ALWAYS show price if price available, even when out of stock -->
                                     <c:choose>
