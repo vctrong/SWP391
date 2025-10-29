@@ -23,7 +23,6 @@ buttons.forEach(btn => {
 
 
 // Hàm xử lý modal
-// Hàm xử lý modal
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     const modalContent = modal.querySelector('.modal');

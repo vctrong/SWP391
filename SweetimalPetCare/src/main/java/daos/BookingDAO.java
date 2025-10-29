@@ -71,4 +71,31 @@ public class BookingDAO extends db.DBContext {
     String ins = "INSERT INTO BookingStatusHistory(booking_id, status_code, changed_by, comment) VALUES (?, ?, ?, ?)";
     executeQuery(ins, new Object[]{bookingId, status, changedBy, "Status changed by admin"});
     }
+
+    public model.Booking getBookingById(int bookingId) throws SQLException {
+        String sql = "SELECT booking_id, customer_id, pet_id, service_id, package_id, requested_date, requested_start, notes, current_status, total_price, booking_time, created_at "
+                + "FROM Booking WHERE booking_id = ?";
+        ResultSet rs = executeSelectQuery(sql, new Object[]{bookingId});
+        if (rs.next()) {
+            java.time.LocalDate rd = rs.getDate("requested_date") != null ? rs.getDate("requested_date").toLocalDate() : null;
+            java.time.LocalTime rsTime = rs.getTime("requested_start") != null ? rs.getTime("requested_start").toLocalTime() : null;
+            java.time.LocalDateTime bookingTime = rs.getTimestamp("booking_time") != null ? rs.getTimestamp("booking_time").toLocalDateTime() : null;
+            java.time.LocalDateTime createdAt = rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null;
+            return new model.Booking(
+                    rs.getInt("booking_id"),
+                    rs.getInt("customer_id"),
+                    rs.getInt("pet_id"),
+                    rs.getInt("service_id"),
+                    rs.getObject("package_id") != null ? rs.getInt("package_id") : null,
+                    rd,
+                    rsTime,
+                    rs.getString("notes"),
+                    rs.getString("current_status"),
+                    rs.getBigDecimal("total_price"),
+                    bookingTime,
+                    createdAt
+            );
+        }
+        return null;
+    }
 }

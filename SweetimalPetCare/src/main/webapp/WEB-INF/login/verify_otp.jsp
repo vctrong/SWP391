@@ -11,6 +11,49 @@
     <main class="flex justify-center items-center h-screen">
       <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h1 class="text-2xl font-bold mb-4 text-center">Nhập mã OTP</h1>
+        
+        <!-- OTP Countdown Timer -->
+        <% Long otpExpiry = (Long) request.getAttribute("otpExpiry"); %>
+        <% if (otpExpiry != null) { %>
+          <div id="countdown-container" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-center">
+            <p class="text-sm text-gray-600 mb-1">OTP hết hạn sau:</p>
+            <p id="countdown" class="text-2xl font-bold text-blue-600"></p>
+          </div>
+          <script>
+            const expiryTime = <%= otpExpiry %>;
+            const countdownEl = document.getElementById('countdown');
+            const containerEl = document.getElementById('countdown-container');
+            
+            function updateCountdown() {
+              const now = Date.now();
+              const remaining = expiryTime - now;
+              
+              if (remaining <= 0) {
+                countdownEl.textContent = 'Đã hết hạn';
+                containerEl.className = 'mb-4 p-3 bg-red-50 border border-red-200 rounded text-center';
+                countdownEl.className = 'text-2xl font-bold text-red-600';
+                setTimeout(() => {
+                  window.location.href = '${pageContext.request.contextPath}/forgot-password';
+                }, 2000);
+                return;
+              }
+              
+              const minutes = Math.floor(remaining / 60000);
+              const seconds = Math.floor((remaining % 60000) / 1000);
+              countdownEl.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+              
+              if (remaining < 30000) {
+                containerEl.className = 'mb-4 p-3 bg-orange-50 border border-orange-200 rounded text-center';
+                countdownEl.className = 'text-2xl font-bold text-orange-600';
+              }
+              
+              setTimeout(updateCountdown, 1000);
+            }
+            
+            updateCountdown();
+          </script>
+        <% } %>
+        
         <% String error = (String) request.getAttribute("error"); String message = (String) request.getAttribute("message"); %>
         <% if (error != null) { %>
           <div class="mb-4 p-3 bg-red-100 text-red-700 rounded"><%= error %></div>

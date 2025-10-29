@@ -12,104 +12,302 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Sweetimal Pet Care</title>
         <%@include file="/WEB-INF/include/library.jsp" %>
+        <style>
+            html {
+                scroll-behavior: smooth;
+            }
+        </style>
     </head>
     <body class="bg-white text-gray-800">
         <!-- Navbar -->
         <%@include file="/WEB-INF/include/header.jsp" %>
         <%@include file="/WEB-INF/toast/loginOk.jsp" %>
         <!-- Phần giới thiệu -->
-        <section class="relative bg-blue-100">
-            <div class="container mx-auto flex flex-col md:flex-row items-center py-20 px-6">
+        <section class="relative bg-gradient-to-br from-sky-50 via-cyan-50 to-white overflow-hidden pb-28">
+            <!-- Decorative circles -->
+            <div class="absolute top-0 right-0 w-72 h-72 bg-sky-200 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-cyan-200 rounded-full blur-3xl opacity-20"></div>
+
+            <div class="container mx-auto flex flex-col md:flex-row items-center py-20 px-6 relative z-10">
+                <!-- Content -->
                 <div class="md:w-1/2">
-                    <h2 class="text-4xl md:text-5xl font-bold mb-6 text-blue-800">
-                        Chăm sóc thú cưng của bạn với tình yêu & đam mê
+                    <div class="inline-flex items-center bg-white rounded-full shadow-sm px-4 py-2 text-sm text-sky-600 font-medium mb-6 hover:shadow-md transition-shadow duration-300">
+                        <i class="fa-solid fa-paw mr-2 animate-bounce"></i>
+                        <span>Chăm sóc chuyên nghiệp</span>
+                    </div>
+
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6 text-gray-800 leading-tight">
+                        Chăm sóc thú cưng của bạn với 
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-cyan-600">tình yêu & đam mê</span>
                     </h2>
-                    <p class="text-lg mb-6">
+
+                    <p class="text-lg text-gray-600 mb-8 leading-relaxed">
                         Khám phá các dịch vụ và sản phẩm chất lượng cho thú cưng. Từ làm đẹp đến bữa ăn dinh dưỡng, chúng tôi đều có.
                     </p>
-                    <a href="#services" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Khám phá dịch vụ</a>
+
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#services" 
+                           class="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-cyan-600 hover:-translate-y-0.5 transition-all duration-300">
+                            <i class="fa-solid fa-rocket mr-2"></i>Khám phá dịch vụ
+                        </a>
+                        <a href="#contact" 
+                           class="inline-flex items-center justify-center px-6 py-3 bg-white text-sky-600 rounded-xl font-semibold shadow hover:shadow-lg border-2 border-sky-100 hover:border-sky-300 hover:-translate-y-0.5 transition-all duration-300">
+                            <i class="fa-solid fa-phone mr-2"></i>Liên hệ ngay
+                        </a>
+                    </div>
                 </div>
-                <div class="md:w-1/2 mt-10 md:mt-0">
-                    <img src="https://cdn.pixabay.com/photo/2017/09/25/13/12/dog-2785074_1280.jpg" alt="Chăm sóc thú cưng" class="rounded-2xl shadow-lg">
+
+                <!-- Image -->
+                <div class="md:w-1/2 mt-10 md:mt-0 md:pl-12">
+                    <div class="relative group">
+                        <!-- Glow effect -->
+                        <div class="absolute inset-0 bg-gradient-to-br from-sky-300 to-cyan-300 rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
+
+                        <!-- Main image -->
+                        <img src="https://cdn.pixabay.com/photo/2017/09/25/13/12/dog-2785074_1280.jpg" 
+                             alt="Chăm sóc thú cưng" 
+                             class="relative rounded-3xl shadow-2xl w-full transform group-hover:scale-105 transition-transform duration-500">
+
+                        <!-- Floating badge -->
+                        <div class="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl p-4 flex items-center gap-3 hover:scale-105 transition-transform duration-300">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-100 to-cyan-100 flex items-center justify-center">
+                                <i class="fa-solid fa-star text-sky-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-800">Tin cậy #1</p>
+                                <p class="text-xs text-gray-500">5000+ khách hàng</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
 
-        <!-- Giới thiệu -->
-        <section class="py-16 px-6 text-center">
-            <h2 class="text-3xl font-bold mb-4">Về Sweetimal Pet Care</h2>
-            <p class="max-w-2xl mx-auto text-gray-600">Chúng tôi cung cấp dịch vụ làm đẹp, kiểm tra sức khỏe thú y và đa dạng sản phẩm cho thú cưng để các bé luôn khỏe mạnh, hạnh phúc.</p>
+        <!-- Giới thiệu ngắn gọn có phân tầng -->
+        <section class="relative -mt-20 bg-white rounded-t-[3rem] shadow-2xl py-20 px-6 overflow-hidden z-20">
+            <!-- Decorative Elements -->
+            <div class="absolute top-0 right-0 w-80 h-80 bg-sky-100 rounded-full blur-3xl opacity-20"></div>
+            <div class="absolute bottom-0 left-0 w-72 h-72 bg-cyan-100 rounded-full blur-3xl opacity-30"></div>
+
+            <div class="relative z-10 max-w-3xl mx-auto text-center">
+                <!-- Badge -->
+                <div class="inline-flex items-center bg-gradient-to-r from-sky-50 to-cyan-50 rounded-full shadow-sm px-4 py-2 text-sm text-sky-600 font-medium mb-6 hover:shadow-md transition duration-300">
+                    <i class="fa-solid fa-paw mr-2 animate-bounce"></i>
+                    <span>Về Sweetimal Pet Care</span>
+                </div>
+
+                <!-- Title -->
+                <h2 class="text-4xl font-bold text-gray-800 mb-6 leading-tight">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-cyan-600">
+                        Chăm sóc toàn diện
+                    </span> cho thú cưng của bạn
+                </h2>
+
+                <!-- Description -->
+                <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+                    Sweetimal Pet Care là điểm đến tin cậy của hàng ngàn chủ nuôi.  
+                    Từ spa, grooming, đến kiểm tra sức khỏe – chúng tôi mang đến cho thú cưng sự chăm sóc chu đáo, an toàn và tận tâm nhất.
+                </p>
+
+                <!-- Buttons -->
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="aboutUs"
+                       class="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-cyan-600 hover:-translate-y-0.5 transition-all duration-300">
+                        <i class="fa-solid fa-info-circle mr-2"></i> Xem chi tiết
+                    </a>
+                    <a href="services"
+                       class="inline-flex items-center justify-center px-6 py-3 bg-white text-sky-600 rounded-xl font-semibold shadow hover:shadow-lg border-2 border-sky-100 hover:border-sky-300 hover:-translate-y-0.5 transition-all duration-300">
+                        <i class="fa-solid fa-dog mr-2"></i> Khám phá dịch vụ
+                    </a>
+                </div>
+            </div>
         </section>
 
         <!-- Dịch vụ nổi bật -->
-        <section id="services" class="py-16 bg-gray-50 px-6 text-center">
-            <h2 class="text-3xl font-bold mb-8">Dịch vụ của chúng tôi</h2>
-            <div class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                <div class="p-6 bg-white rounded-2xl shadow hover:shadow-lg">
-                    <img src="https://cdn-icons-png.flaticon.com/512/616/616408.png" class="w-16 mx-auto mb-4" />
-                    <h3 class="font-semibold text-lg">Chăm sóc - Làm đẹp</h3>
-                    <p class="text-gray-500 text-sm">Chăm sóc chuyên nghiệp cho mọi giống thú cưng.</p>
+        <!-- Dịch vụ nổi bật -->
+        <section id="services" class="relative -mt-10 bg-gradient-to-br from-sky-50 via-cyan-50 to-white py-24 overflow-hidden rounded-t-[3rem]">
+            <!-- Background Decorations -->
+            <div class="absolute top-0 left-0 w-80 h-80 bg-sky-200 rounded-full blur-3xl opacity-20"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 bg-cyan-200 rounded-full blur-3xl opacity-20"></div>
+
+            <div class="relative z-10 max-w-7xl mx-auto px-6 text-center">
+                <!-- Section Header -->
+                <div class="inline-flex items-center bg-gradient-to-r from-sky-100 to-cyan-100 rounded-full px-4 py-2 text-sky-600 font-medium text-sm mb-6 shadow-sm">
+                    <i class="fa-solid fa-paw mr-2 animate-bounce"></i>
+                    <span>Dịch vụ nổi bật</span>
                 </div>
-                <div class="p-6 bg-white rounded-2xl shadow hover:shadow-lg">
-                    <img src="https://cdn-icons-png.flaticon.com/512/616/616408.png" class="w-16 mx-auto mb-4" />
-                    <h3 class="font-semibold text-lg">Thú y</h3>
-                    <p class="text-gray-500 text-sm">Bác sĩ thú y giàu kinh nghiệm, tận tâm.</p>
+
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-6 leading-tight">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-cyan-600">
+                        Dịch vụ
+                    </span> tốt nhất cho thú cưng của bạn
+                </h2>
+
+                <p class="text-gray-600 max-w-2xl mx-auto mb-14 leading-relaxed text-lg">
+                    Từ chăm sóc, làm đẹp đến thăm khám và huấn luyện — Sweetimal mang đến sự tận tâm, an toàn 
+                    và niềm vui cho mỗi bé thú cưng 🐶💖
+                </p>
+
+                <!-- Services Grid -->
+                <div class="grid md:grid-cols-3 gap-10">
+                    <!-- Service Card 1 -->
+                    <div class="group relative bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-sm border border-transparent hover:border-sky-100 hover:shadow-lg hover:-translate-y-2 transition-all duration-300">
+                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 w-20 h-20 rounded-2xl bg-gradient-to-br from-sky-200 to-cyan-200 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+                            <i class="fa-solid fa-shower text-sky-700 text-2xl"></i>
+                        </div>
+                        <div class="pt-14">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3">Chăm sóc & Làm đẹp</h3>
+                            <p class="text-gray-500 text-sm leading-relaxed">
+                                Spa, tắm gội, cắt tỉa lông và làm đẹp giúp bé luôn thơm tho, đáng yêu và khỏe mạnh hơn.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Service Card 2 -->
+                    <div class="group relative bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-sm border border-transparent hover:border-cyan-100 hover:shadow-lg hover:-translate-y-2 transition-all duration-300">
+                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-200 to-teal-200 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+                            <i class="fa-solid fa-stethoscope text-cyan-700 text-2xl"></i>
+                        </div>
+                        <div class="pt-14">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3">Thú y tận tâm</h3>
+                            <p class="text-gray-500 text-sm leading-relaxed">
+                                Khám sức khỏe, tiêm phòng và điều trị bởi đội ngũ bác sĩ chuyên nghiệp, yêu thương thú cưng như của mình.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Service Card 3 -->
+                    <div class="group relative bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-sm border border-transparent hover:border-pink-100 hover:shadow-lg hover:-translate-y-2 transition-all duration-300">
+                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-200 to-rose-200 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+                            <i class="fa-solid fa-dog text-pink-700 text-2xl"></i>
+                        </div>
+                        <div class="pt-14">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3">Huấn luyện hành vi</h3>
+                            <p class="text-gray-500 text-sm leading-relaxed">
+                                Huấn luyện cơ bản, cải thiện hành vi và giúp bé học cách hòa đồng, ngoan ngoãn và vui vẻ hơn.
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <div class="p-6 bg-white rounded-2xl shadow hover:shadow-lg">
-                    <img src="https://cdn-icons-png.flaticon.com/512/616/616408.png" class="w-16 mx-auto mb-4" />
-                    <h3 class="font-semibold text-lg">Huấn luyện thú cưng</h3>
-                    <p class="text-gray-500 text-sm">Huấn luyện vâng lời, cải thiện hành vi.</p>
+
+                <!-- Button -->
+                <div class="mt-14">
+                    <a href="services"
+                       class="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-semibold rounded-full shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300">
+                        <i class="fa-solid fa-paw"></i> Xem thêm dịch vụ
+                    </a>
                 </div>
             </div>
-            <a href="services" class="inline-block mt-8 bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">Xem thêm dịch vụ</a>
         </section>
+
 
         <!-- Cửa hàng thú cưng -->
-        <section id="shop" class="py-16 px-6 text-center">
-            <h2 class="text-3xl font-bold mb-8">Cửa hàng thú cưng</h2>
-            <div class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                <div class="p-6 bg-white rounded-2xl shadow hover:shadow-lg">
-                    <img src="https://images.unsplash.com/photo-1558788353-f76d92427f16?auto=format&fit=crop&w=400&q=80" class="w-full h-40 object-cover rounded-lg mb-4" />
-                    <h3 class="font-semibold">Thức ăn cho chó</h3>
-                    <p class="text-gray-500 text-sm">250.000đ</p>
+        <!-- 🐾 CỬA HÀNG THÚ CƯNG -->
+        <section id="shop" class="relative bg-white py-20 px-6 overflow-hidden">
+            <!-- Decorative elements -->
+            <div class="absolute top-0 left-0 w-80 h-80 bg-sky-100 rounded-full blur-3xl opacity-20"></div>
+            <div class="absolute bottom-0 right-0 w-72 h-72 bg-cyan-100 rounded-full blur-3xl opacity-20"></div>
+
+            <div class="relative z-10 text-center max-w-6xl mx-auto">
+                <div class="inline-flex items-center bg-gradient-to-r from-sky-50 to-cyan-50 rounded-full shadow-sm px-4 py-2 text-sm text-sky-600 font-medium mb-6 hover:shadow-md transition duration-300">
+                    <i class="fa-solid fa-store mr-2 text-cyan-500"></i>
+                    <span>Cửa hàng thú cưng</span>
                 </div>
-                <div class="p-6 bg-white rounded-2xl shadow hover:shadow-lg">
-                    <img src="https://images.unsplash.com/photo-1598133894005-449d6e5c7fbb?auto=format&fit=crop&w=400&q=80" class="w-full h-40 object-cover rounded-lg mb-4" />
-                    <h3 class="font-semibold">Đồ chơi cho mèo</h3>
-                    <p class="text-gray-500 text-sm">100.000đ</p>
+
+                <h2 class="text-4xl font-bold text-gray-800 mb-10 leading-tight">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-cyan-600">
+                        Sản phẩm nổi bật
+                    </span> được yêu thích nhất
+                </h2>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Card 1 -->
+                    <div class="group bg-gradient-to-br from-white to-sky-50 rounded-3xl shadow-lg hover:shadow-2xl p-6 transition-all duration-500 transform hover:-translate-y-2">
+                        <div class="relative overflow-hidden rounded-2xl mb-4">
+                            <img src="https://images.unsplash.com/photo-1629306219761-c85a6a436bd9?auto=format&fit=crop&w=600&q=80"
+                                 class="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-700" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-40 transition duration-500 rounded-2xl"></div>
+                        </div>
+                        <h3 class="font-semibold text-lg text-gray-800">Thức ăn dinh dưỡng cho chó</h3>
+                        <p class="text-sky-600 font-medium mt-2">250.000đ</p>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="group bg-gradient-to-br from-white to-sky-50 rounded-3xl shadow-lg hover:shadow-2xl p-6 transition-all duration-500 transform hover:-translate-y-2">
+                        <div class="relative overflow-hidden rounded-2xl mb-4">
+                            <img src="https://images.unsplash.com/photo-1601758124510-52d02f08b0b4?auto=format&fit=crop&w=600&q=80"
+                                 class="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-700" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-40 transition duration-500 rounded-2xl"></div>
+                        </div>
+                        <h3 class="font-semibold text-lg text-gray-800">Đồ chơi tương tác cho mèo</h3>
+                        <p class="text-sky-600 font-medium mt-2">120.000đ</p>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div class="group bg-gradient-to-br from-white to-sky-50 rounded-3xl shadow-lg hover:shadow-2xl p-6 transition-all duration-500 transform hover:-translate-y-2">
+                        <div class="relative overflow-hidden rounded-2xl mb-4">
+                            <img src="https://images.unsplash.com/photo-1607419726999-6be7eb32b5b0?auto=format&fit=crop&w=600&q=80"
+                                 class="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-700" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-40 transition duration-500 rounded-2xl"></div>
+                        </div>
+                        <h3 class="font-semibold text-lg text-gray-800">Giường êm ái cho thú cưng</h3>
+                        <p class="text-sky-600 font-medium mt-2">450.000đ</p>
+                    </div>
                 </div>
-                <div class="p-6 bg-white rounded-2xl shadow hover:shadow-lg">
-                    <img src="https://images.unsplash.com/photo-1619983081654-7fa34b5d2a5a?auto=format&fit=crop&w=400&q=80" class="w-full h-40 object-cover rounded-lg mb-4" />
-                    <h3 class="font-semibold">Giường thú cưng</h3>
-                    <p class="text-gray-500 text-sm">450.000đ</p>
-                </div>
+
+                <a href="/shop"
+                   class="mt-12 inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-cyan-600 hover:-translate-y-0.5 transition-all duration-300">
+                    <i class="fa-solid fa-paw mr-2"></i> Đến cửa hàng
+                </a>
             </div>
-            <a href="${pageContext.request.contextPath}/shop" class="inline-block mt-8 bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">Đến cửa hàng</a>
         </section>
 
-        <!-- Đăng ký tư vấn miễn phí -->
-        <section id="contact" class="py-16 bg-gray-100 px-6 text-center">
-            <h2 class="text-3xl font-bold mb-6">Đăng ký tư vấn miễn phí</h2>
-            <form class="max-w-xl mx-auto space-y-4">
-                <input type="text" placeholder="Họ và tên" class="w-full border rounded-lg px-4 py-3" />
-                <input type="email" placeholder="Email của bạn" class="w-full border rounded-lg px-4 py-3" />
-                <select class="w-full border rounded-lg px-4 py-3">
-                    <option>Chọn dịch vụ/sản phẩm</option>
-                    <option>Chăm sóc - Làm đẹp</option>
-                    <option>Thú y</option>
-                    <option>Huấn luyện thú cưng</option>
-                    <option>Hỏi đáp cửa hàng</option>
-                </select>
-                <textarea placeholder="Nội dung cần tư vấn" class="w-full border rounded-lg px-4 py-3"></textarea>
-                <button type="submit" class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">Gửi</button>
-            </form>
+        <!-- 💌 ĐĂNG KÝ TƯ VẤN MIỄN PHÍ -->
+        <section id="contact" class="relative bg-gradient-to-br from-sky-50 via-cyan-50 to-white py-20 px-6 overflow-hidden">
+            <!-- Decorative Elements -->
+            <div class="absolute top-0 right-0 w-80 h-80 bg-sky-200 rounded-full blur-3xl opacity-25"></div>
+            <div class="absolute bottom-0 left-0 w-72 h-72 bg-cyan-200 rounded-full blur-3xl opacity-25"></div>
+
+            <div class="relative z-10 text-center max-w-3xl mx-auto">
+                <div class="inline-flex items-center bg-white/70 backdrop-blur-sm rounded-full shadow-sm px-4 py-2 text-sm text-sky-600 font-medium mb-6 hover:shadow-md transition duration-300">
+                    <i class="fa-solid fa-comments mr-2"></i>
+                    <span>Tư vấn miễn phí</span>
+                </div>
+
+                <h2 class="text-4xl font-bold text-gray-800 mb-8 leading-tight">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-cyan-600">
+                        Đăng ký ngay
+                    </span> để được hỗ trợ tận tâm nhất
+                </h2>
+
+                <form class="space-y-5">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <input type="text" placeholder="Họ và tên" class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition" />
+                        <input type="email" placeholder="Email của bạn" class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition" />
+                    </div>
+                    <select class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition">
+                        <option>Chọn dịch vụ/sản phẩm</option>
+                        <option>Chăm sóc - Làm đẹp</option>
+                        <option>Thú y</option>
+                        <option>Huấn luyện thú cưng</option>
+                        <option>Hỏi đáp cửa hàng</option>
+                    </select>
+                    <textarea placeholder="Nội dung cần tư vấn" class="w-full border border-sky-100 rounded-xl px-4 py-3 h-32 focus:ring-2 focus:ring-cyan-300 outline-none transition"></textarea>
+
+                    <button type="submit"
+                            class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-cyan-600 hover:-translate-y-0.5 transition-all duration-300">
+                        <i class="fa-solid fa-paper-plane mr-2"></i> Gửi yêu cầu
+                    </button>
+                </form>
+            </div>
         </section>
+
 
         <!-- Footer -->
         <%@include file="/WEB-INF/include/footer.jsp" %>
 
-        
+
     </body>
 </html>
 

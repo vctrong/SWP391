@@ -524,27 +524,346 @@ SELECT 'INV-BKG-1001',
 
 GO
 
-/* ==================== ADDITIONAL SAMPLE SCHEDULES ==================== */
--- Insert a variety of ScheduleSlot rows for testing UI: OPEN, BOOKED, DONE, CANCELLED
--- Use staff/vet users created earlier (staff1, staff2, vet1, vet2)
 
--- OPEN slots (available for booking)
-INSERT INTO ScheduleSlot(booking_id, staff_id, room_name, start_time, end_time, status)
-VALUES (NULL, (SELECT user_id FROM Users WHERE username='staff1'), N'Groom-Avail-1', '2025-10-09 09:00:00.000', '2025-10-09 10:00:00.000', 'OPEN');
+/* ======================================================================= */
+/* ==================== BỔ SUNG DỮ LIỆU ẢO SỐ LƯỢNG LỚN ================== */
+/* ======================================================================= */
 
-INSERT INTO ScheduleSlot(booking_id, staff_id, room_name, start_time, end_time, status)
-VALUES (NULL, (SELECT user_id FROM Users WHERE username='vet2'), N'Clinic-Avail-1', '2025-10-09 14:00:00.000', '2025-10-09 14:30:00.000', 'OPEN');
+USE SweetimalPetCare;
+GO
 
--- BOOKED slots (already tied to bookings)
-INSERT INTO ScheduleSlot(booking_id, staff_id, room_name, start_time, end_time, status)
-VALUES ((SELECT TOP 1 booking_id FROM Booking WHERE current_status IN ('PENDING','CONFIRMED')), (SELECT user_id FROM Users WHERE username='staff1'), N'Groom-Booked-1', '2025-10-10 09:00:00.000', '2025-10-10 10:00:00.000', 'BOOKED');
+/* -------- Thêm thêm khách hàng và địa chỉ -------- */
+-- Customers 3..10
+INSERT INTO Users(username, email, phone, password_hash, full_name, gender, birthday, is_active, role_id)
+SELECT v.username, v.email, v.phone, 'e10adc3949ba59abbe56e057f20f883e', v.full_name, v.gender, v.birthday, 1, r.role_id
+FROM (VALUES
+('customer3','customer3@example.com','0911000003',N'Phạm Khách 3',1,CAST('1996-01-12' AS DATE)),
+('customer4','customer4@example.com','0911000004',N'Trương Khách 4',2,CAST('1992-08-23' AS DATE)),
+('customer5','customer5@example.com','0911000005',N'Vũ Khách 5',1,CAST('1990-12-02' AS DATE)),
+('customer6','customer6@example.com','0911000006',N'Đỗ Khách 6',2,CAST('1998-04-30' AS DATE)),
+('customer7','customer7@example.com','0911000007',N'Bùi Khách 7',1,CAST('1997-03-18' AS DATE)),
+('customer8','customer8@example.com','0911000008',N'Hoàng Khách 8',2,CAST('1991-09-09' AS DATE)),
+('customer9','customer9@example.com','0911000009',N'Đặng Khách 9',1,CAST('1993-06-06' AS DATE)),
+('customer10','customer10@example.com','0911000010',N'Ngô Khách 10',2,CAST('1994-11-11' AS DATE))
+) AS v(username,email,phone,full_name,gender,birthday)
+CROSS JOIN (SELECT role_id FROM Roles WHERE role_name=N'Customer') r;
 
--- DONE slots (completed)
-INSERT INTO ScheduleSlot(booking_id, staff_id, room_name, start_time, end_time, status)
-VALUES ((SELECT TOP 1 booking_id FROM Booking WHERE current_status='COMPLETED'), (SELECT user_id FROM Users WHERE username='vet1'), N'Clinic-Done-1', '2025-10-03 10:00:00.000', '2025-10-03 10:30:00.000', 'DONE');
+-- Addresses for new customers
+INSERT INTO UserAddress(user_id,label,recipient_name,phone,address_line1,ward,district,city,province,is_default)
+SELECT u.user_id, N'Nhà', u.full_name, u.phone, N'789 Đường C', N'Phường 5', N'Quận 5', N'Hồ Chí Minh', N'Hồ Chí Minh', 1
+FROM Users u WHERE u.username IN ('customer3','customer4','customer5','customer6','customer7','customer8','customer9','customer10');
 
--- CANCELLED slot
+/* -------- Thêm thêm thú cưng cho các khách mới -------- */
+INSERT INTO Pets(owner_id,name,species_id,breed_id,gender,birthdate,weight_kg,color,notes)
+SELECT (SELECT user_id FROM Users WHERE username='customer3'),
+       N'Mướp',
+       (SELECT species_id FROM PetSpecies WHERE species_name=N'Mèo'),
+       (SELECT TOP 1 breed_id FROM PetBreed WHERE breed_name=N'Anh lông ngắn'),
+       'F','2023-05-05',3.2,N'Vàng mướp',N'Hiền lành';
+
+INSERT INTO Pets(owner_id,name,species_id,breed_id,gender,birthdate,weight_kg,color,notes)
+SELECT (SELECT user_id FROM Users WHERE username='customer3'),
+       N'Max',
+       (SELECT species_id FROM PetSpecies WHERE species_name=N'Chó'),
+       (SELECT TOP 1 breed_id FROM PetBreed WHERE breed_name=N'Poodle'),
+       'M','2021-08-20',6.8,N'Nâu',N'Rất năng động';
+
+INSERT INTO Pets(owner_id,name,species_id,breed_id,gender,birthdate,weight_kg,color,notes)
+SELECT (SELECT user_id FROM Users WHERE username='customer4'),
+       N'Rex',
+       (SELECT species_id FROM PetSpecies WHERE species_name=N'Chó'),
+       (SELECT TOP 1 breed_id FROM PetBreed WHERE breed_name=N'Golden Retriever'),
+       'M','2020-10-10',30.5,N'Vàng',N'Thân thiện';
+
+INSERT INTO Pets(owner_id,name,species_id,breed_id,gender,birthdate,weight_kg,color,notes)
+SELECT (SELECT user_id FROM Users WHERE username='customer5'),
+       N'MiMi',
+       (SELECT species_id FROM PetSpecies WHERE species_name=N'Mèo'),
+       (SELECT TOP 1 breed_id FROM PetBreed WHERE breed_name=N'Anh lông ngắn'),
+       'F','2022-01-15',3.0,N'Trắng',N'Ít rụng lông';
+
+INSERT INTO Pets(owner_id,name,species_id,breed_id,gender,birthdate,weight_kg,color,notes)
+SELECT (SELECT user_id FROM Users WHERE username='customer6'),
+       N'Đốm',
+       (SELECT species_id FROM PetSpecies WHERE species_name=N'Chó'),
+       (SELECT TOP 1 breed_id FROM PetBreed WHERE breed_name=N'Poodle'),
+       'M','2024-02-01',4.0,N'Trắng đốm đen',N'Tò mò';
+
+INSERT INTO Pets(owner_id,name,species_id,breed_id,gender,birthdate,weight_kg,color,notes)
+SELECT (SELECT user_id FROM Users WHERE username='customer7'),
+       N'Cam',
+       (SELECT species_id FROM PetSpecies WHERE species_name=N'Mèo'),
+       (SELECT TOP 1 breed_id FROM PetBreed WHERE breed_name=N'Anh lông ngắn'),
+       'F','2023-07-07',2.8,N'Cam',N'Ăn khỏe';
+
+INSERT INTO Pets(owner_id,name,species_id,breed_id,gender,birthdate,weight_kg,color,notes)
+SELECT (SELECT user_id FROM Users WHERE username='customer8'),
+       N'KiKi',
+       (SELECT species_id FROM PetSpecies WHERE species_name=N'Chó'),
+       (SELECT TOP 1 breed_id FROM PetBreed WHERE breed_name=N'Poodle'),
+       'F','2022-03-03',5.5,N'Đen',N'Vâng lời';
+
+INSERT INTO Pets(owner_id,name,species_id,breed_id,gender,birthdate,weight_kg,color,notes)
+SELECT (SELECT user_id FROM Users WHERE username='customer9'),
+       N'BíNgô',
+       (SELECT species_id FROM PetSpecies WHERE species_name=N'Chó'),
+       (SELECT TOP 1 breed_id FROM PetBreed WHERE breed_name=N'Golden Retriever'),
+       'M','2021-01-21',29.0,N'Vàng',N'Ngoan';
+
+INSERT INTO Pets(owner_id,name,species_id,breed_id,gender,birthdate,weight_kg,color,notes)
+SELECT (SELECT user_id FROM Users WHERE username='customer10'),
+       N'Snow',
+       (SELECT species_id FROM PetSpecies WHERE species_name=N'Mèo'),
+       (SELECT TOP 1 breed_id FROM PetBreed WHERE breed_name=N'Anh lông ngắn'),
+       'F','2022-12-12',3.4,N'Trắng',N'Hiền';
+
+/* -------- Thêm 40 booking + lịch sử + lịch + phân công -------- */
+DECLARE @staff1 INT = (SELECT user_id FROM Users WHERE username='staff1');
+DECLARE @staff2 INT = (SELECT user_id FROM Users WHERE username='staff2');
+DECLARE @vet1   INT = (SELECT user_id FROM Users WHERE username='vet1');
+DECLARE @vet2   INT = (SELECT user_id FROM Users WHERE username='vet2');
+
+-- Danh sách booking cần thêm (ít nhất 40)
+DECLARE @NewBookingRows TABLE(
+  username        VARCHAR(50),
+  pet_name        NVARCHAR(100),
+  service_code    VARCHAR(20),
+  req_date        DATE,
+  req_start       CHAR(5),
+  status          VARCHAR(20),
+  note            NVARCHAR(255),
+  price           INT
+);
+
+INSERT INTO @NewBookingRows(username,pet_name,service_code,req_date,req_start,status,note,price)
+VALUES
+-- customer1
+('customer1',N'Bông','GRM_BASIC','2025-10-08','09:00','CONFIRMED',N'Groom định kỳ',150000),
+('customer1',N'Bông','GRM_PREMIUM','2025-10-15','10:30','PENDING',N'Cắt tỉa toàn thân',250000),
+('customer1',N'Bông','HLT_CHECK','2025-10-18','14:00','PENDING',N'Kiểm tra sau tiêm',200000),
+('customer1',N'Bông','HLT_VACC','2025-10-03','09:30','COMPLETED',N'Nhắc tiêm vaccine',250000),
+
+-- customer2
+('customer2',N'Lucky','GRM_PREMIUM','2025-10-07','15:00','COMPLETED',N'Tắm sấy cắt tỉa',250000),
+('customer2',N'Lucky','HLT_CHECK','2025-10-12','11:00','CONFIRMED',N'Khám sau vận động',200000),
+('customer2',N'Miu','GRM_BASIC','2025-10-09','10:00','PENDING',N'Tắm khử mùi',150000),
+('customer2',N'Miu','HLT_VACC','2025-10-13','09:30','CONFIRMED',N'Tiêm nhắc',250000),
+
+-- customer3
+('customer3',N'Mướp','GRM_BASIC','2025-10-05','11:00','COMPLETED',N'Tắm làm sạch',150000),
+('customer3',N'Max','GRM_PREMIUM','2025-10-16','16:00','PENDING',N'Cắt tỉa tạo kiểu',250000),
+('customer3',N'Max','HLT_CHECK','2025-10-10','14:30','CONFIRMED',N'Khám tổng quát',200000),
+('customer3',N'Mướp','HLT_VACC','2025-10-02','09:00','COMPLETED',N'Tiêm phòng dại',250000),
+
+-- customer4
+('customer4',N'Rex','GRM_BASIC','2025-10-04','09:00','COMPLETED',N'Tắm khử mùi',150000),
+('customer4',N'Rex','HLT_CHECK','2025-10-11','15:00','CONFIRMED',N'Kiểm tra khớp',200000),
+('customer4',N'Rex','HLT_VACC','2025-10-19','10:00','PENDING',N'Nhắc tiêm 7 bệnh',250000),
+
+-- customer5
+('customer5',N'MiMi','GRM_BASIC','2025-10-06','10:00','CONFIRMED',N'Spa mèo',150000),
+('customer5',N'MiMi','HLT_CHECK','2025-10-14','13:30','PENDING',N'Kiểm tra mắt',200000),
+('customer5',N'MiMi','HLT_VACC','2025-10-01','09:00','COMPLETED',N'Tiêm mũi 2',250000),
+
+-- customer6
+('customer6',N'Đốm','GRM_PREMIUM','2025-10-08','15:30','CONFIRMED',N'Cắt tỉa lông mặt',250000),
+('customer6',N'Đốm','HLT_CHECK','2025-10-17','09:00','PENDING',N'Khám tiêu hóa',200000),
+('customer6',N'Đốm','HLT_VACC','2025-10-05','10:00','COMPLETED',N'Vaccine 5in1',250000),
+
+-- customer7
+('customer7',N'Cam','GRM_BASIC','2025-10-09','09:30','PENDING',N'Tắm sấy nhanh',150000),
+('customer7',N'Cam','HLT_CHECK','2025-10-15','11:00','CONFIRMED',N'Khám đường hô hấp',200000),
+('customer7',N'Cam','HLT_VACC','2025-10-07','08:30','COMPLETED',N'Vaccine dại',250000),
+
+-- customer8
+('customer8',N'KiKi','GRM_PREMIUM','2025-10-12','16:00','CONFIRMED',N'Groom tạo kiểu',250000),
+('customer8',N'KiKi','HLT_CHECK','2025-10-20','10:00','PENDING',N'Khám da liễu',200000),
+('customer8',N'KiKi','HLT_VACC','2025-10-06','09:00','COMPLETED',N'Nhắc vaccine',250000),
+
+-- customer9
+('customer9',N'BíNgô','GRM_BASIC','2025-10-10','10:30','CONFIRMED',N'Tắm khử mùi',150000),
+('customer9',N'BíNgô','GRM_PREMIUM','2025-10-18','14:00','PENDING',N'Cắt tỉa toàn thân',250000),
+('customer9',N'BíNgô','HLT_CHECK','2025-10-03','15:00','COMPLETED',N'Khám dinh dưỡng',200000),
+
+-- customer10
+('customer10',N'Snow','GRM_BASIC','2025-10-11','09:00','CONFIRMED',N'Tắm mèo nhẹ nhàng',150000),
+('customer10',N'Snow','HLT_CHECK','2025-10-16','13:00','PENDING',N'Khám răng miệng',200000),
+('customer10',N'Snow','HLT_VACC','2025-10-04','10:00','COMPLETED',N'Vaccine mũi nhắc',250000),
+
+-- Bổ sung thêm để đạt >= 40
+('customer1',N'Bông','GRM_BASIC','2025-10-19','09:00','PENDING',N'Groom dọn lông rụng',150000),
+('customer2',N'Lucky','GRM_BASIC','2025-10-14','10:00','CONFIRMED',N'Tắm dịp lễ',150000),
+('customer3',N'Max','GRM_BASIC','2025-10-13','09:00','PENDING',N'Tắm sau chơi bẩn',150000),
+('customer4',N'Rex','GRM_PREMIUM','2025-10-02','16:00','COMPLETED',N'Groom chuẩn bị thi show',250000),
+('customer5',N'MiMi','GRM_PREMIUM','2025-10-17','15:00','PENDING',N'Cắt tỉa lông dài',250000),
+('customer6',N'Đốm','GRM_BASIC','2025-10-09','11:00','CONFIRMED',N'Tắm khử mùi',150000),
+('customer7',N'Cam','GRM_PREMIUM','2025-10-12','10:00','CONFIRMED',N'Spa toàn diện',250000),
+('customer8',N'KiKi','GRM_BASIC','2025-10-07','09:00','COMPLETED',N'Tắm nhanh',150000)
+;
+
+-- Chèn booking và lưu các booking_id vừa thêm
+DECLARE @InsertedBookings TABLE(
+  booking_id      INT,
+  customer_id     INT,
+  pet_id          INT,
+  service_id      INT,
+  requested_date  DATE,
+  requested_start CHAR(5),
+  current_status  VARCHAR(20)
+);
+
+INSERT INTO Booking(customer_id,pet_id,service_id,booking_time,requested_date,requested_start,notes,current_status,total_price)
+OUTPUT inserted.booking_id, inserted.customer_id, inserted.pet_id, inserted.service_id, inserted.requested_date, inserted.requested_start, inserted.current_status
+SELECT u.user_id, p.pet_id, s.service_id, SYSUTCDATETIME(), n.req_date, n.req_start, n.note, n.status, n.price
+FROM @NewBookingRows n
+JOIN Users u ON u.username = n.username
+JOIN Pets p ON p.name = n.pet_name AND p.owner_id = u.user_id
+JOIN Services s ON s.service_code = n.service_code;
+
+-- Lịch sử trạng thái
+-- PENDING
+INSERT INTO BookingStatusHistory(booking_id,status_code,changed_by,comment)
+SELECT b.booking_id, 'PENDING', b.customer_id, N'Đặt mới'
+FROM @InsertedBookings ib
+JOIN Booking b ON b.booking_id = ib.booking_id;
+
+-- CONFIRMED
+INSERT INTO BookingStatusHistory(booking_id,status_code,changed_by,comment)
+SELECT b.booking_id, 'CONFIRMED',
+       CASE WHEN s.service_code LIKE 'GRM%' THEN @staff2 ELSE @vet1 END,
+       N'Xác nhận lịch'
+FROM @InsertedBookings ib
+JOIN Booking b ON b.booking_id = ib.booking_id
+JOIN Services s ON s.service_id = ib.service_id
+WHERE ib.current_status IN ('CONFIRMED','COMPLETED');
+
+-- COMPLETED
+INSERT INTO BookingStatusHistory(booking_id,status_code,changed_by,comment)
+SELECT b.booking_id, 'COMPLETED',
+       CASE WHEN s.service_code LIKE 'GRM%' THEN @staff1 ELSE @vet2 END,
+       N'Đã hoàn tất'
+FROM @InsertedBookings ib
+JOIN Booking b ON b.booking_id = ib.booking_id
+JOIN Services s ON s.service_id = ib.service_id
+WHERE ib.current_status = 'COMPLETED';
+
+-- Tạo slot lịch BOOKED theo requested_date + requested_start
 INSERT INTO ScheduleSlot(booking_id, staff_id, room_name, start_time, end_time, status)
-VALUES ((SELECT TOP 1 booking_id FROM Booking WHERE current_status IN ('PENDING','CONFIRMED')), (SELECT user_id FROM Users WHERE username='staff2'), N'Groom-Cancelled-1', '2025-10-11 11:00:00.000', '2025-10-11 12:00:00.000', 'CANCELLED');
+SELECT b.booking_id,
+       CASE WHEN s.service_code LIKE 'GRM%' THEN @staff1 ELSE @vet1 END AS staff_id,
+       CASE WHEN s.service_code LIKE 'GRM%' THEN N'Groom-1' ELSE N'Clinic-1' END AS room_name,
+       CAST(CONCAT(CONVERT(VARCHAR(10), ib.requested_date, 23), ' ', ib.requested_start) AS DATETIME2) AS start_time,
+       DATEADD(MINUTE, s.base_duration_min,
+               CAST(CONCAT(CONVERT(VARCHAR(10), ib.requested_date, 23), ' ', ib.requested_start) AS DATETIME2)) AS end_time,
+       'BOOKED'
+FROM @InsertedBookings ib
+JOIN Booking b ON b.booking_id = ib.booking_id
+JOIN Services s ON s.service_id = ib.service_id;
+
+-- Phân công nhân sự
+INSERT INTO BookingStaffAssignment(booking_id, staff_id, role_in_service)
+SELECT b.booking_id,
+       CASE WHEN s.service_code LIKE 'GRM%' THEN @staff1 ELSE @vet1 END,
+       CASE WHEN s.service_code LIKE 'GRM%' THEN N'Groomer chính' ELSE N'Bác sĩ chính' END
+FROM @InsertedBookings ib
+JOIN Booking b ON b.booking_id = ib.booking_id
+JOIN Services s ON s.service_id = ib.service_id;
+
+-- Tạo hồ sơ khám cho các booking y tế đã COMPLETED
+-- VetVisit
+INSERT INTO VetVisit(booking_id, pet_id, owner_id, vet_staff_id, visit_type_code, visit_date, weight_kg, temperature_c, symptoms, notes)
+SELECT b.booking_id, b.pet_id, b.customer_id,
+       CASE WHEN s.service_code='HLT_VACC' THEN @vet2 ELSE @vet1 END,
+       CASE WHEN s.service_code='HLT_VACC' THEN 'VACCINE' ELSE 'CHECKUP' END,
+       ss.start_time,
+       CASE WHEN s.service_code='HLT_VACC' THEN 3.5 ELSE 6.0 END, -- số liệu mẫu
+       CASE WHEN s.service_code='HLT_VACC' THEN 38.4 ELSE 38.6 END,
+       CASE WHEN s.service_code='HLT_VACC' THEN N'Tiêm vaccine' ELSE N'Khám tổng quát' END,
+       CASE WHEN s.service_code='HLT_VACC' THEN N'Ổn định sau tiêm' ELSE N'Không bất thường' END
+FROM @InsertedBookings ib
+JOIN Booking b ON b.booking_id = ib.booking_id
+JOIN Services s ON s.service_id = ib.service_id
+JOIN ScheduleSlot ss ON ss.booking_id = b.booking_id
+WHERE ib.current_status = 'COMPLETED' AND s.service_code LIKE 'HLT_%';
+
+-- Diagnosis cho CHECKUP
+INSERT INTO Diagnosis(visit_id, diagnosis_code, description, severity)
+SELECT v.visit_id, 'NORMAL', N'Sức khỏe bình thường', 1
+FROM VetVisit v
+JOIN Booking b ON b.booking_id = v.booking_id
+JOIN Services s ON s.service_id = b.service_id
+WHERE v.visit_type_code='CHECKUP' AND b.booking_id IN (SELECT booking_id FROM @InsertedBookings);
+
+-- MedicalRecord cho CHECKUP
+INSERT INTO MedicalRecord(pet_id, visit_id, summary, follow_up_date)
+SELECT v.pet_id, v.visit_id, N'Tiếp tục chế độ ăn và vận động phù hợp',
+       DATEADD(MONTH, 6, CAST(v.visit_date AS DATE))
+FROM VetVisit v
+WHERE v.visit_type_code='CHECKUP' AND v.booking_id IN (SELECT booking_id FROM @InsertedBookings);
+
+-- VaccinationRecord cho VACCINE
+INSERT INTO VaccinationRecord(visit_id, vaccine_name, batch_number, administered_at, next_due_date)
+SELECT v.visit_id, N'Vaccine tổng hợp', N'BATCH-2025-10', v.visit_date,
+       DATEADD(MONTH, 12, CAST(v.visit_date AS DATE))
+FROM VetVisit v
+WHERE v.visit_type_code='VACCINE' AND v.booking_id IN (SELECT booking_id FROM @InsertedBookings);
+
+-- Prescription cho VACCINE
+INSERT INTO Prescription(visit_id, instructions)
+SELECT v.visit_id, N'Giảm đau nhẹ sau tiêm, uống sau ăn'
+FROM VetVisit v
+WHERE v.visit_type_code='VACCINE' AND v.booking_id IN (SELECT booking_id FROM @InsertedBookings);
+
+-- PrescriptionItem cho VACCINE
+INSERT INTO PrescriptionItem(prescription_id, medicine_name, dosage, frequency, duration_days)
+SELECT pr.prescription_id, N'Paracetamol thú y 120mg', N'1/2 viên', N'2 lần/ngày', 3
+FROM Prescription pr
+JOIN VetVisit v ON v.visit_id = pr.visit_id
+WHERE v.visit_type_code='VACCINE' AND v.booking_id IN (SELECT booking_id FROM @InsertedBookings);
+
+-- Đánh dấu slot DONE cho các booking hoàn tất
+UPDATE ss
+SET ss.status = 'DONE'
+FROM ScheduleSlot ss
+JOIN @InsertedBookings ib ON ib.booking_id = ss.booking_id
+WHERE ib.current_status = 'COMPLETED';
+
+-- Tạo thanh toán + hóa đơn cho các booking COMPLETED vừa thêm
+WITH cteCompleted AS (
+  SELECT b.booking_id, b.total_price
+  FROM Booking b
+  WHERE b.booking_id IN (SELECT booking_id FROM @InsertedBookings WHERE current_status='COMPLETED')
+)
+INSERT INTO Payments(order_id, booking_id, payment_method_code, amount, status, transaction_ref, paid_at)
+SELECT NULL, c.booking_id,
+       CASE WHEN (c.booking_id % 2)=0 THEN 'CASH' ELSE 'EWALLET' END,
+       c.total_price, 'SUCCESS',
+       'BKG-PAY-' + CAST(c.booking_id AS NVARCHAR(20)),
+       SYSUTCDATETIME()
+FROM cteCompleted c;
+
+WITH cteCompleted2 AS (
+  SELECT c.booking_id, c.total_price,
+         ROW_NUMBER() OVER (ORDER BY c.booking_id) AS rn
+  FROM Booking c
+  WHERE c.booking_id IN (SELECT booking_id FROM @InsertedBookings WHERE current_status='COMPLETED')
+)
+INSERT INTO Invoice(invoice_code, booking_id, total_amount, tax_amount, note)
+SELECT 'INV-BKG-2' + RIGHT('0000' + CAST(rn AS VARCHAR(4)), 4),
+       booking_id, total_price, 0, N'Hóa đơn dịch vụ'
+FROM cteCompleted2;
+
+-- Thêm một vài review cho các dịch vụ và lần khám mới
+INSERT INTO Reviews(target_type_code, target_id, customer_id, rating, comment)
+SELECT 'SERVICE', s.service_id, b.customer_id, 5, N'Dịch vụ tuyệt vời!'
+FROM @InsertedBookings ib
+JOIN Booking b ON b.booking_id = ib.booking_id
+JOIN Services s ON s.service_id = ib.service_id
+WHERE ib.current_status='COMPLETED' AND s.service_code LIKE 'GRM_%';
+
+INSERT INTO Reviews(target_type_code, target_id, customer_id, rating, comment)
+SELECT 'VET_VISIT', v.visit_id, v.owner_id, 4, N'Bác sĩ tận tâm, tư vấn rõ ràng'
+FROM VetVisit v
+WHERE v.booking_id IN (SELECT booking_id FROM @InsertedBookings);
 
 GO

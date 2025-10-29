@@ -33,8 +33,7 @@ public class ForgotPasswordServlet extends HttpServlet {
             return;
         }
         if (userDAO.findByEmail(email) == null) {
-            // Không tiết lộ sự tồn tại của email
-            request.setAttribute("message", "Nếu email tồn tại, OTP sẽ được gửi trong giây lát.");
+            request.setAttribute("message", "Email không tồn tại");
             request.getRequestDispatcher("WEB-INF/login/forgot_password.jsp").forward(request, response);
             return;
         }
@@ -62,6 +61,7 @@ public class ForgotPasswordServlet extends HttpServlet {
             return;
         }
 
+        request.setAttribute("otpExpiry", expiresAt);
         request.getRequestDispatcher("WEB-INF/login/verify_otp.jsp").forward(request, response);
     }
 }
