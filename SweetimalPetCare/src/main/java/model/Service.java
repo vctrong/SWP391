@@ -9,13 +9,13 @@ import java.math.BigDecimal;
 // Lớp Service ánh xạ với bảng Services
 public class Service {
 
-    private int id;             // id dịch vụ
+    private long id;             // id dịch vụ (BIGINT in DB)
     private String name;         // tên dịch vụ
     private String description;  // mô tả dịch vụ
     private int durationMin;     // thời lượng (phút)
     private BigDecimal price;    // giá hiện tại
 
-    public Service(int id, String name, String description, int durationMin, BigDecimal price) {
+    public Service(long id, String name, String description, int durationMin, BigDecimal price) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -27,7 +27,7 @@ public class Service {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
