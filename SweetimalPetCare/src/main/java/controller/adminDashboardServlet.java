@@ -63,14 +63,14 @@ public class adminDashboardServlet extends HttpServlet {
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
-            response.sendRedirect(request.getContextPath() + "/login.jsp");
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
         Users user = (Users) session.getAttribute("user");
         if (user.getRoleEnum() != RoleEnum.ADMIN) {
             request.setAttribute("accessDenied", true);
-            request.getRequestDispatcher("WEB-INF/pages/dashboard.jsp").forward(request, response);
+            request.getRequestDispatcher("WEB-INF/admin/dashboard.jsp").forward(request, response);
             return;
         }
 
@@ -87,7 +87,7 @@ public class adminDashboardServlet extends HttpServlet {
             request.setAttribute("error", "Database error: " + e.getMessage());
         }
 
-        request.getRequestDispatcher("WEB-INF/pages/dashboard.jsp").forward(request, response);
+        request.getRequestDispatcher("WEB-INF/admin/dashboard.jsp").forward(request, response);
     }
 
     /**

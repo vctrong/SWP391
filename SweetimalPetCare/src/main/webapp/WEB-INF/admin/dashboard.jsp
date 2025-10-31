@@ -1,175 +1,168 @@
-<%--
-    Document   : dashboard
-    Created on : Oct 3, 2025, 6:50:09 PM
-    Author     : Lim Thế Toàn - CE190616
+<%-- 
+    Document   : dashboard.jsp
+    Created on : Oct 22, 2025, 4:39:50 PM
+    Author     : Vo Chi Trong - CE191062
 --%>
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="enums.BookingStatusColor"%>
 <!DOCTYPE html>
-<html>
+<html lang="vi">
     <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Dashboard Admin | Sweetimal Pet Care</title>
         <%@include file="/WEB-INF/include/library.jsp" %>
-        <%@include file="/WEB-INF/include/header.jsp" %>
-        <title>Admin Dashboard</title>
+        <link rel="stylesheet" href="assets/css/adminPages.css"/>
+        <!-- Font Awesome Icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     </head>
-    <body class="bg-gray-50 text-gray-800">
-        <div class="container mx-auto px-6 py-8">
-            <div class="flex items-center justify-between mb-8">
-                <h1 class="text-2xl font-semibold">Admin Dashboard</h1>
-                <div>
-                    <a href="${pageContext.request.contextPath}/admin/services" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                        <i class="fa-solid fa-wrench mr-2"></i> Manage Services
-                    </a>
+
+    <body class="flex bg-gradient-to-br from-sky-50 via-cyan-50 to-white min-h-screen text-gray-800">
+        <%@include file="/WEB-INF/include/admin_sidebar.jsp" %>
+
+        <!-- Main Content -->
+        <div class="flex-1 ml-64 flex flex-col min-h-screen p-8 space-y-8">
+
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-4xl font-extrabold text-sky-700 tracking-tight">
+                    <i class="fa-solid fa-gauge-high mr-3 text-sky-500"></i> Bảng điều khiển
+                </h1>
+                <p class="text-gray-500">
+                    Xin chào, <span class="font-semibold text-sky-600">Admin!</span>
+                </p>
+            </div>
+
+            <!-- Overview Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                <div class="bg-white shadow-md hover:shadow-xl transition rounded-2xl p-5 flex flex-col items-center text-center border border-gray-100">
+                    <i class="fa-solid fa-user-doctor text-3xl text-sky-500 mb-2"></i>
+                    <h3 class="text-gray-500">Bác sĩ</h3>
+                    <p class="text-3xl font-bold text-sky-600">12</p>
+                </div>
+                <div class="bg-white shadow-md hover:shadow-xl transition rounded-2xl p-5 flex flex-col items-center text-center border border-gray-100">
+                    <i class="fa-solid fa-box text-3xl text-emerald-500 mb-2"></i>
+                    <h3 class="text-gray-500">Đơn hàng</h3>
+                    <p class="text-3xl font-bold text-emerald-600">56</p>
+                </div>
+                <div class="bg-white shadow-md hover:shadow-xl transition rounded-2xl p-5 flex flex-col items-center text-center border border-gray-100">
+                    <i class="fa-solid fa-users text-3xl text-cyan-500 mb-2"></i>
+                    <h3 class="text-gray-500">Người dùng</h3>
+                    <p class="text-3xl font-bold text-cyan-600">438</p>
+                </div>
+                <div class="bg-white shadow-md hover:shadow-xl transition rounded-2xl p-5 flex flex-col items-center text-center border border-gray-100">
+                    <i class="fa-solid fa-paw text-3xl text-pink-400 mb-2"></i>
+                    <h3 class="text-gray-500">Sản phẩm</h3>
+                    <p class="text-3xl font-bold text-pink-500">87</p>
+                </div>
+                <div class="bg-white shadow-md hover:shadow-xl transition rounded-2xl p-5 flex flex-col items-center text-center border border-gray-100">
+                    <i class="fa-solid fa-id-card text-3xl text-indigo-400 mb-2"></i>
+                    <h3 class="text-gray-500">Nhân sự</h3>
+                    <p class="text-3xl font-bold text-indigo-500">15</p>
+                </div>
+                <div class="bg-white shadow-md hover:shadow-xl transition rounded-2xl p-5 flex flex-col items-center text-center border border-gray-100">
+                    <i class="fa-solid fa-envelope text-3xl text-yellow-500 mb-2"></i>
+                    <h3 class="text-gray-500">Liên hệ</h3>
+                    <p class="text-3xl font-bold text-yellow-600">8</p>
                 </div>
             </div>
 
-            <c:if test="${accessDenied}">
-                <div class="mb-6 text-red-600 font-medium">Access Denied: You must be an administrator to view this page.</div>
-            </c:if>
+            <!-- Recent Info Grid -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 mt-6">
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <div class="bg-white p-4 rounded-lg shadow-sm flex items-center space-x-4">
-                    <div class="p-3 bg-blue-100 text-blue-700 rounded-full">
-                        <i class="fa-solid fa-users"></i>
-                    </div>
-                    <div>
-                        <div class="text-sm text-gray-500">Users</div>
-                        <div class="text-xl font-bold">${userCount}</div>
-                    </div>
+                <!-- Recent Services -->
+                <div class="bg-white rounded-2xl shadow-md hover:shadow-xl transition p-6 border border-gray-100">
+                    <h2 class="text-xl font-semibold text-sky-700 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-hand-holding-medical text-sky-500"></i> Đơn dịch vụ gần đây
+                    </h2>
+                    <table class="w-full text-left">
+                        <thead class="border-b border-gray-200 text-gray-500 text-sm">
+                            <tr>
+                                <th class="pb-2">Khách hàng</th>
+                                <th class="pb-2">Dịch vụ</th>
+                                <th class="pb-2 text-right">Ngày</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-gray-700">
+                            <tr class="hover:bg-sky-50 transition">
+                                <td>Nguyễn Văn A</td>
+                                <td>Khám sức khỏe thú cưng</td>
+                                <td class="text-right">24/10</td>
+                            </tr>
+                            <tr class="hover:bg-sky-50 transition">
+                                <td>Lê Thị B</td>
+                                <td>Tắm gội & spa</td>
+                                <td class="text-right">23/10</td>
+                            </tr>
+                            <tr class="hover:bg-sky-50 transition">
+                                <td>Phạm C</td>
+                                <td>Tiêm ngừa</td>
+                                <td class="text-right">22/10</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm flex items-center space-x-4">
-                    <div class="p-3 bg-green-100 text-green-700 rounded-full">
-                        <i class="fa-solid fa-cart-shopping"></i>
-                    </div>
-                    <div>
-                        <div class="text-sm text-gray-500">Orders</div>
-                        <div class="text-xl font-bold">${orderCount}</div>
-                    </div>
+
+                <!-- Recent Orders -->
+                <div class="bg-white rounded-2xl shadow-md hover:shadow-xl transition p-6 border border-gray-100">
+                    <h2 class="text-xl font-semibold text-emerald-700 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping text-emerald-500"></i> Đơn hàng gần đây
+                    </h2>
+                    <table class="w-full text-left">
+                        <thead class="border-b border-gray-200 text-gray-500 text-sm">
+                            <tr>
+                                <th class="pb-2">Mã đơn</th>
+                                <th class="pb-2">Khách hàng</th>
+                                <th class="pb-2 text-right">Tổng</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-gray-700">
+                            <tr class="hover:bg-emerald-50 transition">
+                                <td>#ORD120</td>
+                                <td>Trần D</td>
+                                <td class="text-right">520.000đ</td>
+                            </tr>
+                            <tr class="hover:bg-emerald-50 transition">
+                                <td>#ORD121</td>
+                                <td>Ngô E</td>
+                                <td class="text-right">230.000đ</td>
+                            </tr>
+                            <tr class="hover:bg-emerald-50 transition">
+                                <td>#ORD122</td>
+                                <td>Hoàng F</td>
+                                <td class="text-right">680.000đ</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm flex items-center space-x-4">
-                    <div class="p-3 bg-yellow-100 text-yellow-700 rounded-full">
-                        <i class="fa-solid fa-calendar-check"></i>
-                    </div>
-                    <div>
-                        <div class="text-sm text-gray-500">Bookings</div>
-                        <div class="text-xl font-bold">${bookingCount}</div>
-                    </div>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm flex items-center space-x-4">
-                    <div class="p-3 bg-purple-100 text-purple-700 rounded-full">
-                        <i class="fa-solid fa-box-open"></i>
-                    </div>
-                    <div>
-                        <div class="text-sm text-gray-500">Products</div>
-                        <div class="text-xl font-bold">${productCount}</div>
-                    </div>
+
+                <!-- Support Requests -->
+                <div class="bg-white rounded-2xl shadow-md hover:shadow-xl transition p-6 border border-gray-100">
+                    <h2 class="text-xl font-semibold text-pink-700 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-comments text-pink-500"></i> Các vấn đề cần tư vấn
+                    </h2>
+                    <ul class="divide-y divide-gray-200 text-gray-700 text-sm">
+                        <li class="py-3 hover:bg-pink-50 px-2 rounded-lg transition">
+                            🐶 “Cún nhà tôi bị rụng lông nhiều, cần tư vấn chăm sóc.”
+                            <span class="block text-gray-400 text-xs mt-1">Từ: Nguyễn H - 24/10</span>
+                        </li>
+                        <li class="py-3 hover:bg-pink-50 px-2 rounded-lg transition">
+                            🐱 “Mèo ăn ít và lười vận động, có cách nào cải thiện không?”
+                            <span class="block text-gray-400 text-xs mt-1">Từ: Lê I - 23/10</span>
+                        </li>
+                        <li class="py-3 hover:bg-pink-50 px-2 rounded-lg transition">
+                            🐾 “Cần tư vấn về lịch tiêm định kỳ cho thú cưng.”
+                            <span class="block text-gray-400 text-xs mt-1">Từ: Phan K - 22/10</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
 
-            <div class="space-y-8">
-                <!-- Recent Actions -->
-                <section class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold">Recent User Actions</h2>
-                        <a href="#" class="text-sm text-blue-600">View all</a>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-100">
-                                <c:forEach var="a" items="${recentActions}">
-                                    <tr>
-                                        <td class="px-4 py-3">${a.fullName}</td>
-                                        <td class="px-4 py-3">${a.email}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-600">${a.actionType}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-600">${a.description}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-500">${a.createdAt}</td>
-                                    </tr>
-                                </c:forEach>
-                                <c:if test="${empty recentActions}">
-                                    <tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No recent logs found</td></tr>
-                                </c:if>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- Recent Bookings -->
-                <section class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold">Recent Bookings</h2>
-                        <a href="#" class="text-sm text-blue-600">View all</a>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pet</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">When</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-100">
-                                <c:forEach var="b" items="${recentBookings}">
-                                    <tr>
-                                        <td class="px-3 py-3">${b.id}</td>
-                                        <td class="px-3 py-3">${b.customerName}</td>
-                                        <td class="px-3 py-3">${b.petName}</td>
-                                        <td class="px-3 py-3">${b.serviceName}</td>
-                                        <td class="px-3 py-3">${b.requestedDate} ${b.requestedStart}</td>
-                                        <td class="px-3 py-3">
-                                            <% 
-                                               Object __bObj = pageContext.getAttribute("b");
-                                               String __status = null;
-                                               if (__bObj != null) {
-                                                   model.BookingSummary __bCast = (model.BookingSummary)__bObj;
-                                                   __status = __bCast.getCurrentStatus();
-                                               }
-                                               BookingStatusColor st = BookingStatusColor.fromString(__status);
-                                            %>
-                                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium <%=st.getBgClass()%> <%=st.getTextClass()%>"><%=st.getLabel()%></span>
-                                        </td>
-                                        <td class="px-3 py-3">${b.totalPrice}</td>
-                                        <td class="px-3 py-3">
-                                            <form action="${pageContext.request.contextPath}/admin/booking/status" method="post" class="flex items-center space-x-2">
-                                                <input type="hidden" name="bookingId" value="${b.id}"/>
-                                                <select name="status" class="border rounded px-2 py-1 text-sm">
-                                                    <option value="PENDING" <c:if test="${b.currentStatus == 'PENDING'}">selected</c:if>>PENDING</option>
-                                                    <option value="CONFIRMED" <c:if test="${b.currentStatus == 'CONFIRMED'}">selected</c:if>>CONFIRMED</option>
-                                                    <option value="IN_PROGRESS" <c:if test="${b.currentStatus == 'IN_PROGRESS'}">selected</c:if>>IN_PROGRESS</option>
-                                                    <option value="COMPLETED" <c:if test="${b.currentStatus == 'COMPLETED'}">selected</c:if>>COMPLETED</option>
-                                                    <option value="CANCELLED" <c:if test="${b.currentStatus == 'CANCELLED'}">selected</c:if>>CANCELLED</option>
-                                                </select>
-                                                <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded text-sm">Update</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                </c:forEach>
-                                <c:if test="${empty recentBookings}">
-                                    <tr><td colspan="8" class="px-4 py-6 text-center text-gray-400">No bookings found</td></tr>
-                                </c:if>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
+            <!-- Footer -->
+            <div class="mt-auto">
+                <%@include file="/WEB-INF/include/footer_admin.jsp" %>
             </div>
-
-            
         </div>
-        <%@include file="/WEB-INF/include/footer.jsp" %>
+
+        <script src="assets/js/adminPages.js"></script>
     </body>
 </html>
