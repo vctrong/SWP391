@@ -4,6 +4,7 @@
  */
 package model;
 
+import enums.RoleEnum;
 import java.sql.Date;
 
 /**
@@ -14,7 +15,6 @@ public class Users {
 
     private int id;
     private String username;
-    
     private String fullName;
     private String email;
     private String phone;
@@ -23,14 +23,17 @@ public class Users {
     private String urlImg;
     private int role;
     private Date birthday;
+    private Date create;
+    private int nop; //Number of pets
 
     public Users() {
     }
 
-    public Users(int id, String username, String fullName, String email, String phone, int active, int gender, String urlImg, int role, Date birthday) {
+    public Users(int id, String username, String fullName, String email,
+            String phone, int active, int gender, String urlImg, int role,
+            Date birthday, Date create, int nop) {
         this.id = id;
         this.username = username;
-        
         this.fullName = fullName;
         this.email = email;
         this.phone = phone;
@@ -39,6 +42,24 @@ public class Users {
         this.urlImg = urlImg;
         this.role = role;
         this.birthday = birthday;
+        this.create = create;
+        this.nop = nop;
+    }
+
+    public int getNop() {
+        return nop;
+    }
+
+    public void setNop(int nop) {
+        this.nop = nop;
+    }
+
+    public Date getCreate() {
+        return create;
+    }
+
+    public void setCreate(Date create) {
+        this.create = create;
     }
 
     public int getId() {
@@ -56,8 +77,6 @@ public class Users {
     public void setUsername(String username) {
         this.username = username;
     }
-
-   
 
     public String getFullName() {
         return fullName;
@@ -123,8 +142,13 @@ public class Users {
         this.birthday = birthday;
     }
 
+
     public void setPassword(String password) {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+    public RoleEnum getRoleEnum() {
+        return RoleEnum.findCode(this.role);
+
     }
 
 }

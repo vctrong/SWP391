@@ -21,7 +21,7 @@
     </div>
 </header>
 
-<!-- Nội dung chính -->
+<!-- Main -->
 <div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-pink-100 to-blue-200 pt-10">
     <div class="bg-white shadow-lg rounded-2xl w-full max-w-md p-8 text-center">
         <img src="assets/img/logo.jpg" alt="Logo"

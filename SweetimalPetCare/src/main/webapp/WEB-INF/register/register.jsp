@@ -1,5 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+
 <!DOCTYPE html>
 <html lang="vi">
     <head>
@@ -11,41 +13,92 @@
     <body class="bg-gray-100">
 
         <!-- Header -->
-        <header class="fixed top-0 left-0 w-full z-50 bg-white/30 backdrop-blur-md shadow-sm">
-            <div class="container mx-auto flex items-center py-4 px-6">
-                <!-- Logo + Brand (trái) -->
-                <div class="flex items-center space-x-3">
-                    <img src="assets/img/logo.jpg" 
-                         alt="Sweetimal Logo" 
-                         class="w-10 h-10 rounded-full border border-blue-600 shadow-sm">
-                    <h1 class="text-2xl font-bold text-blue-600">Sweetimal Pet Care</h1>
+        <header id="navbar"
+        class="sticky top-0 left-0 w-full z-30 bg-white/40 backdrop-blur-md border-b border-sky-100 shadow-sm transition-all duration-500">
+    <div class="container mx-auto flex justify-between items-center py-4 px-6">
+        <!-- Logo + Brand -->
+        <div class="flex items-center space-x-3">
+            <a href="${pageContext.request.contextPath}/home"
+               class="flex items-center space-x-3 px-2 py-1 rounded-full transition-all transform hover:scale-105 hover:shadow-md hover:text-blue-600"
+               title="Sweetimal Home">
+                <img src="${pageContext.request.contextPath}/assets/img/logo.jpg"
+                     alt="Sweetimal Logo"
+                     class="w-10 h-10 rounded-full border border-blue-600 shadow-sm hover:shadow-lg transition">
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent">
+                    Sweetimal Pet Care
+                </h1>
+            </a>
+        </div>
+
+        <!-- Nav Links -->
+        <nav class="hidden md:flex items-center space-x-2 text-gray-700 font-medium">
+            <a href="${pageContext.request.contextPath}/home"
+               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               hover:text-blue-600 hover:border-blue-400
+               ${fn:contains(current, '/home') ? 'active' : ''}">Trang chủ</a>
+
+            <a href="${pageContext.request.contextPath}/services"
+               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               hover:text-blue-600 hover:border-blue-400
+               ${fn:contains(current, '/services') ? 'active' : ''}">Dịch vụ</a>
+
+            <a href="#shop"
+               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               hover:text-blue-600 hover:border-blue-400
+               ${fn:contains(current, '/shop') ? 'active' : ''}">Cửa hàng</a>
+
+            <a href="${pageContext.request.contextPath}/contacts"
+               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               hover:text-blue-600 hover:border-blue-400
+               ${fn:contains(current, '/Contacts') ? 'active' : ''}">Liên hệ</a>
+
+            <a href="${pageContext.request.contextPath}/aboutUs"
+               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               hover:text-blue-600 hover:border-blue-400
+               ${fn:contains(current, '/aboutus') ? 'active' : ''}">Về chúng tôi</a>
+
+            <c:if test="${not empty user}">
+                <a href="${pageContext.request.contextPath}/booking-history"
+                   class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                   hover:text-blue-600 hover:border-blue-400
+                   ${fn:contains(current, '/bookingHistory') ? 'active' : ''}">
+                    Lịch sử đặt lịch
+                </a>
+            </c:if>
+        </nav>
+
+        <!-- User / Auth Buttons -->
+        <c:if test="${not empty user}">
+
+
+
+            <div class="space-x-4 flex items-center">
+                <div class="px-1 py-1 rounded-full transform hover:scale-105 hover:text-blue-600 transition">
+                    <button id="userMenuButton"
+                            class="flex items-center space-x-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-blue-600 hover:to-blue-700
+                            text-white px-4 py-2 rounded-full shadow-md hover:shadow-lg transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        ${user.fullName}
+                    </button>
                 </div>
 
-                <!-- Nav Links (giữa) -->
-                <nav class="flex-1 flex justify-center space-x-6">
-                    <a href="home" class="hover:text-blue-500">Trang chủ</a>
-                    <a href="#services" class="hover:text-blue-500">Dịch vụ</a>
-                    <a href="#shop" class="hover:text-blue-500">Cửa hàng</a>
-                    <a href="#contact" class="hover:text-blue-500">Liên hệ</a>
-                    <a href="aboutUs" class="hover:text-blue-500">Về chúng tôi</a>
-                </nav>
-                <div class="space-x-4">
-                    <a href="${pageContext.request.contextPath}/login" class="button px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Đăng nhập</a>
-                    <a href="register" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-                        Đăng ký
-                    </a>
-                </div>
-
-                <!-- User info (phải) -->
-                <c:if test="${not empty user}">
-                    <div class="space-x-4">
-                        <a href="#" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            ${user.fullName}
-                        </a>
-                    </div>
-                </c:if>
             </div>
-        </header>
+        </c:if>
+
+        <c:if test="${empty user}">
+            <div class="space-x-4">
+                <a href="${pageContext.request.contextPath}/login"
+                   class="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold
+                   shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300">Đăng nhập</a>
+                <a href="register"
+                   class="inline-block px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 font-medium hover:scale-105 border border-transparent transition-all duration-300">
+                    Đăng ký
+                </a>
+
+            </div>
+        </c:if>
+    </div>
+</header>
+
 
         <!-- Form Register -->
         <div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-pink-100 to-blue-200 pt-10">

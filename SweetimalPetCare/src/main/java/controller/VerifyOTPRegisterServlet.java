@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
-@WebServlet(name = "VerifyOTPServlet", urlPatterns = {"/verifyOTP"})
+@WebServlet(name = "VerifyOTPRegisterServlet", urlPatterns = {"/verifyOTPRegister"})
 public class VerifyOTPRegisterServlet extends HttpServlet {
 
     

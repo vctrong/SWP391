@@ -1,0 +1,45 @@
+/*
+Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/CascadeStyleSheet.css to edit this template
+*/
+/* 
+    Created on : Oct 2, 2025, 10:55:01 AM
+    Author     : Vo Chi Trong - CE191062
+*/
+
+/* Hiệu ứng xuất hiện */
+@keyframes tw-toast-in {
+    from {
+        transform: translateX(100%); /* trượt từ bên phải */
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Hiệu ứng biến mất */
+@keyframes tw-toast-out {
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.tw-toast-enter {
+    animation: tw-toast-in 300ms ease-out;
+}
+
+.tw-toast-leave {
+    animation: tw-toast-out 250ms ease-in;
+    animation-fill-mode: forwards;
+}
+
+/* Nếu người dùng bật reduce motion */
+@media (prefers-reduced-motion: reduce) {
+    .tw-toast-enter,
+    .tw-toast-leave {
+        animation: none !important;
+    }
+}

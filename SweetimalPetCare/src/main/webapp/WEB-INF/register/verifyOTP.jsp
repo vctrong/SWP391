@@ -33,7 +33,7 @@
             <p class="text-sm text-gray-500">Vui lòng nhập mã OTP được gửi tới email của bạn.</p>
         </div>
 
-        <form action="verifyOTP" method="post" class="space-y-4">
+        <form action="${pageContext.request.contextPath}/verifyOTPRegister" method="post" class="space-y-4"> 
             <!-- OTP -->
             <div>
                 <label for="otp" class="block text-gray-700 mb-1">Mã OTP</label>

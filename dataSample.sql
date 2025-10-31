@@ -523,3 +523,28 @@ SELECT 'INV-BKG-1001',
        150000, 0, N'Hóa đơn dịch vụ grooming';
 
 GO
+
+/* ==================== ADDITIONAL SAMPLE SCHEDULES ==================== */
+-- Insert a variety of ScheduleSlot rows for testing UI: OPEN, BOOKED, DONE, CANCELLED
+-- Use staff/vet users created earlier (staff1, staff2, vet1, vet2)
+
+-- OPEN slots (available for booking)
+INSERT INTO ScheduleSlot(booking_id, staff_id, room_name, start_time, end_time, status)
+VALUES (NULL, (SELECT user_id FROM Users WHERE username='staff1'), N'Groom-Avail-1', '2025-10-09 09:00:00.000', '2025-10-09 10:00:00.000', 'OPEN');
+
+INSERT INTO ScheduleSlot(booking_id, staff_id, room_name, start_time, end_time, status)
+VALUES (NULL, (SELECT user_id FROM Users WHERE username='vet2'), N'Clinic-Avail-1', '2025-10-09 14:00:00.000', '2025-10-09 14:30:00.000', 'OPEN');
+
+-- BOOKED slots (already tied to bookings)
+INSERT INTO ScheduleSlot(booking_id, staff_id, room_name, start_time, end_time, status)
+VALUES ((SELECT TOP 1 booking_id FROM Booking WHERE current_status IN ('PENDING','CONFIRMED')), (SELECT user_id FROM Users WHERE username='staff1'), N'Groom-Booked-1', '2025-10-10 09:00:00.000', '2025-10-10 10:00:00.000', 'BOOKED');
+
+-- DONE slots (completed)
+INSERT INTO ScheduleSlot(booking_id, staff_id, room_name, start_time, end_time, status)
+VALUES ((SELECT TOP 1 booking_id FROM Booking WHERE current_status='COMPLETED'), (SELECT user_id FROM Users WHERE username='vet1'), N'Clinic-Done-1', '2025-10-03 10:00:00.000', '2025-10-03 10:30:00.000', 'DONE');
+
+-- CANCELLED slot
+INSERT INTO ScheduleSlot(booking_id, staff_id, room_name, start_time, end_time, status)
+VALUES ((SELECT TOP 1 booking_id FROM Booking WHERE current_status IN ('PENDING','CONFIRMED')), (SELECT user_id FROM Users WHERE username='staff2'), N'Groom-Cancelled-1', '2025-10-11 11:00:00.000', '2025-10-11 12:00:00.000', 'CANCELLED');
+
+GO

@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Try build with Maven Wrapper",
+			"type": "shell",
+			"command": "./mvnw -v",
+			"args": [],
+			"isBackground": false,
+			"group": "build"
+		}
+	]
+}

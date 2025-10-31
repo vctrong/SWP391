@@ -60,4 +60,23 @@ public class DBContext {
         }
         return statement.executeUpdate();
     }
+
+    public int executeInsertAndReturnId(String qr, Object[] params) throws SQLException {
+        PreparedStatement statement = this.getConnection().prepareStatement(qr, PreparedStatement.RETURN_GENERATED_KEYS);
+        if (params != null) {
+            for (int i = 0; i < params.length; i++) {
+                statement.setObject(i + 1, params[i]);
+            }
+        }
+        statement.executeUpdate();
+
+        ResultSet rs = statement.getGeneratedKeys();
+        int id = -1;
+        if (rs.next()) {
+            id = rs.getInt(1);
+        }
+        rs.close();
+        statement.close();
+        return id;
+    }
 }

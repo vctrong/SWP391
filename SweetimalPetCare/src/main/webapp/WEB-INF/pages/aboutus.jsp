@@ -4,11 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <title>Về chúng tôi - PetCare</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-        <link href="assets/css/style.css" rel="stylesheet" >
+        <%@include file="/WEB-INF/include/library.jsp" %>
 
     </head>
     <body class="bg-gray-50 text-gray-800">
