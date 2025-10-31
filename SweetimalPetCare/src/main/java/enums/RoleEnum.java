@@ -10,10 +10,10 @@ package enums;
  */
 public enum RoleEnum {
 
-    ADMIN(1, "Admin", "fa-solid fa-user-tie"),
-    STAFF(4, "Staff", "fa-solid fa-users"),
+    ADMIN(4, "Admin", "fa-solid fa-user-tie"),
+    STAFF(2, "Staff", "fa-solid fa-users"),
     VET(3, "Vet", "fa-solid fa-user-doctor"),
-    CUSTOMER(2, "Customer", "fa-solid fa-user");
+    CUSTOMER(1, "Customer", "fa-solid fa-user");
 
     private int code;
     private String text;
