@@ -2,6 +2,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@include file="/WEB-INF/include/library.jsp" %>
 <!doctype html>
 <html lang="vi">
     <head>
@@ -29,6 +30,7 @@
                 margin-top:4px;
             }
         </style>
+        <!--<script src="${pageContext.request.contextPath}/assets/js/loading.js"></script>-->
     </head>
     <body class="bg-gray-50 font-sans pt-20">
         <%@ include file="/WEB-INF/include/header.jsp" %>
@@ -60,7 +62,7 @@
                             </thead>
                             <tbody>
                                 <c:forEach var="it" items="${cartItems}">
-                                    <tr class="align-top border-b" data-cart-item-id="${it.cartItemId}">
+                                    <tr class="align-top border-b" data-order-item-id="${it.orderItemId}">
                                         <td class="py-4">
                                             <div class="flex items-center gap-4">
                                                 <div>
@@ -99,7 +101,6 @@
                                                                 ${it.variant.attributeText}
                                                             </c:when>
                                                             <c:otherwise>
-                                                                <!-- nếu bạn muốn không hiển gì thì để trống, hoặc hiển text -->
                                                                 <span class="text-gray-500">Không có thuộc tính</span>
                                                             </c:otherwise>
                                                         </c:choose>
@@ -111,16 +112,14 @@
                                         <!-- unit price and small computed display (updates with qty) -->
                                         <td class="py-4" data-unit="${it.unitPrice}">
                                             <div class="unit-price"><fmt:formatNumber value="${it.unitPrice}" type="number" groupingUsed="true"/>₫</div>
-                                            <!--<div class="small-muted per-line-calc">(<span class="calc-qty">${it.quantity}</span> × <span class="calc-unit"><fmt:formatNumber value="${it.unitPrice}" type="number" groupingUsed="true"/></span> = <span class="calc-line"><fmt:formatNumber value="${it.lineTotal}" type="number" groupingUsed="true"/></span>₫)</div>-->
                                         </td>
 
                                         <!-- quantity form -->
                                         <td class="py-4">
-                                            <form method="post" action="${pageContext.request.contextPath}/cart" class="inline-flex items-center" style="gap:.5rem" data-cart-item-id="${it.cartItemId}">
+                                            <form method="post" action="${pageContext.request.contextPath}/cart" class="inline-flex items-center update-qty-form" style="gap:.5rem" data-order-item-id="${it.orderItemId}">
                                                 <input type="hidden" name="action" value="update">
-                                                <input type="hidden" name="cartItemId" value="${it.cartItemId}">
-                                                <input type="number" name="quantity" value="${it.quantity}" min="1" class="qty-input w-20 border rounded px-2 py-1" data-cart-item-id="${it.cartItemId}">
-                                                <!--<button type="submit" class="ml-2 bg-gray-100 px-3 py-1 rounded">Cập nhật</button>-->
+                                                <input type="hidden" name="orderItemId" value="${it.orderItemId}">
+                                                <input type="number" name="quantity" value="${it.quantity}" min="1" class="qty-input w-20 border rounded px-2 py-1" data-order-item-id="${it.orderItemId}">
                                             </form>
                                         </td>
 
@@ -132,7 +131,7 @@
                                         <td class="py-4">
                                             <form method="post" action="${pageContext.request.contextPath}/cart" onsubmit="return confirm('Xác nhận xóa sản phẩm khỏi giỏ?');">
                                                 <input type="hidden" name="action" value="remove">
-                                                <input type="hidden" name="cartItemId" value="${it.cartItemId}">
+                                                <input type="hidden" name="orderItemId" value="${it.orderItemId}">
                                                 <button type="submit" class="bg-red-50 text-red-600 px-3 py-1 rounded">Xóa</button>
                                             </form>
                                         </td>
@@ -154,17 +153,49 @@
                         <span class="muted">Tạm tính</span>
                         <span id="subtotal" class="font-medium"><fmt:formatNumber value="${subtotal}" type="number" groupingUsed="true"/>₫</span>
                     </div>
-                    <div class="flex justify-between mb-2">
-                        <span class="muted">Phí vận chuyển</span>
-                        <span class="font-medium" id="shippingFeeDisplay"><fmt:formatNumber value="${shippingFee}" type="number" groupingUsed="true"/>₫</span>
-                    </div>
+
+                    <!-- Address selector (kept) -->
+                    <c:if test="${not empty addresses}">
+                        <div class="mb-3">
+                            <label for="cartShippingAddress" class="muted block mb-1">Địa chỉ giao hàng</label>
+                            <form id="cartCheckoutForm" method="get" action="${pageContext.request.contextPath}/checkout">
+                                <select id="cartShippingAddress" name="shippingAddressId" class="w-full border rounded px-2 py-2">
+                                    <c:forEach var="addr" items="${addresses}">
+                                        <option value="${addr.addressId}">
+                                            <c:out value="${addr.label != null ? addr.label : ''}"/>
+                                            <c:if test="${not empty addr.recipientName}"> - ${addr.recipientName}</c:if>
+                                            <c:if test="${not empty addr.addressLine}">, ${addr.addressLine}</c:if>
+                                            <c:if test="${not empty addr.ward}">, ${addr.ward}</c:if>
+                                            <c:if test="${not empty addr.district}">, ${addr.district}</c:if>
+                                            <c:if test="${not empty addr.city}">, ${addr.city}</c:if>
+                                            <c:if test="${addr.isDefault}"> (Mặc định)</c:if>
+                                        </option>
+                                    </c:forEach>
+                                </select>
+                            </form>
+                        </div>
+                    </c:if>
+
+                    <c:if test="${empty addresses}">
+                        <div class="mb-3">
+                            <div class="text-gray-600">Bạn chưa có địa chỉ giao hàng.</div>
+                            <a href="${pageContext.request.contextPath}/account/addresses" class="text-blue-600 hover:underline">Thêm địa chỉ</a>
+                        </div>
+                    </c:if>
+
+                    <!-- shipping removed because project does not charge shipping -->
+
                     <div class="border-t mt-3 pt-3 flex justify-between items-center text-lg font-bold">
                         <span>Tổng</span>
-                        <span class="text-red-600" id="grandTotal"><fmt:formatNumber value="${subtotal + (shippingFee != null ? shippingFee : 0)}" type="number" groupingUsed="true"/>₫</span>
+                        <span class="text-red-600" id="grandTotal"><fmt:formatNumber value="${subtotal}" type="number" groupingUsed="true"/>₫</span>
                     </div>
 
-                    <div class="mt-4">
-                        <a href="${pageContext.request.contextPath}/checkout" class="block text-center bg-blue-600 text-white py-2 rounded">Thanh toán</a>
+                    <div class="mt-4 space-y-2">
+                        <!-- Checkout button submits the small GET form above (if addresses exist) so checkout can prefill selected address.
+                             If no addresses exist the button simply navigates to /checkout -->
+                        <button type="button" id="checkoutBtn" class="w-full block bg-blue-600 text-white py-2 rounded">Thanh toán</button>
+
+                        <a href="${pageContext.request.contextPath}/shop" class="block text-center bg-gray-100 text-gray-800 py-2 rounded border">Tiếp tục mua sắm</a>
                     </div>
                 </div>
             </div>
@@ -181,7 +212,7 @@
             }
 
             function recalcTotals() {
-                const rows = document.querySelectorAll('tr[data-cart-item-id]');
+                const rows = document.querySelectorAll('tr[data-order-item-id]');
                 let subtotal = 0;
                 rows.forEach(row => {
                     const unit = Number(row.querySelector('[data-unit]').getAttribute('data-unit')) || 0;
@@ -189,21 +220,11 @@
                     const qty = qtyInput ? Math.max(1, Number(qtyInput.value) || 1) : 1;
                     const lineTotal = unit * qty;
 
-                    // update "calc" small display (Giá column)
-                    const calcQty = row.querySelector('.calc-qty');
-                    const calcUnit = row.querySelector('.calc-unit');
-                    const calcLine = row.querySelector('.calc-line');
                     const unitPriceEl = row.querySelector('.unit-price');
                     const lineEl = row.querySelector('.line-total');
 
                     if (unitPriceEl)
                         unitPriceEl.textContent = formatVND(unit);
-                    if (calcQty)
-                        calcQty.textContent = qty;
-                    if (calcUnit)
-                        calcUnit.textContent = formatVND(unit);
-                    if (calcLine)
-                        calcLine.textContent = formatVND(lineTotal).replace(/\u00A0₫$/, '');
                     if (lineEl)
                         lineEl.textContent = formatVND(lineTotal);
 
@@ -211,18 +232,59 @@
                 });
 
                 document.getElementById('subtotal').textContent = formatVND(subtotal);
-                const shipping = Number('${shippingFee != null ? shippingFee : 0}');
+                // Shipping is zero because project does not charge shipping
+                const shipping = 0;
                 document.getElementById('grandTotal').textContent = formatVND(subtotal + shipping);
             }
 
+            // debounce helper
+            function debounce(fn, ms) {
+                let t;
+                return function(...args) {
+                    clearTimeout(t);
+                    t = setTimeout(() => fn.apply(this, args), ms);
+                };
+            }
+
             document.addEventListener('DOMContentLoaded', function () {
-                // Attach handlers
+                // Attach handlers to update quantity inputs:
                 document.querySelectorAll('.qty-input').forEach(input => {
-                    input.addEventListener('input', () => recalcTotals());
-                    input.addEventListener('blur', () => recalcTotals());
+                    // realtime client recalc
+                    input.addEventListener('input', debounce(() => recalcTotals(), 120));
+                    input.addEventListener('blur', function () {
+                        recalcTotals();
+                        // auto-submit parent form to persist quantity change
+                        const form = this.closest('.update-qty-form');
+                        if (form) {
+                            // submit after short delay to allow blur->change stabilise
+                            setTimeout(() => form.submit(), 150);
+                        }
+                    });
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const form = this.closest('.update-qty-form');
+                            if (form) form.submit();
+                        }
+                    });
                 });
 
-                // calculate on load
+                // Checkout button behavior:
+                const checkoutBtn = document.getElementById('checkoutBtn');
+                if (checkoutBtn) {
+                    checkoutBtn.addEventListener('click', function () {
+                        const form = document.getElementById('cartCheckoutForm');
+                        if (form) {
+                            // if select exists, submit form (GET) to /checkout with shippingAddressId param
+                            form.submit();
+                        } else {
+                            // fallback: go to checkout page
+                            window.location.href = '${pageContext.request.contextPath}/checkout';
+                        }
+                    });
+                }
+
+                // initial totals calculation
                 recalcTotals();
             });
         </script>

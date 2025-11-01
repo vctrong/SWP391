@@ -11,71 +11,113 @@ import java.sql.Timestamp;
  * @author Pham Nguyen Xuan Mai - CE190106
  */
 public class Review {
-
-    private int reviewId;
-    private String targetTypeCode;
-    private int targetId;
-    private int customerId;
-    private int rating;
+    private Integer reviewId;     // PK
+    private Integer serviceId;    // nullable
+    private Integer productId;    // nullable
+    private Integer staffId;      // nullable
+    private Integer customerId;   // not null
+    private Integer rating;       // 1..5
     private String comment;
     private Timestamp createdAt;
 
-    // thêm để hiển thị
+    // optional display name (from Users.full_name) — không phải cột trong Reviews nhưng thuận tiện khi join
     private String userName;
-    private String youtubeUrl;
 
     public Review() {
     }
 
-    public Review(int reviewId, String targetTypeCode, int targetId, int customerId,
-            int rating, String comment, Timestamp createdAt) {
+    // Full constructor (useful when reading from DB)
+    public Review(Integer reviewId, Integer serviceId, Integer productId, Integer staffId,
+                  Integer customerId, Integer rating, String comment, Timestamp createdAt) {
         this.reviewId = reviewId;
-        this.targetTypeCode = targetTypeCode;
-        this.targetId = targetId;
+        this.serviceId = serviceId;
+        this.productId = productId;
+        this.staffId = staffId;
         this.customerId = customerId;
         this.rating = rating;
         this.comment = comment;
         this.createdAt = createdAt;
     }
 
-    // getters & setters
-    public int getReviewId() {
+    // Convenience constructor for creating a new product review
+    public Review(Integer productId, Integer customerId, Integer rating, String comment) {
+        this.productId = productId;
+        this.customerId = customerId;
+        this.rating = rating;
+        this.comment = comment;
+    }
+
+    // getters / setters
+    public Integer getReviewId() {
         return reviewId;
     }
 
-    public int getTargetId() {
-        return targetId;
+    public void setReviewId(Integer reviewId) {
+        this.reviewId = reviewId;
     }
 
-    public int getCustomerId() {
+    public Integer getServiceId() {
+        return serviceId;
+    }
+
+    public void setServiceId(Integer serviceId) {
+        this.serviceId = serviceId;
+    }
+
+    public Integer getProductId() {
+        return productId;
+    }
+
+    public void setProductId(Integer productId) {
+        this.productId = productId;
+    }
+
+    public Integer getStaffId() {
+        return staffId;
+    }
+
+    public void setStaffId(Integer staffId) {
+        this.staffId = staffId;
+    }
+
+    public Integer getCustomerId() {
         return customerId;
     }
 
-    public int getRating() {
+    public void setCustomerId(Integer customerId) {
+        this.customerId = customerId;
+    }
+
+    public Integer getRating() {
         return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
     }
 
     public String getComment() {
         return comment;
     }
 
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
     public Timestamp getCreatedAt() {
         return createdAt;
     }
 
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    // optional display name
     public String getUserName() {
         return userName;
     }
 
     public void setUserName(String userName) {
         this.userName = userName;
-    }
-
-    public String getYoutubeUrl() {
-        return youtubeUrl;
-    }
-
-    public void setYoutubeUrl(String youtubeUrl) {
-        this.youtubeUrl = youtubeUrl;
     }
 }

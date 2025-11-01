@@ -4,30 +4,41 @@
  */
 package model;
 
+import java.util.Date;
+
 /**
  *
  * @author Pham Nguyen Xuan Mai - CE190106
  */
 public class UserAddress {
-    private int addressId;
+
+    private long addressId;
+    private long userId;
     private String label;
     private String recipientName;
     private String phone;
-    private String addressLine;
+    private String addressLine1; 
     private String ward;
     private String district;
     private String city;
-    private String province;
-    private int isDefault;
+    private boolean isDefault;
+    private Date createdAt;
 
-    public UserAddress() {}
-
-    public int getAddressId() {
+    // getters / setters (JSP EL dùng getXxx)
+    public long getAddressId() {
         return addressId;
     }
 
-    public void setAddressId(int addressId) {
+    public void setAddressId(long addressId) {
         this.addressId = addressId;
+    }
+
+    public long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(long userId) {
+        this.userId = userId;
     }
 
     public String getLabel() {
@@ -55,11 +66,11 @@ public class UserAddress {
     }
 
     public String getAddressLine() {
-        return addressLine;
+        return addressLine1;
     }
 
-    public void setAddressLine(String addressLine) {
-        this.addressLine = addressLine;
+    public void setAddressLine(String addressLine1) {
+        this.addressLine1 = addressLine1;
     }
 
     public String getWard() {
@@ -86,19 +97,19 @@ public class UserAddress {
         this.city = city;
     }
 
-    public String getProvince() {
-        return province;
-    }
-
-    public void setProvince(String province) {
-        this.province = province;
-    }
-
-    public int getIsDefault() {
+    public boolean getIsDefault() {
         return isDefault;
+    } // JSP checked with addr.isDefault
+
+    public void setIsDefault(boolean isDefault) {
+        this.isDefault = isDefault;
     }
 
-    public void setIsDefault(int isDefault) {
-        this.isDefault = isDefault;
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
     }
 }

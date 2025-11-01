@@ -1,9 +1,10 @@
 package controller;
 
-import daos.CartDAO;
 import daos.UserAddressDAO;
 import daos.OrderDAO;
+import daos.OrderCartDAO;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
@@ -11,14 +12,13 @@ import java.util.logging.Logger;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import model.CartItem;
+
 import model.UserAddress;
 import model.Users;
+import model.OrderItem;
 
 /**
- * checkoutServlet - safer error handling: compute totals server-side and forward to JSP.
- * - Does NOT write to response before forwarding.
- * - Logs errors and avoids forwarding after response is committed.
+ * checkoutServlet - updated to redirect to different pages by payment method.
  */
 @WebServlet(name = "checkoutServlet", urlPatterns = {"/checkout"})
 public class checkoutServlet extends HttpServlet {
@@ -85,6 +85,46 @@ public class checkoutServlet extends HttpServlet {
         return null;
     }
 
+    // small reflection helpers to read common bean property names safely
+    private Long readLongProperty(Object obj, String... names) {
+        if (obj == null) return null;
+        for (String n : names) {
+            try {
+                Method m = obj.getClass().getMethod(n);
+                Object v = m.invoke(obj);
+                if (v instanceof Number) return ((Number) v).longValue();
+                if (v instanceof String) {
+                    try { return Long.parseLong((String) v); } catch (NumberFormatException ex) {}
+                }
+            } catch (NoSuchMethodException ignore) {
+            } catch (Exception ex) {
+                LOG.log(Level.FINE, "readLongProperty error for " + n, ex);
+            }
+        }
+        return null;
+    }
+
+    private Boolean readBooleanProperty(Object obj, String... names) {
+        if (obj == null) return null;
+        for (String n : names) {
+            try {
+                Method m = obj.getClass().getMethod(n);
+                Object v = m.invoke(obj);
+                if (v instanceof Boolean) return (Boolean) v;
+                if (v instanceof Number) return ((Number) v).intValue() != 0;
+                if (v instanceof String) {
+                    String s = ((String) v).trim().toLowerCase();
+                    if ("1".equals(s) || "true".equals(s) || "yes".equals(s)) return true;
+                    if ("0".equals(s) || "false".equals(s) || "no".equals(s)) return false;
+                }
+            } catch (NoSuchMethodException ignore) {
+            } catch (Exception ex) {
+                LOG.log(Level.FINE, "readBooleanProperty error for " + n, ex);
+            }
+        }
+        return null;
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -99,34 +139,20 @@ public class checkoutServlet extends HttpServlet {
 
         try {
             UserAddressDAO addrDao = new UserAddressDAO();
-            CartDAO cartDao = new CartDAO();
+            OrderCartDAO cartDao = new OrderCartDAO();
 
             List<UserAddress> addresses = addrDao.getAddressesByUser(userId);
-            List<CartItem> cartItems = cartDao.getCartItemsByUser(userId);
+            List<OrderItem> cartItems = cartDao.listCartItemsByUser(userId.longValue());
 
             double subtotal = 0.0;
             if (cartItems != null) {
-                for (CartItem it : cartItems) {
+                for (OrderItem it : cartItems) {
                     try {
                         subtotal += it.getLineTotal();
                     } catch (Throwable t) {
-                        LOG.log(Level.WARNING, "Failed to compute line total for cart item", t);
+                        LOG.log(Level.WARNING, "Failed to compute line total for order item", t);
                     }
                 }
-            }
-
-            // shippingFee may come from request param (when returning from failed place order),
-            // otherwise use default 30000
-            double shippingFee = 30000.0;
-            String shippingFeeParam = request.getParameter("shippingFee");
-            if (shippingFeeParam == null) {
-                Object sfAttr = request.getAttribute("shippingFee");
-                if (sfAttr instanceof Number) shippingFee = ((Number) sfAttr).doubleValue();
-                else if (sfAttr instanceof String) {
-                    try { shippingFee = Double.parseDouble((String) sfAttr); } catch (Exception ignore) {}
-                }
-            } else {
-                try { shippingFee = Double.parseDouble(shippingFeeParam); } catch (Exception ignore) {}
             }
 
             double tax = 0.0;
@@ -136,13 +162,13 @@ public class checkoutServlet extends HttpServlet {
                 try { tax = Double.parseDouble((String) taxAttr); } catch (Exception ignore) {}
             }
 
-            double total = subtotal + shippingFee + tax;
+            // shipping is not charged -> do not expose shippingFee
+            double total = subtotal + tax;
 
             // set attributes for JSP
             request.setAttribute("addresses", addresses);
             request.setAttribute("cartItems", cartItems);
             request.setAttribute("subtotal", subtotal);
-            request.setAttribute("shippingFee", shippingFee);
             request.setAttribute("tax", tax);
             request.setAttribute("total", total);
 
@@ -182,28 +208,76 @@ public class checkoutServlet extends HttpServlet {
 
         String shippingAddressIdParam = request.getParameter("shippingAddressId");
         String paymentMethod = request.getParameter("paymentMethod");
-        String shippingFeeParam = request.getParameter("shippingFee");
-        int shippingAddressId = 0;
-        double shippingFee = 30000.0;
+        long shippingAddressId = 0L;
+
+        UserAddressDAO addrDao = new UserAddressDAO();
+
+        // determine shippingAddressId:
+        if (shippingAddressIdParam != null && !shippingAddressIdParam.isEmpty()) {
+            try {
+                shippingAddressId = Long.parseLong(shippingAddressIdParam);
+            } catch (NumberFormatException ex) {
+                LOG.log(Level.WARNING, "Invalid shippingAddressId param: " + shippingAddressIdParam, ex);
+            }
+        }
 
         try {
-            if (shippingAddressIdParam != null && !shippingAddressIdParam.isEmpty()) {
-                shippingAddressId = Integer.parseInt(shippingAddressIdParam);
+            // if client didn't provide an address, try to pick the default (or first) address
+            if (shippingAddressId == 0L) {
+                List<UserAddress> addresses = addrDao.getAddressesByUser(userId);
+                if (addresses != null && !addresses.isEmpty()) {
+                    // try to find default
+                    Long found = null;
+                    for (UserAddress a : addresses) {
+                        Boolean isDef = readBooleanProperty(a, "isDefault", "getIsDefault", "getDefault", "is_default", "getIs_default");
+                        if (isDef != null && isDef) {
+                            found = readLongProperty(a, "getAddressId", "getAddress_id", "getId", "addressId", "address_id");
+                            if (found != null) break;
+                        }
+                    }
+                    if (found == null) {
+                        // fallback to first address id
+                        found = readLongProperty(addresses.get(0), "getAddressId", "getAddress_id", "getId", "addressId", "address_id");
+                    }
+                    if (found != null) shippingAddressId = found;
+                }
             }
-            if (shippingFeeParam != null && !shippingFeeParam.isEmpty()) {
-                shippingFee = Double.parseDouble(shippingFeeParam);
-            }
-        } catch (NumberFormatException ignore) {}
 
-        OrderDAO orderDao = new OrderDAO();
-        try {
-            int orderId = orderDao.placeOrderFromCart(userId, shippingAddressId, paymentMethod, shippingFee);
-            response.sendRedirect(request.getContextPath() + "/order-confirmation?orderId=" + orderId);
+            // if still no address chosen, require user to add/select address
+            if (shippingAddressId == 0L) {
+                request.setAttribute("checkoutError", "Vui lòng thêm hoặc chọn địa chỉ giao hàng trước khi đặt hàng.");
+                doGet(request, response); // reload page with error message
+                return;
+            }
+
+            OrderDAO orderDao = new OrderDAO();
+
+            // Create/finalize order (OrderDAO will validate & decrement stock)
+            long orderId = orderDao.finalizeDraftOrder(userId.longValue(), shippingAddressId, paymentMethod);
+
+            // Branch by payment method:
+            if (paymentMethod != null && "EWALLET".equalsIgnoreCase(paymentMethod.trim())) {
+                // For e-wallet: show QR code page. Build a payment URL for QR (replace with real payment link in production)
+                String paymentUrl = request.getRequestURL().toString().replace(request.getRequestURI(), request.getContextPath()) 
+                        + "/pay?orderId=" + orderId; // example payment endpoint
+                String qrUrl = "https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=" 
+                        + java.net.URLEncoder.encode(paymentUrl, "UTF-8");
+
+                request.setAttribute("orderId", orderId);
+                request.setAttribute("paymentUrl", paymentUrl);
+                request.setAttribute("qrUrl", qrUrl);
+                request.getRequestDispatcher("/WEB-INF/toast/paymentQr.jsp").forward(request, response);
+                return;
+            } else {
+                // Default / CASH: show simple confirmation page
+                request.setAttribute("orderId", orderId);
+                request.getRequestDispatcher("/WEB-INF/toast/orderConfirmation.jsp").forward(request, response);
+                return;
+            }
         } catch (SQLException sqe) {
             LOG.log(Level.SEVERE, "Order creation failed", sqe);
             request.setAttribute("checkoutError", "Không thể tạo đơn hàng: " + sqe.getMessage());
             if (!response.isCommitted()) {
-                // reload page showing error
                 try {
                     doGet(request, response);
                 } catch (Exception e) {

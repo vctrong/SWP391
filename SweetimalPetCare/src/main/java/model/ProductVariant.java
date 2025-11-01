@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.sql.Timestamp;
@@ -17,9 +13,7 @@ public class ProductVariant {
     private String sku;
     private String attributeJson;
     private double price;
-    private Double cost;
     private int stockQuantity;
-    private int soldQuantity;
     private String imageUrl;
     private boolean isActive;
     private Timestamp createdAt;
@@ -29,16 +23,13 @@ public class ProductVariant {
     }
 
     public ProductVariant(long variantId, long productId, String sku, String attributeJson,
-            double price, Double cost, int stockQuantity, int soldQuantity,
-            String imageUrl, boolean isActive, Timestamp createdAt) {
+            double price, int stockQuantity, String imageUrl, boolean isActive, Timestamp createdAt) {
         this.variantId = variantId;
         this.productId = productId;
         this.sku = sku;
         this.attributeJson = attributeJson;
         this.price = price;
-        this.cost = cost;
         this.stockQuantity = stockQuantity;
-        this.soldQuantity = soldQuantity;
         this.imageUrl = imageUrl;
         this.isActive = isActive;
         this.createdAt = createdAt;
@@ -85,28 +76,12 @@ public class ProductVariant {
         this.price = price;
     }
 
-    public Double getCost() {
-        return cost;
-    }
-
-    public void setCost(Double cost) {
-        this.cost = cost;
-    }
-
     public int getStockQuantity() {
         return stockQuantity;
     }
 
     public void setStockQuantity(int stockQuantity) {
         this.stockQuantity = stockQuantity;
-    }
-
-    public int getSoldQuantity() {
-        return soldQuantity;
-    }
-
-    public void setSoldQuantity(int soldQuantity) {
-        this.soldQuantity = soldQuantity;
     }
 
     public String getImageUrl() {

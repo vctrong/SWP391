@@ -48,7 +48,7 @@
                hover:text-blue-600 hover:border-blue-400
                ${fn:contains(current, '/services') ? 'active' : ''}">Dịch vụ</a>
 
-            <a href="#shop"
+            <a href="${pageContext.request.contextPath}/shop"
                class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                hover:text-blue-600 hover:border-blue-400
                ${fn:contains(current, '/shop') ? 'active' : ''}">Cửa hàng</a>

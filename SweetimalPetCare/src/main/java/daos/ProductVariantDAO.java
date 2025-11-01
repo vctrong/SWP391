@@ -21,8 +21,8 @@ public class ProductVariantDAO extends DBContext {
     public List<ProductVariant> getVariantsByProductId(long productId) {
         List<ProductVariant> list = new ArrayList<>();
         try {
-            String sql = "SELECT variant_id, product_id, sku, attribute_json, price, cost, "
-                    + "stock_quantity, sold_quantity, image_url, is_active, created_at "
+            String sql = "SELECT variant_id, product_id, sku, attribute_json, price, "
+                    + "stock_quantity, image_url, is_active, created_at "
                     + "FROM ProductVariant WHERE product_id = ?";
             PreparedStatement ps = getConnection().prepareStatement(sql);
             ps.setLong(1, productId);
@@ -34,6 +34,7 @@ public class ProductVariantDAO extends DBContext {
             rs.close();
             ps.close();
         } catch (SQLException ex) {
+            ex.printStackTrace();
             Logger.getLogger(ProductVariantDAO.class.getName()).log(Level.SEVERE, null, ex);
         }
         return list;
@@ -42,8 +43,8 @@ public class ProductVariantDAO extends DBContext {
     // Lấy 1 variant "chính" (ví dụ TOP 1 theo created_at hoặc theo is_active)
     public ProductVariant getMainVariantByProductId(long productId) {
         try {
-            String sql = "SELECT TOP 1 variant_id, product_id, sku, attribute_json, price, cost, "
-                    + "stock_quantity, sold_quantity, image_url, is_active, created_at "
+            String sql = "SELECT TOP 1 variant_id, product_id, sku, attribute_json, price, "
+                    + "stock_quantity, image_url, is_active, created_at "
                     + "FROM ProductVariant "
                     + "WHERE product_id = ? AND is_active = 1 "
                     + "ORDER BY created_at ASC";
@@ -59,6 +60,7 @@ public class ProductVariantDAO extends DBContext {
             rs.close();
             ps.close();
         } catch (SQLException ex) {
+            ex.printStackTrace();
             Logger.getLogger(ProductVariantDAO.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
@@ -80,17 +82,9 @@ public class ProductVariantDAO extends DBContext {
             v.setPrice(0.0);
         }
 
-        // Lấy cost (có thể NULL) -> model dùng Double
-        BigDecimal costBd = rs.getBigDecimal("cost");
-        if (costBd != null) {
-            v.setCost(costBd.doubleValue());
-        } else {
-            v.setCost(null);
-        }
-
         // Nếu cột có thể NULL và bạn muốn phân biệt NULL với 0, bạn có thể kiểm tra rs.wasNull() sau getInt.
         v.setStockQuantity(rs.getInt("stock_quantity"));
-        v.setSoldQuantity(rs.getInt("sold_quantity"));
+
         v.setImageUrl(rs.getString("image_url"));
         v.setActive(rs.getBoolean("is_active"));
         v.setCreatedAt(rs.getTimestamp("created_at"));
