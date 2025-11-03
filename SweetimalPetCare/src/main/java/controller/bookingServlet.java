@@ -138,7 +138,7 @@ public class bookingServlet extends HttpServlet {
             daos.ScheduleDAO scheduleDAO = new daos.ScheduleDAO();
             model.ScheduleSlot slot = scheduleDAO.getSlotById(slotId);
             if (slot == null) {
-                request.setAttribute("errorMessage", "Khung giờ đã được đặt, vui lòng chọn khung giờ khác");
+                request.setAttribute("errorMessage", "Khung giờ không tồn tại, vui lòng chọn khung giờ khác");
                 doGet(request, response);
                 return;
             }
