@@ -29,8 +29,19 @@ public class MarkNoShowServlet extends HttpServlet {
             return;
         }
 
+        String bookingIdParam = request.getParameter("bookingId");
+        if (bookingIdParam == null || bookingIdParam.trim().isEmpty()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing bookingId parameter.");
+            return;
+        }
+        int bookingId;
         try {
-            int bookingId = Integer.parseInt(request.getParameter("bookingId"));
+            bookingId = Integer.parseInt(bookingIdParam.trim());
+        } catch (NumberFormatException ex) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid bookingId parameter.");
+            return;
+        }
+        try {
             daos.BookingDAO dao = new BookingDAO();
             dao.updateBookingStatus(bookingId, "NO_SHOW", (int) u.getId());
             response.sendRedirect(request.getContextPath() + "/dashboard?noShowMarked=1");
