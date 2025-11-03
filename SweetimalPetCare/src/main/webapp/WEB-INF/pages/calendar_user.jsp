@@ -21,6 +21,24 @@
             <div class="w-full max-w-2xl px-4">
                 <h2 class="text-2xl font-bold text-blue-700 mb-6 text-center">Đặt lịch dịch vụ cho thú cưng</h2>
 
+                <!-- Popup for booking success -->
+                <c:if test="${not empty bookingSuccess}">
+                  <div id="bookingSuccessPopup" class="fixed inset-0 flex items-center justify-center z-50">
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded shadow-lg">
+                      <strong>Đặt lịch thành công!</strong>
+                      <button onclick="document.getElementById('bookingSuccessPopup').style.display='none'" class="ml-4 text-green-900 font-bold">Đóng</button>
+                    </div>
+                  </div>
+                  <script>setTimeout(function(){ document.getElementById('bookingSuccessPopup').style.display='none'; }, 3000);</script>
+                </c:if>
+
+                <!-- Error message display -->
+                <c:if test="${not empty errorMessage}">
+                  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
+                    ${errorMessage}
+                  </div>
+                </c:if>
+
                 <form action="booking" method="post" class="bg-white shadow rounded-lg p-6 space-y-5 w-full mx-auto max-w-xl">
                 <!-- Chọn thú cưng -->
                 <div>

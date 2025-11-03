@@ -138,41 +138,62 @@ public class bookingServlet extends HttpServlet {
             daos.ScheduleDAO scheduleDAO = new daos.ScheduleDAO();
             model.ScheduleSlot slot = scheduleDAO.getSlotById(slotId);
             if (slot == null) {
-                throw new ServletException("Selected slot not found");
+                request.setAttribute("errorMessage", "Khung giờ không tồn tại, vui lòng chọn khung giờ khác");
+                doGet(request, response);
+                return;
             }
-
-            // map slot start timestamp to requested_date and requested_start
-            java.sql.Timestamp ts = slot.getStartTime();
-            java.time.LocalDate requestedDate = ts.toLocalDateTime().toLocalDate();
-            java.time.LocalTime requestedStart = ts.toLocalDateTime().toLocalTime();
+            if (slot.getBookingId() != null) {
+                request.setAttribute("errorMessage", "Khung giờ đã được đặt, vui lòng chọn khung giờ khác");
+                doGet(request, response);
+                return;
+            }
+            // Validate slot is in the future
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            java.time.LocalDateTime slotStart = slot.getStartTime().toLocalDateTime();
+            if (slotStart.isBefore(now)) {
+                request.setAttribute("errorMessage", "Không thể đặt lịch cho thời gian trong quá khứ");
+                doGet(request, response);
+                return;
+            }
+            // Validate slot is open and has capacity (status = 'OPEN')
+            if (!"OPEN".equalsIgnoreCase(slot.getStatus())) {
+                request.setAttribute("errorMessage", "Không có slot/phòng/nhân sự phù hợp");
+                doGet(request, response);
+                return;
+            }
 
             // 2) determine price from service
             daos.ServiceDAO serviceDAO = new daos.ServiceDAO();
-            model.Service svc = null;
-            for (model.Service s : serviceDAO.getAllServices()) {
-                if (s.getId() == serviceId) {
-                    svc = s;
-                    break;
-                }
+            model.Service svc = serviceDAO.getServiceById(serviceId);
+            if (svc == null || svc.getPrice() == null) {
+                request.setAttribute("errorMessage", "Dịch vụ hiện không khả dụng");
+                doGet(request, response);
+                return;
             }
-
-            java.math.BigDecimal totalPrice = svc != null ? svc.getPrice() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal totalPrice = svc.getPrice();
 
             // 3) create booking via BookingDAO
             daos.BookingDAO bookingDAO = new daos.BookingDAO();
             int bookingId = bookingDAO.createBooking((int) customerId, petId, serviceId, null,
-                    requestedDate, requestedStart, notes, totalPrice);
+                    slotStart.toLocalDate(),
+                    slotStart.toLocalTime(),
+                    notes, totalPrice);
 
             if (bookingId <= 0) {
-                throw new ServletException("Failed to create booking");
+                request.setAttribute("errorMessage", "Đặt lịch thất bại, vui lòng thử lại");
+                doGet(request, response);
+                return;
             }
 
             // 4) assign booking to slot
             scheduleDAO.assignBookingToSlot(slotId, bookingId);
 
-            response.sendRedirect(request.getContextPath() + "/booking?success=1");
+            // Set success flag for popup
+            request.setAttribute("bookingSuccess", true);
+            doGet(request, response);
         } catch (Exception e) {
-            throw new ServletException("Booking failed", e);
+            request.setAttribute("errorMessage", "Đặt lịch thất bại: " + e.getMessage());
+            doGet(request, response);
         }
     }
 
