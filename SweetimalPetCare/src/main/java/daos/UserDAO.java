@@ -9,7 +9,6 @@ import java.sql.SQLException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import model.Users;
@@ -19,6 +18,23 @@ import model.Users;
  * @author Vo Chi Trong - CE191062
  */
 public class UserDAO extends db.DBContext {
+
+    /**
+     * Return true if the user has any Booking rows referencing them.
+     * This is used to prevent hard delete when related booking data exists.
+     */
+    public boolean hasBookings(long userId) throws SQLException {
+        String sql = "SELECT COUNT(*) AS c FROM Booking WHERE customer_id = ?";
+        try (java.sql.PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("c") > 0;
+                }
+            }
+        }
+        return false;
+    }
 
     public void updateUserStatus(long userId, boolean isActive) throws SQLException {
         String sql = "UPDATE Users SET is_active=? WHERE user_id=?";

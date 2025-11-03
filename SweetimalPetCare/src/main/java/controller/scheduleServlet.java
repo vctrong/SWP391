@@ -71,7 +71,10 @@ public class scheduleServlet extends HttpServlet {
             response.sendRedirect("login");
             return;
         }
-
+        if (user.getRoleEnum() != enums.RoleEnum.ADMIN) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ admin mới được truy cập trang này.");
+            return;
+        }
         try {
             List<ScheduleSlot> slots = scheduleDAO.getSlotsByStaff(user.getId());
             request.setAttribute("slots", slots);
@@ -93,12 +96,14 @@ public class scheduleServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         Users user = (Users) request.getSession().getAttribute("user");
-
+        if (user == null || user.getRoleEnum() != enums.RoleEnum.ADMIN) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ admin mới được thêm ca làm việc.");
+            return;
+        }
         String room = request.getParameter("room");
         LocalDate date = LocalDate.parse(request.getParameter("date"));
         LocalTime start = LocalTime.parse(request.getParameter("start"));
         LocalTime end = LocalTime.parse(request.getParameter("end"));
-
         try {
             scheduleDAO.addSlot(user.getId(), room, LocalDateTime.of(date, start), LocalDateTime.of(date, end));
             response.sendRedirect("schedule");

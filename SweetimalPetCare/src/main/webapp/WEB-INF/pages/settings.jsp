@@ -24,11 +24,25 @@
                         class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
                     Vô hiệu hóa tài khoản
                 </button>
-                <button name="action" value="delete"
-                        onclick="return confirm('Bạn có chắc chắn muốn xóa tài khoản này vĩnh viễn?')"
-                        class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                    Xóa tài khoản
-                </button>
+
+                <%-- Show delete option only when user has no bookings --%>
+                <% Boolean hasBooking = (Boolean) request.getAttribute("hasBooking");
+                   String error = (String) request.getAttribute("error");
+                   if (error != null) { %>
+                    <div class="mt-4 p-3 bg-red-100 text-red-800 rounded"> <%= error %> </div>
+                <% } %>
+
+                <% if (hasBooking == null || !hasBooking) { %>
+                    <button name="action" value="delete"
+                            onclick="return confirm('Bạn có chắc chắn muốn xóa tài khoản này vĩnh viễn?')"
+                            class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                        Xóa tài khoản
+                    </button>
+                <% } else { %>
+                    <div class="mt-4 p-3 bg-yellow-50 text-gray-800 rounded">
+                        Bạn không thể xóa tài khoản vì bạn đã có lịch đặt trước. Bạn chỉ có thể vô hiệu hóa tài khoản.
+                    </div>
+                <% } %>
             </form>
         </section>
         <!-- Footer -->
