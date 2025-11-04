@@ -2,10 +2,8 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
  */
-package controller;
+package controller.admin;
 
-import daos.AdminDashboardDAO;
-import enums.RoleEnum;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -13,15 +11,13 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import model.Users;
 
 /**
  *
- * @author Lim Thế Toàn - CE190616
+ * @author Vo Chi Trong - CE191062
  */
-@WebServlet(name = "adminDashboardServlet", urlPatterns = {"/dashboard"})
-public class adminDashboardServlet extends HttpServlet {
+@WebServlet(name = "orderAdminServlet", urlPatterns = {"/admin/order"})
+public class orderServlet extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -40,16 +36,15 @@ public class adminDashboardServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet adminDashboardServlet</title>");
+            out.println("<title>Servlet orderServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet adminDashboardServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet orderServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
      *
@@ -61,33 +56,7 @@ public class adminDashboardServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
-        }
-
-        Users user = (Users) session.getAttribute("user");
-        if (user.getRoleEnum() != RoleEnum.ADMIN) {
-            request.setAttribute("accessDenied", true);
-            request.getRequestDispatcher("WEB-INF/admin/dashboard.jsp").forward(request, response);
-            return;
-        }
-
-        AdminDashboardDAO dao = new AdminDashboardDAO();
-        try {
-            request.setAttribute("userCount", dao.getUserCount());
-            request.setAttribute("orderCount", dao.getOrderCount());
-            request.setAttribute("bookingCount", dao.getBookingCount());
-            request.setAttribute("productCount", dao.getProductCount());
-            request.setAttribute("recentActions", dao.getRecentAuditLogs());
-            // recent bookings for admin to review
-            request.setAttribute("recentBookings", dao.getRecentBookingsForAdmin(50));
-        } catch (Exception e) {
-            request.setAttribute("error", "Database error: " + e.getMessage());
-        }
-
-        request.getRequestDispatcher("WEB-INF/admin/dashboard.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/admin/orders.jsp").forward(request, response);
     }
 
     /**
