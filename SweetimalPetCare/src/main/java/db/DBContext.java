@@ -61,7 +61,7 @@ public class DBContext {
         return statement.executeUpdate();
     }
 
-    public int executeInsertAndReturnId(String qr, Object[] params) throws SQLException {
+    public long executeInsertAndReturnId(String qr, Object[] params) throws SQLException {
         PreparedStatement statement = this.getConnection().prepareStatement(qr, PreparedStatement.RETURN_GENERATED_KEYS);
         if (params != null) {
             for (int i = 0; i < params.length; i++) {
@@ -71,12 +71,13 @@ public class DBContext {
         statement.executeUpdate();
 
         ResultSet rs = statement.getGeneratedKeys();
-        int id = -1;
+        long id = -1L;
         if (rs.next()) {
-            id = rs.getInt(1);
+            id = rs.getLong(1);
         }
         rs.close();
         statement.close();
         return id;
     }
+    
 }
