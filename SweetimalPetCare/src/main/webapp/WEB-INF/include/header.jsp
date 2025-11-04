@@ -71,7 +71,7 @@
                           <a href="${pageContext.request.contextPath}/contacts"
                               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                               hover:text-blue-600 hover:border-blue-400
-                              ${fn:contains(current, '/Contacts') ? 'active' : ''}">Liên hệ</a>
+                              ${fn:contains(current, '/contacts') ? 'active' : ''}">Liên hệ</a>
 
                           <a href="${pageContext.request.contextPath}/aboutUs"
                               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
