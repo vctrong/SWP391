@@ -36,47 +36,64 @@
             </a>
         </div>
 
-        <!-- Nav Links -->
-        <nav class="hidden md:flex items-center space-x-2 text-gray-700 font-medium">
-            <a href="${pageContext.request.contextPath}/home"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
-               hover:text-blue-600 hover:border-blue-400
-               ${fn:contains(current, '/home') ? 'active' : ''}">Trang chủ</a>
+          <!-- Nav Links -->
+          <nav class="hidden md:flex items-center space-x-2 text-gray-700 font-medium">
+                <c:choose>
+                    <%-- If user is admin (role == 4) show only Home + Dashboard --%>
+                     <c:when test="${not empty user and user.role == 4}">
+                          <a href="${pageContext.request.contextPath}/home"
+                              class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                              hover:text-blue-600 hover:border-blue-400
+                              ${fn:contains(current, '/home') ? 'active' : ''}">Trang chủ</a>
 
-            <a href="${pageContext.request.contextPath}/services"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
-               hover:text-blue-600 hover:border-blue-400
-               ${fn:contains(current, '/services') ? 'active' : ''}">Dịch vụ</a>
+                          <a href="${pageContext.request.contextPath}/dashboard"
+                              class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                              hover:text-blue-600 hover:border-blue-400
+                              ${fn:contains(current, '/dashboard') ? 'active' : ''}">Dashboard</a>
+                     </c:when>
+                    <%-- Default navbar for non-admin users / guests --%>
+                     <c:otherwise>
+                          <a href="${pageContext.request.contextPath}/home"
+                              class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                              hover:text-blue-600 hover:border-blue-400
+                              ${fn:contains(current, '/home') ? 'active' : ''}">Trang chủ</a>
 
-            <a href="#shop"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
-               hover:text-blue-600 hover:border-blue-400
-               ${fn:contains(current, '/shop') ? 'active' : ''}">Cửa hàng</a>
+                          <a href="${pageContext.request.contextPath}/services"
+                              class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                              hover:text-blue-600 hover:border-blue-400
+                              ${fn:contains(current, '/services') ? 'active' : ''}">Dịch vụ</a>
 
-            <a href="${pageContext.request.contextPath}/contacts"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
-               hover:text-blue-600 hover:border-blue-400
-               ${fn:contains(current, '/Contacts') ? 'active' : ''}">Liên hệ</a>
+                          <a href="#shop"
+                              class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                              hover:text-blue-600 hover:border-blue-400
+                              ${fn:contains(current, '/shop') ? 'active' : ''}">Cửa hàng</a>
 
-            <a href="${pageContext.request.contextPath}/aboutUs"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
-               hover:text-blue-600 hover:border-blue-400
-               ${fn:contains(current, '/aboutus') ? 'active' : ''}">Về chúng tôi</a>
-               
-               <a href="${pageContext.request.contextPath}/news"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
-               hover:text-blue-600 hover:border-blue-400
-               ${fn:contains(current, '/news') ? 'active' : ''}">Tin tức</a>
+                          <a href="${pageContext.request.contextPath}/contacts"
+                              class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                              hover:text-blue-600 hover:border-blue-400
+                              ${fn:contains(current, '/Contacts') ? 'active' : ''}">Liên hệ</a>
 
-            <c:if test="${not empty user}">
-                <a href="${pageContext.request.contextPath}/booking-history"
-                   class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
-                   hover:text-blue-600 hover:border-blue-400
-                   ${fn:contains(current, '/bookingHistory') ? 'active' : ''}">
-                    Lịch sử đặt lịch
-                </a>
-            </c:if>
-        </nav>
+                          <a href="${pageContext.request.contextPath}/aboutUs"
+                              class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                              hover:text-blue-600 hover:border-blue-400
+                              ${fn:contains(current, '/aboutus') ? 'active' : ''}">Về chúng tôi</a>
+                       
+                              <a href="${pageContext.request.contextPath}/news"
+                              class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                              hover:text-blue-600 hover:border-blue-400
+                              ${fn:contains(current, '/news') ? 'active' : ''}">Tin tức</a>
+
+                          <c:if test="${not empty user}">
+                                <a href="${pageContext.request.contextPath}/booking-history"
+                                    class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                                    hover:text-blue-600 hover:border-blue-400
+                                    ${fn:contains(current, '/bookingHistory') ? 'active' : ''}">
+                                     Lịch sử đặt lịch
+                                </a>
+                          </c:if>
+                     </c:otherwise>
+                </c:choose>
+          </nav>
 
         <!-- User / Auth Buttons -->
         <c:if test="${not empty user}">
