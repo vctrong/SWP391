@@ -78,7 +78,7 @@
                               hover:text-blue-600 hover:border-blue-400
                               ${fn:contains(current, '/aboutus') ? 'active' : ''}">Về chúng tôi</a>
                        
-                              <a href="${pageContext.request.contextPath}/news"
+                          <a href="${pageContext.request.contextPath}/news"
                               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                               hover:text-blue-600 hover:border-blue-400
                               ${fn:contains(current, '/news') ? 'active' : ''}">Tin tức</a>
