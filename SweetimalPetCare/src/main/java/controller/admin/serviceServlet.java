@@ -2,9 +2,9 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
  */
-package controller;
+package controller.admin;
 
-import daos.LoginDAO;
+import daos.admin.ServiceDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -12,15 +12,17 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import model.Users;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import model.service.service;
+import model.service.serviceCate;
 
 /**
  *
  * @author Vo Chi Trong - CE191062
  */
-@WebServlet(name = "loginServlet", urlPatterns = {"/login"})
-public class loginServlet extends HttpServlet {
+@WebServlet(name = "serviceAdminServlet", urlPatterns = {"/admin/service"})
+public class serviceServlet extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -39,10 +41,10 @@ public class loginServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet loginServlet</title>");
+            out.println("<title>Servlet serviceServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet loginServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet serviceServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
@@ -59,7 +61,12 @@ public class loginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher("WEB-INF/login/login.jsp").forward(request, response);
+        ServiceDAO sDAO = new ServiceDAO();
+        ArrayList<service> listService = sDAO.getServiceAdmin();
+        request.setAttribute("listCate", sDAO.getServiceCate());
+        request.setAttribute("listService", listService);
+
+        request.getRequestDispatcher("/WEB-INF/admin/services.jsp").forward(request, response);
     }
 
     /**
@@ -73,48 +80,45 @@ public class loginServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String username = request.getParameter("username");
-        String password = request.getParameter("password");
-        String view = request.getParameter("view");
+        String serviceCode = request.getParameter("service_code");
+        String serviceName = request.getParameter("service_name");
+        String serviceCategoryIdStr = request.getParameter("service_category_id");
+        String baseDurationStr = request.getParameter("base_duration_min");
+        String currentPriceStr = request.getParameter("current_price");
+        String status = request.getParameter("status");
+        String descriptionBase = request.getParameter("description");
 
-        LoginDAO lDAO = new LoginDAO();
-        Users user = lDAO.login(username, password);
+        String description = descriptionBase == null ? "" : descriptionBase.trim();
 
-        HttpSession session = request.getSession(true); // always ensure a session exists
-
-        if (user == null) {
-            session.setAttribute("loginFail", "Tên đăng nhập hoặc mật khẩu không đúng.");
-            response.sendRedirect(request.getContextPath() + "/login?view=fail");
+        if (serviceCode == null || serviceName == null) {
+            request.setAttribute("err", Boolean.TRUE);
+            response.sendRedirect(request.getContextPath() + "/admin/service?create=fail");
             return;
         }
 
-        if (user.getActive() == 0) {
-            session.setAttribute("loginFail", "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ hỗ trợ.");
-            response.sendRedirect(request.getContextPath() + "/login?view=inactive");
+        long serviceCategoryId = 0;
+        int baseDurationMin = 0;
+        BigDecimal currentPrice = null;
+
+        try {
+            serviceCategoryId = Long.parseLong(serviceCategoryIdStr);
+            baseDurationMin = Integer.parseInt(baseDurationStr);
+            currentPrice = new BigDecimal(currentPriceStr);
+        } catch (NumberFormatException e) {
+
+            response.sendRedirect(request.getContextPath() + "/admin/service?create=fail");
             return;
         }
+        ServiceDAO sDAO = new ServiceDAO();
+        if (sDAO.exitsServiceCode(serviceCode)) {
 
-        session.setAttribute("user", user);
-        session.setAttribute("loginOk", Boolean.TRUE);
-
-        switch (user.getRoleEnum()) {
-            case ADMIN:
-                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
-                break;
-
-            case STAFF:
-                response.sendRedirect(request.getContextPath() + "/staff/dashboard");
-                break;
-
-            case VET:
-                response.sendRedirect(request.getContextPath() + "/vet/dashboard");
-                break;
-
-            case CUSTOMER:
-            default:
-                response.sendRedirect(request.getContextPath() + "/home");
-                break;
+            response.sendRedirect(request.getContextPath() + "/admin/service?create=fail");
+            return;
         }
+        int createService = sDAO.createService(serviceCategoryId, serviceCode,
+                serviceName, description, baseDurationMin, currentPrice, status);
+
+        response.sendRedirect(request.getContextPath() + "/admin/service?create=succsec");
     }
 
     /**
