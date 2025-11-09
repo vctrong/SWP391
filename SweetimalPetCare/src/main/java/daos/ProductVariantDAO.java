@@ -2,6 +2,7 @@ package daos;
 
 import db.DBContext;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -90,5 +91,37 @@ public class ProductVariantDAO extends DBContext {
         v.setCreatedAt(rs.getTimestamp("created_at"));
 
         return v;
+    }
+    
+      
+    /**
+     * Trả về giá lớn nhất (unit: ví dụ đ = đồng) giữa các variant.
+     * Trả về null nếu không có giá nào.
+     */
+    public Integer getMaxPrice() {
+        String sql = "SELECT MAX(price) AS max_price FROM ProductVariant WHERE is_active = 1";
+
+        try (
+             PreparedStatement ps = getConnection().prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                BigDecimal max = rs.getBigDecimal("max_price");
+                if (max == null) {
+                    return null;
+                }
+                // Bỏ phần thập phân (làm tròn lên) rồi làm tròn lên theo bước 1000
+                long value = max.setScale(0, RoundingMode.CEILING).longValue();
+                long roundedThousand = ((value + 999) / 1000) * 1000L;
+
+                if (roundedThousand > Integer.MAX_VALUE) {
+                    return Integer.MAX_VALUE;
+                }
+                return (int) roundedThousand;
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
     }
 }

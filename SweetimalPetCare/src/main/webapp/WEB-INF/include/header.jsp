@@ -1,9 +1,3 @@
-<%--
-    Document   : header
-    Created on : Sep 15, 2025, 1:13:59 AM
-    Author     : Vo Chi Trong - CE191062
---%>
-
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
@@ -62,6 +56,11 @@
                class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                hover:text-blue-600 hover:border-blue-400
                ${fn:contains(current, '/aboutus') ? 'active' : ''}">Về chúng tôi</a>
+               
+               <a href="${pageContext.request.contextPath}/news"
+               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               hover:text-blue-600 hover:border-blue-400
+               ${fn:contains(current, '/news') ? 'active' : ''}">Tin tức</a>
 
             <c:if test="${not empty user}">
                 <a href="${pageContext.request.contextPath}/booking-history"
@@ -75,7 +74,8 @@
 
         <!-- User / Auth Buttons -->
         <c:if test="${not empty user}">
-            <div class="space-x-4 flex items-center">
+            <div class="space-x-4 flex items-center">          
+
                 <div class="px-1 py-1 rounded-full transform hover:scale-105 hover:text-blue-600 transition">
                     <button id="userMenuButton"
                             class="flex items-center space-x-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-blue-600 hover:to-blue-700
@@ -83,6 +83,12 @@
                         ${user.fullName}
                     </button>
                 </div>
+                    
+                   <a href="${pageContext.request.contextPath}/cart"
+                   class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white border shadow-sm hover:shadow-md transition mr-2">
+                    <i class="fa-solid fa-cart-shopping text-gray-700"></i>
+                    <!--<span class="text-gray-700 font-medium whitespace-nowrap">Giỏ hàng</span>-->
+                </a>
             </div>
         </c:if>
 
@@ -115,12 +121,9 @@
     });
 </script>
 
-
-
 <!-- Floating Vet Chatbox -->
 <jsp:include page="/WEB-INF/include/chatbox.jsp" />
 
 <%@include file="/WEB-INF/include/sidebarInfo.jsp" %>
 <%@include file="/WEB-INF/include/cardID.jsp" %>
 <script src="${pageContext.request.contextPath}/assets/js/sidebar.js"></script>
-

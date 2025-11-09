@@ -5,140 +5,108 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import model.OrderItem;
 
 /**
- * OrderCartDAO - simplified student version using getConnection().prepareStatement(...) directly.
  *
- * WARNING: This implementation calls getConnection() multiple times inside a method.
- * Ensure DBContext.getConnection() returns the same Connection within a method invocation,
- * otherwise transactions (setAutoCommit/commit/rollback) will not work correctly.
+ * @author Pham Nguyen Xuan Mai - CE190106
  */
 public class OrderCartDAO extends DBContext {
 
-    // Find or create a draft order for customer
-    private long getOrCreateDraftOrderId(long customerId) throws SQLException {
-        String sqlFind = "SELECT order_id FROM Orders WHERE customer_id = ? AND order_code LIKE ? AND order_status = ? ORDER BY created_at DESC";
-        try (PreparedStatement ps = getConnection().prepareStatement(sqlFind)) {
-            ps.setLong(1, customerId);
-            ps.setString(2, "CART-" + customerId + "-%");
-            ps.setString(3, "PENDING");
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getLong("order_id");
-            }
-        }
-
-        String sqlInsert = "INSERT INTO Orders(order_code, customer_id, order_status, payment_status, subtotal_amount, shipping_fee, total_amount, created_at) VALUES (?, ?, ?, ?, 0, 0, 0, SYSUTCDATETIME())";
-        String orderCode = "CART-" + customerId + "-" + System.currentTimeMillis();
-        try (PreparedStatement ps = getConnection().prepareStatement(sqlInsert, PreparedStatement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, orderCode);
-            ps.setLong(2, customerId);
-            ps.setString(3, "PENDING");
-            ps.setString(4, "PENDING");
-            ps.executeUpdate();
-            try (ResultSet gk = ps.getGeneratedKeys()) {
-                if (gk.next()) return gk.getLong(1);
-            }
-        }
-
-        // fallback (rare)
-        try (PreparedStatement ps = getConnection().prepareStatement("SELECT SCOPE_IDENTITY() AS id");
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) return rs.getLong("id");
-        }
-
-        throw new SQLException("Unable to create draft order for customer " + customerId);
-    }
-
-    // Recalculate subtotal and total for an order (single SQL statement)
-    private void recalcAndUpdateOrderTotals(long orderId) throws SQLException {
-        String sql =
-            "UPDATE Orders SET subtotal_amount = ISNULL(t.sub,0), total_amount = ISNULL(t.sub,0) + ISNULL(shipping_fee,0), updated_at = SYSUTCDATETIME() " +
-            "FROM Orders o LEFT JOIN (SELECT order_id, SUM(unit_price * quantity) AS sub FROM OrderItems WHERE order_id = ? GROUP BY order_id) t ON t.order_id = o.order_id " +
-            "WHERE o.order_id = ?";
+    /**
+     * Return price as double for a variant, or 0.0 if not found.
+     */
+    public double getVariantPriceAsDouble(long variantId) throws SQLException {
+        String sql = "SELECT price FROM ProductVariant WHERE variant_id = ?";
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
-            ps.setLong(1, orderId);
-            ps.setLong(2, orderId);
-            ps.executeUpdate();
-        }
-    }
-
-    // Add variant into customer's draft order
-    public void addToCart(long customerId, long variantId, int qty) throws SQLException {
-        if (qty <= 0) qty = 1;
-
-        // begin transaction on connection returned by getConnection()
-        getConnection().setAutoCommit(false);
-        try {
-            // Validate variant
-            String sqlVar = "SELECT price, stock_quantity FROM ProductVariant WHERE variant_id = ?";
-            double price;
-            int stock;
-            try (PreparedStatement ps = getConnection().prepareStatement(sqlVar)) {
-                ps.setLong(1, variantId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) throw new SQLException("Variant not found: " + variantId);
-                    price = rs.getBigDecimal("price") != null ? rs.getBigDecimal("price").doubleValue() : 0.0;
-                    stock = rs.getInt("stock_quantity");
+            ps.setLong(1, variantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    java.math.BigDecimal bd = null;
+                    try { bd = rs.getBigDecimal("price"); } catch (SQLException ignore) {}
+                    if (bd != null) return bd.doubleValue();
+                    return rs.getDouble("price");
                 }
             }
-
-            if (stock < qty) throw new SQLException("Insufficient stock");
-
-            long orderId = getOrCreateDraftOrderId(customerId);
-
-            // Check existing OrderItem
-            Long itemId = null;
-            int existingQty = 0;
-            String sqlCheck = "SELECT order_item_id, quantity FROM OrderItems WHERE order_id = ? AND variant_id = ?";
-            try (PreparedStatement ps = getConnection().prepareStatement(sqlCheck)) {
-                ps.setLong(1, orderId);
-                ps.setLong(2, variantId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        itemId = rs.getLong("order_item_id");
-                        existingQty = rs.getInt("quantity");
-                    }
-                }
-            }
-
-            if (itemId != null) {
-                int newQty = existingQty + qty;
-                if (newQty > stock) newQty = stock;
-                String sqlUpd = "UPDATE OrderItems SET quantity = ? WHERE order_item_id = ?";
-                try (PreparedStatement ps = getConnection().prepareStatement(sqlUpd)) {
-                    ps.setInt(1, newQty);
-                    ps.setLong(2, itemId);
-                    ps.executeUpdate();
-                }
-            } else {
-                String sqlIns = "INSERT INTO OrderItems(order_id, variant_id, unit_price, quantity) VALUES (?, ?, ?, ?)";
-                try (PreparedStatement ps = getConnection().prepareStatement(sqlIns)) {
-                    ps.setLong(1, orderId);
-                    ps.setLong(2, variantId);
-                    ps.setDouble(3, price);
-                    ps.setInt(4, qty);
-                    ps.executeUpdate();
-                }
-            }
-
-            // Recalc totals
-            recalcAndUpdateOrderTotals(orderId);
-
-            // commit
-            getConnection().commit();
         } catch (SQLException ex) {
-            try { getConnection().rollback(); } catch (SQLException ignore) {}
+            java.util.logging.Logger.getLogger(OrderCartDAO.class.getName()).log(java.util.logging.Level.FINER, null, ex);
             throw ex;
         }
-        // note: not resetting autocommit/closing connection per request
+        return 0.0;
     }
 
-    // List draft order items for a customer
+    /**
+     * Return stock quantity for variant (0 if not found).
+     */
+    public int getVariantStock(long variantId) throws SQLException {
+        String sql = "SELECT stock_quantity FROM ProductVariant WHERE variant_id = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setLong(1, variantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("stock_quantity");
+                }
+            }
+        } catch (SQLException ex) {
+            java.util.logging.Logger.getLogger(OrderCartDAO.class.getName()).log(java.util.logging.Level.FINER, null, ex);
+            throw ex;
+        }
+        return 0;
+    }
+
+    /**
+     * Return variant metadata used for display/enrichment.
+     * Keys: variantId, productId, sku, attributeJson, price, stockQuantity, imageUrl, productName
+     * Returns empty map if not found.
+     */
+    public Map<String, Object> getVariantMetadata(long variantId) throws SQLException {
+        String sql = "SELECT pv.variant_id, pv.product_id, pv.sku, pv.attribute_json, pv.price, pv.stock_quantity, pv.image_url, p.product_name " +
+                     "FROM ProductVariant pv LEFT JOIN Product p ON pv.product_id = p.product_id " +
+                     "WHERE pv.variant_id = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setLong(1, variantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Map<String, Object> meta = new HashMap<>();
+                    meta.put("variantId", rs.getLong("variant_id"));
+                    long pid = rs.getLong("product_id");
+                    if (!rs.wasNull()) meta.put("productId", pid);
+                    String sku = rs.getString("sku"); if (sku != null) meta.put("sku", sku);
+                    String attrJson = rs.getString("attribute_json"); if (attrJson != null) meta.put("attributeJson", attrJson);
+                    java.math.BigDecimal bd = null;
+                    try { bd = rs.getBigDecimal("price"); } catch (SQLException ignore) {}
+                    if (bd != null) meta.put("price", bd.doubleValue());
+                    else {
+                        try {
+                            double p = rs.getDouble("price");
+                            if (!rs.wasNull()) meta.put("price", p);
+                        } catch (SQLException ignore) {}
+                    }
+                    int stock = rs.getInt("stock_quantity"); if (!rs.wasNull()) meta.put("stockQuantity", stock);
+                    String img = rs.getString("image_url"); if (img != null) meta.put("imageUrl", img);
+                    String pname = rs.getString("product_name"); if (pname != null) meta.put("productName", pname);
+                    return meta;
+                }
+            }
+        } catch (SQLException ex) {
+            java.util.logging.Logger.getLogger(OrderCartDAO.class.getName()).log(java.util.logging.Level.FINER, null, ex);
+            throw ex;
+        }
+        return Collections.emptyMap();
+    }
+
+    /**
+     * Legacy helper: list order items from a draft Orders row for the customer.
+     * Kept read-only for backward compatibility with older code paths.
+     *
+     * If you have migrated to CartItems table, prefer using CartItemsDAO.getCartItemsByUser instead.
+     */
     public List<OrderItem> listCartItemsByUser(long customerId) throws SQLException {
         List<OrderItem> list = new ArrayList<>();
-
         Long orderId = null;
         String sqlFind = "SELECT order_id FROM Orders WHERE customer_id = ? AND order_code LIKE ? AND order_status = ? ORDER BY created_at DESC";
         try (PreparedStatement ps = getConnection().prepareStatement(sqlFind)) {
@@ -148,7 +116,11 @@ public class OrderCartDAO extends DBContext {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) orderId = rs.getLong("order_id");
             }
+        } catch (SQLException ex) {
+            java.util.logging.Logger.getLogger(OrderCartDAO.class.getName()).log(java.util.logging.Level.FINER, null, ex);
+            throw ex;
         }
+
         if (orderId == null) return list;
 
         String sql = "SELECT oi.order_item_id, oi.order_id, oi.variant_id, oi.unit_price, oi.quantity, p.product_name, v.image_url " +
@@ -169,81 +141,10 @@ public class OrderCartDAO extends DBContext {
                     list.add(it);
                 }
             }
+        } catch (SQLException ex) {
+            java.util.logging.Logger.getLogger(OrderCartDAO.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            throw ex;
         }
         return list;
-    }
-
-    // Update quantity for an order item
-    public boolean updateOrderItemQuantity(long orderItemId, int newQty) throws SQLException {
-        if (newQty <= 0) return false;
-
-        getConnection().setAutoCommit(false);
-        try {
-            long orderId;
-            long variantId;
-            String sqlFind = "SELECT order_id, variant_id FROM OrderItems WHERE order_item_id = ?";
-            try (PreparedStatement ps = getConnection().prepareStatement(sqlFind)) {
-                ps.setLong(1, orderItemId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) { getConnection().rollback(); return false; }
-                    orderId = rs.getLong("order_id");
-                    variantId = rs.getLong("variant_id");
-                }
-            }
-
-            String sqlStock = "SELECT stock_quantity FROM ProductVariant WHERE variant_id = ?";
-            int stock;
-            try (PreparedStatement ps = getConnection().prepareStatement(sqlStock)) {
-                ps.setLong(1, variantId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) { getConnection().rollback(); return false; }
-                    stock = rs.getInt("stock_quantity");
-                }
-            }
-
-            if (newQty > stock) newQty = stock;
-
-            String sqlUpd = "UPDATE OrderItems SET quantity = ? WHERE order_item_id = ?";
-            try (PreparedStatement ps = getConnection().prepareStatement(sqlUpd)) {
-                ps.setInt(1, newQty);
-                ps.setLong(2, orderItemId);
-                ps.executeUpdate();
-            }
-
-            recalcAndUpdateOrderTotals(orderId);
-            getConnection().commit();
-            return true;
-        } catch (SQLException ex) {
-            try { getConnection().rollback(); } catch (SQLException ignore) {}
-            throw ex;
-        }
-    }
-
-    // Remove an order item
-    public boolean removeOrderItem(long orderItemId) throws SQLException {
-        getConnection().setAutoCommit(false);
-        try {
-            Long orderId = null;
-            String sqlFind = "SELECT order_id FROM OrderItems WHERE order_item_id = ?";
-            try (PreparedStatement ps = getConnection().prepareStatement(sqlFind)) {
-                ps.setLong(1, orderItemId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) orderId = rs.getLong("order_id");
-                }
-            }
-
-            String sqlDel = "DELETE FROM OrderItems WHERE order_item_id = ?";
-            try (PreparedStatement ps = getConnection().prepareStatement(sqlDel)) {
-                ps.setLong(1, orderItemId);
-                ps.executeUpdate();
-            }
-
-            if (orderId != null) recalcAndUpdateOrderTotals(orderId);
-            getConnection().commit();
-            return true;
-        } catch (SQLException ex) {
-            try { getConnection().rollback(); } catch (SQLException ignore) {}
-            throw ex;
-        }
     }
 }

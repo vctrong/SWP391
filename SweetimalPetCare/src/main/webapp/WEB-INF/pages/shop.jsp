@@ -1,18 +1,11 @@
-<%-- 
-    Document   : shop
-    Created on : Oct 2, 2025, 10:19:22 AM
-    Author     : Pham Nguyen Xuan Mai - CE190106
---%>
-
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
-<%@taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
 <%@include file="/WEB-INF/include/library.jsp" %>
 
-<!doctype html>
 <html lang="vi">
     <head>
         <meta charset="UTF-8">
@@ -24,7 +17,7 @@
         <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-4 gap-6 mt-20">
 
             <!-- Sidebar -->
-            <aside class="bg-white p-4 rounded shadow h-fit space-y-4">
+            <aside id="shopSidebar" class="bg-white p-4 rounded shadow h-fit space-y-4">
 
                 <!-- Filter tags -->
                 <c:if test="${not empty paramValues.category or not empty paramValues.brand or not empty paramValues.stock or not empty param.minPrice or not empty param.maxPrice}">
@@ -168,7 +161,7 @@
                 </c:if>
 
                 <!-- Filter Form -->
-                <form method="get" action="shop" onsubmit="return validatePriceRange(this);">
+                <form id="filterForm" method="get" action="shop">
                     <!-- Category -->
                     <div>
                         <h2 class="font-semibold mb-2">Loại sản phẩm</h2>
@@ -189,7 +182,7 @@
                                                value="${c.productCategoryId}"
                                                <c:if test="${c.productCount == 0}">disabled</c:if>
                                                <c:if test="${isCheckedCat}">checked</c:if>
-                                                   onchange="this.form.submit()" />
+                                               />
                                         <c:if test="${c.productCount == 0}">
                                             <span class="text-gray-400">${c.categoryName} (${c.productCount})</span>
                                         </c:if>
@@ -221,7 +214,7 @@
                                                value="${b.brandId}"
                                                <c:if test="${b.productCount == 0}">disabled</c:if>
                                                <c:if test="${isCheckedBrand}">checked</c:if>
-                                                   onchange="this.form.submit()" />
+                                               />
                                         <c:if test="${b.productCount == 0}">
                                             <span class="text-gray-400">${b.brandName} (${b.productCount})</span>
                                         </c:if>
@@ -255,7 +248,7 @@
                                     <input type="checkbox" id="stock-in" name="stock" value="inStock"
                                            <c:if test="${isInStockChecked}">checked</c:if>
                                            <c:if test="${inStockCount == 0}">disabled</c:if>
-                                               onchange="this.form.submit()" />
+                                           />
                                            <span>
                                                Còn hàng
                                                <span class="text-gray-500 ml-1">(${inStockCount})</span>
@@ -267,7 +260,7 @@
                                     <input type="checkbox" id="stock-out" name="stock" value="outOfStock"
                                            <c:if test="${isOutStockChecked}">checked</c:if>
                                            <c:if test="${outStockCount == 0}">disabled</c:if>
-                                               onchange="this.form.submit()" />
+                                           />
                                            <span>
                                                Hết hàng
                                                <span class="text-gray-500 ml-1">(${outStockCount})</span>
@@ -282,7 +275,12 @@
                         <h2 class="font-semibold mb-2 mt-3">Giá</h2>
                         <div class="px-2 space-y-3">
                             <!-- Thanh kéo 2 đầu -->
-                            <div id="priceSlider" class="mt-2"></div>
+                            <div id="priceSlider"
+                                 data-start-min="${empty param.minPrice ? 0 : param.minPrice}"
+                                 data-start-max="${empty param.maxPrice ? (empty maxPriceInDb ? 1000000 : maxPriceInDb) : param.maxPrice}"
+                                 data-min="0"
+                                 data-max="${empty maxPriceInDb ? 1000000 : maxPriceInDb}"
+                                 class="mt-2"></div>
 
                             <!-- Hai ô nhập giá -->
                             <div class="flex justify-between items-center">
@@ -297,84 +295,23 @@
                                     <input type="number" id="maxPriceInput" name="maxPrice"
                                            class="w-full text-center outline-none"
                                            min="0" step="1000"
-                                           value="${empty param.maxPrice ? 1000000 : param.maxPrice}">₫
+                                           value="${empty param.maxPrice ? (empty maxPriceInDb ? 1000000 : maxPriceInDb) : param.maxPrice}">₫
                                 </div>
                             </div>
 
                             <button type="submit"
-                                    onclick="removeEmptyPrices(this.form)"
                                     class="w-full border border-gray-400 text-gray-800 font-medium rounded-lg mt-2 py-1 hover:bg-gray-100 transition">
                                 Apply
                             </button>
                         </div>
                     </div>
 
-                    <script>
-                        function removeEmptyPrices(form) {
-                            if (!form.minPrice.value)
-                                form.minPrice.removeAttribute("name");
-                            if (!form.maxPrice.value)
-                                form.maxPrice.removeAttribute("name");
-                        }
-
-                        const slider = document.getElementById('priceSlider');
-                        const minInput = document.getElementById('minPriceInput');
-                        const maxInput = document.getElementById('maxPriceInput');
-
-                        // Tạo slider
-                        noUiSlider.create(slider, {
-                            start: [${empty param.minPrice ? 0 : param.minPrice}, ${empty param.maxPrice ? 1000000 : param.maxPrice}],
-                            connect: true,
-                            step: 1000,
-                            range: {
-                                'min': 0,
-                                'max': 1000000
-                            },
-                            tooltips: [true, true],
-                            format: {
-                                to: value => Math.round(value).toLocaleString('vi-VN'),
-                                from: value => Number(value.replace(/\./g, ''))
-                            }
-                        });
-
-                        // Đồng bộ slider <-> input
-                        slider.noUiSlider.on('update', (values, handle) => {
-                            const min = parseInt(values[0].replace(/\./g, ''));
-                            const max = parseInt(values[1].replace(/\./g, ''));
-                            minInput.value = min;
-                            maxInput.value = max;
-                        });
-
-                        minInput.addEventListener('change', () => {
-                            slider.noUiSlider.set([minInput.value, null]);
-                        });
-
-                        maxInput.addEventListener('change', () => {
-                            slider.noUiSlider.set([null, maxInput.value]);
-                        });
-                    </script>
-
                 </form>
 
-                <script>
-                    function validatePriceRange(form) {
-                        var minPrice = form.minPrice.value;
-                        var maxPrice = form.maxPrice.value;
-                        if (minPrice && maxPrice && parseInt(minPrice) > parseInt(maxPrice)) {
-                            alert('Giá từ không được lớn hơn giá đến.');
-                            return false;
-                        }
-                        if (minPrice && parseInt(minPrice) < 0) {
-                            alert('Giá không được âm.');
-                            return false;
-                        }
-                        return true;
-                    }
-                </script>
             </aside>
 
             <!-- Product grid -->
-            <section class="md:col-span-3">
+            <section id="productsSection" class="md:col-span-3">
 <div class="flex items-center justify-between mb-4">
     <h2 class="text-lg font-bold">Sản phẩm</h2>
 
@@ -409,8 +346,7 @@
         </div>
 
         <!-- Sort select -->
-        <select name="sort" onchange="document.getElementById('sortForm').submit()"
-                class="border rounded px-3 py-1 text-sm bg-white">
+        <select name="sort" class="border rounded px-3 py-1 text-sm bg-white">
             <option value="">Mặc định</option>
 
             <option value="best_selling" <c:if test="${param.sort == 'best_selling'}">selected</c:if>>Bán chạy nhất</option>
@@ -594,5 +530,256 @@
         </main>
 
         <%@include file="/WEB-INF/include/footer.jsp" %>
+
+        <!-- Inlined AJAX + slider JS (fixed to use context path) -->
+        <script>
+        (function () {
+            // CONTEXT_PATH is inserted by JSP so fetch targets correct servlet path
+            const CONTEXT_PATH = '${pageContext.request.contextPath}';
+            const sidebarSelector = '#shopSidebar';
+            const productsSelector = '#productsSection';
+            const filterFormSelector = '#filterForm';
+            const sortFormSelector = '#sortForm';
+            let debounceTimer = null;
+
+            function buildUrlFromForms() {
+                // build URL using context path so it points to correct servlet mapping
+                const base = new URL(CONTEXT_PATH + '/shop', window.location.origin).toString();
+                const url = new URL(base);
+                const filterForm = document.querySelector(filterFormSelector);
+                const sortForm = document.querySelector(sortFormSelector);
+                const forms = [filterForm, sortForm].filter(Boolean);
+
+                forms.forEach(form => {
+                    const fd = new FormData(form);
+                    // mimic previous behavior: don't include empty minPrice/maxPrice
+                    if (fd.get('minPrice') === '') fd.delete('minPrice');
+                    if (fd.get('maxPrice') === '') fd.delete('maxPrice');
+
+                    for (const [k, v] of fd.entries()) {
+                        url.searchParams.append(k, v);
+                    }
+                });
+
+                return url.toString();
+            }
+
+            function resolveHref(href) {
+                try {
+                    return new URL(href, window.location.href).toString();
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function isShopUrl(urlString) {
+                try {
+                    const u = new URL(urlString);
+                    return u.pathname === (CONTEXT_PATH + '/shop') || u.pathname.endsWith('/shop');
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function showLoading(show) {
+                let el = document.getElementById('shop-ajax-loader');
+                if (show) {
+                    if (!el) {
+                        el = document.createElement('div');
+                        el.id = 'shop-ajax-loader';
+                        el.style.position = 'fixed';
+                        el.style.top = '12px';
+                        el.style.right = '12px';
+                        el.style.padding = '6px 10px';
+                        el.style.background = 'rgba(0,0,0,0.7)';
+                        el.style.color = '#fff';
+                        el.style.borderRadius = '6px';
+                        el.style.zIndex = '9999';
+                        el.textContent = 'Đang tải...';
+                        document.body.appendChild(el);
+                    }
+                } else {
+                    if (el) el.remove();
+                }
+            }
+
+            function parseAndReplace(htmlText, pushState = true, targetUrl = null) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, 'text/html');
+
+                const newSidebar = doc.querySelector(sidebarSelector);
+                const newProducts = doc.querySelector(productsSelector);
+
+                const currentSidebar = document.querySelector(sidebarSelector);
+                const currentProducts = document.querySelector(productsSelector);
+
+                if (newSidebar && currentSidebar) currentSidebar.innerHTML = newSidebar.innerHTML;
+                if (newProducts && currentProducts) currentProducts.innerHTML = newProducts.innerHTML;
+
+                if (pushState) {
+                    try {
+                        const urlToPush = targetUrl || buildUrlFromForms();
+                        history.pushState({}, '', urlToPush);
+                    } catch (e) { /* ignore */ }
+                }
+
+                initShopAjax();
+            }
+
+            function fetchAndReplace(url, pushState = true) {
+                showLoading(true);
+                fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                })
+                    .then(resp => {
+                        if (!resp.ok) throw new Error('Network response was not ok');
+                        return resp.text();
+                    })
+                    .then(html => parseAndReplace(html, pushState, url))
+                    .catch(err => {
+                        console.error('Fetch error:', err);
+                        // fallback: full navigation
+                        window.location.href = url;
+                    })
+                    .finally(() => showLoading(false));
+            }
+
+            function validatePriceRange(minVal, maxVal) {
+                if (minVal && maxVal && parseInt(minVal) > parseInt(maxVal)) {
+                    alert('Giá từ không được lớn hơn giá đến.');
+                    return false;
+                }
+                if (minVal && parseInt(minVal) < 0) {
+                    alert('Giá không được âm.');
+                    return false;
+                }
+                return true;
+            }
+
+            function initPriceSlider() {
+                const sliderEl = document.getElementById('priceSlider');
+                if (!sliderEl || typeof noUiSlider === 'undefined') return;
+
+                if (sliderEl.noUiSlider) sliderEl.noUiSlider.destroy();
+
+                const min = parseInt(sliderEl.getAttribute('data-min') || '0', 10);
+                const max = parseInt(sliderEl.getAttribute('data-max') || '1000000', 10);
+                const startMin = parseInt(sliderEl.getAttribute('data-start-min') || min, 10);
+                const startMax = parseInt(sliderEl.getAttribute('data-start-max') || max, 10);
+
+                const minInput = document.getElementById('minPriceInput');
+                const maxInput = document.getElementById('maxPriceInput');
+
+                noUiSlider.create(sliderEl, {
+                    start: [startMin, startMax],
+                    connect: true,
+                    step: 1000,
+                    range: { 'min': min, 'max': max },
+                    tooltips: [true, true],
+                    format: {
+                        to: value => Math.round(value).toLocaleString('vi-VN'),
+                        from: value => Number(value.replace(/\./g, ''))
+                    }
+                });
+
+                sliderEl.noUiSlider.on('update', (values) => {
+                    const v0 = parseInt(values[0].replace(/\./g, ''), 10);
+                    const v1 = parseInt(values[1].replace(/\./g, ''), 10);
+                    if (minInput) minInput.value = isNaN(v0) ? '' : v0;
+                    if (maxInput) maxInput.value = isNaN(v1) ? '' : v1;
+                });
+
+                if (minInput) minInput.addEventListener('change', () => sliderEl.noUiSlider.set([minInput.value || null, null]));
+                if (maxInput) maxInput.addEventListener('change', () => sliderEl.noUiSlider.set([null, maxInput.value || null]));
+            }
+
+            function initShopAjax() {
+                initPriceSlider();
+
+                const sidebar = document.querySelector(sidebarSelector);
+                const productsArea = document.querySelector(productsSelector);
+                const filterForm = document.querySelector(filterFormSelector);
+                const sortForm = document.querySelector(sortFormSelector);
+
+                if (!sidebar || !filterForm) return;
+
+                // checkboxes trigger AJAX (debounced)
+                sidebar.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.onchange = () => {
+                        clearTimeout(debounceTimer);
+                        debounceTimer = setTimeout(() => {
+                            const url = buildUrlFromForms();
+                            fetchAndReplace(url);
+                        }, 200);
+                    };
+                });
+
+                // price form submission (Apply)
+                filterForm.onsubmit = (e) => {
+                    e.preventDefault();
+                    const minInput = filterForm.querySelector('input[name="minPrice"]');
+                    const maxInput = filterForm.querySelector('input[name="maxPrice"]');
+                    const minVal = minInput ? minInput.value : '';
+                    const maxVal = maxInput ? maxInput.value : '';
+                    if (!validatePriceRange(minVal, maxVal)) return;
+                    if (minInput && minInput.value === '') minInput.removeAttribute('name');
+                    if (maxInput && maxInput.value === '') maxInput.removeAttribute('name');
+                    const url = buildUrlFromForms();
+                    fetchAndReplace(url);
+                };
+
+                // sort select
+                if (sortForm) {
+                    const sortSelect = sortForm.querySelector('select[name="sort"]');
+                    if (sortSelect) {
+                        sortSelect.onchange = () => {
+                            const url = buildUrlFromForms();
+                            fetchAndReplace(url);
+                        };
+                    }
+                    sortForm.onsubmit = (e) => {
+                        e.preventDefault();
+                        const url = buildUrlFromForms();
+                        fetchAndReplace(url);
+                    };
+                }
+
+                // intercept sidebar tag links (remove filters links)
+                sidebar.onclick = (e) => {
+                    const a = e.target.closest('a');
+                    if (!a) return;
+                    const resolved = resolveHref(a.getAttribute('href'));
+                    if (!resolved) return;
+                    if (isShopUrl(resolved)) {
+                        e.preventDefault();
+                        fetchAndReplace(resolved);
+                    }
+                };
+
+                // intercept brand links in product cards that point to /shop
+                if (productsArea) {
+                    productsArea.onclick = (e) => {
+                        const a = e.target.closest('a');
+                        if (!a) return;
+                        const resolved = resolveHref(a.getAttribute('href'));
+                        if (!resolved) return;
+                        if (isShopUrl(resolved)) {
+                            e.preventDefault();
+                            fetchAndReplace(resolved);
+                        }
+                    };
+                }
+            }
+
+            window.addEventListener('popstate', () => {
+                fetchAndReplace(window.location.href, false);
+            });
+
+            document.addEventListener('DOMContentLoaded', () => {
+                initShopAjax();
+            });
+        })();
+        </script>
     </body>
 </html>

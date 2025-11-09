@@ -9,7 +9,7 @@
   <title>Chi tiết đơn hàng</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="pt-20 font-sans bg-gray-50">
+<body>
   <%@ include file="/WEB-INF/include/header.jsp" %>
   <div class="max-w-4xl mx-auto p-6">
     <h1 class="text-2xl font-bold mb-4">Chi tiết đơn hàng</h1>

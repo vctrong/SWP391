@@ -4,7 +4,8 @@
  */
 package model;
 
-import java.sql.Timestamp;
+import java.util.Date;
+
 
 /**
  *
@@ -18,7 +19,7 @@ public class Review {
     private Integer customerId;   // not null
     private Integer rating;       // 1..5
     private String comment;
-    private Timestamp createdAt;
+    private Date createdAt;
 
     // optional display name (from Users.full_name) — không phải cột trong Reviews nhưng thuận tiện khi join
     private String userName;
@@ -26,9 +27,7 @@ public class Review {
     public Review() {
     }
 
-    // Full constructor (useful when reading from DB)
-    public Review(Integer reviewId, Integer serviceId, Integer productId, Integer staffId,
-                  Integer customerId, Integer rating, String comment, Timestamp createdAt) {
+    public Review(Integer reviewId, Integer serviceId, Integer productId, Integer staffId, Integer customerId, Integer rating, String comment, Date createdAt, String userName) {
         this.reviewId = reviewId;
         this.serviceId = serviceId;
         this.productId = productId;
@@ -37,7 +36,9 @@ public class Review {
         this.rating = rating;
         this.comment = comment;
         this.createdAt = createdAt;
+        this.userName = userName;
     }
+
 
     // Convenience constructor for creating a new product review
     public Review(Integer productId, Integer customerId, Integer rating, String comment) {
@@ -104,11 +105,11 @@ public class Review {
         this.comment = comment;
     }
 
-    public Timestamp getCreatedAt() {
+    public Date getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Timestamp createdAt) {
+    public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
 

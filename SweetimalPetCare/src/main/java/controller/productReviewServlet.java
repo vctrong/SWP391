@@ -1,190 +1,233 @@
 package controller;
 
+import daos.OrderDAO;
 import daos.ReviewDAO;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.net.URLEncoder;
-import java.util.Enumeration;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.*;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import model.Users;
 
 /**
+ * productReviewServlet - trả JSON khi là AJAX, redirect khi non-AJAX
  *
- * @author Pham Nguyen Xuan Mai - CE190106
+ * Logging: gọi trực tiếp Logger.getLogger(...).log(...) trong các catch (không khai báo biến logger ở lớp hay phương thức)
  */
 @WebServlet(name="productReviewServlet", urlPatterns={"/product/review"})
 public class productReviewServlet extends HttpServlet {
 
-    private static final String[] SESSION_USER_KEYS = new String[] {
-        "customerId", "customer", "user", "account", "authUser"
-    };
+    // nhỏ gọn helper để escape JSON string (utility nhỏ)
+    private static String jsonEscape(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
+    }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
-        // Redirect GET back to shop or product page
-        response.sendRedirect(request.getContextPath() + "/shop");
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // Nếu người dùng GET tới /product/review => redirect về product page
+        String pid = req.getParameter("productId");
+        if (pid == null) {
+            resp.sendRedirect(req.getContextPath() + "/shop");
+        } else {
+            resp.sendRedirect(req.getContextPath() + "/product?id=" + URLEncoder.encode(pid, "UTF-8"));
+        }
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        ReviewDAO reviewDAO = new ReviewDAO();
+        // Detect AJAX (fetch/XHR)
+        boolean isAjax = "XMLHttpRequest".equalsIgnoreCase(req.getHeader("X-Requested-With"))
+                || (req.getHeader("Accept") != null && req.getHeader("Accept").contains("application/json"));
 
-        // --- Debug: print session/cookie info to help diagnose why server thinks user is not logged in ---
         HttpSession session = req.getSession(false);
-        System.out.println("[productReviewServlet] POST " + req.getRequestURL() + (req.getQueryString() != null ? "?" + req.getQueryString() : ""));
-        System.out.println("[productReviewServlet] session = " + session);
+
+        // Chỉ lấy user từ session (không đọc id từ request)
+        Integer userId = null;
         if (session != null) {
-            System.out.println("[productReviewServlet] sessionId = " + session.getId());
-            Enumeration<String> names = session.getAttributeNames();
-            while (names.hasMoreElements()) {
-                String n = names.nextElement();
-                System.out.println("[productReviewServlet] session.attr: " + n + " = " + session.getAttribute(n));
+            Object userObj = session.getAttribute("user");
+            if (userObj instanceof Users) {
+                Users u = (Users) userObj;
+                userId = u.getId();
             }
-        }
-        Cookie[] cookies = req.getCookies();
-        if (cookies != null) {
-            for (Cookie c : cookies) {
-                System.out.println("[productReviewServlet] cookie: " + c.getName() + "=" + c.getValue()
-                        + " path=" + c.getPath() + " domain=" + c.getDomain() + " secure=" + c.getSecure());
-            }
-        } else {
-            System.out.println("[productReviewServlet] no cookies");
         }
 
-        // --- Resolve customerId from session (be flexible) ---
-        Long customerId = resolveCustomerId(session);
-        if (customerId == null) {
-            // Not authenticated -> redirect to login with redirect back to referer/product page
-            String referer = req.getHeader("Referer");
-            String loginUrl = req.getContextPath() + "/login";
-            if (referer != null && !referer.isEmpty()) {
-                loginUrl += "?redirect=" + URLEncoder.encode(referer, "UTF-8");
+        if (userId == null) {
+            String message = "Bạn cần đăng nhập để gửi đánh giá.";
+            if (isAjax) {
+                resp.setContentType("application/json;charset=UTF-8");
+                resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                String json = "{\"success\":false,\"message\":\"" + jsonEscape(message) + "\",\"login\":true}";
+                resp.getWriter().write(json);
             } else {
-                // fallback to product page if productId present
-                String pid = req.getParameter("productId");
-                if (pid != null && !pid.isEmpty()) {
-                    String current = req.getContextPath() + "/product?id=" + URLEncoder.encode(pid, "UTF-8");
-                    loginUrl += "?redirect=" + URLEncoder.encode(current, "UTF-8");
-                }
+                String referer = req.getHeader("Referer");
+                String loginUrl = req.getContextPath() + "/login";
+                if (referer != null && !referer.isEmpty()) loginUrl += "?redirect=" + URLEncoder.encode(referer, "UTF-8");
+                if (session != null) session.setAttribute("reviewError", message);
+                resp.sendRedirect(loginUrl);
             }
-            System.out.println("[productReviewServlet] No authenticated user found -> redirect to " + loginUrl);
-            resp.sendRedirect(loginUrl);
             return;
         }
 
-        // Parse form
+        String action = req.getParameter("action");
+        if (action == null) action = "create";
+
         String productIdStr = req.getParameter("productId");
-        String ratingStr = req.getParameter("rating");
-        String comment = req.getParameter("comment");
-        String reviewTitle = req.getParameter("reviewTitle");
-
-        long productId;
-        int rating;
+        final int productId;
         try {
-            productId = Long.parseLong(productIdStr);
+            productId = Integer.parseInt(productIdStr);
         } catch (Exception ex) {
-            if (session != null) session.setAttribute("reviewError", "Product ID không hợp lệ.");
-            resp.sendRedirect(req.getContextPath() + "/product?id=" + (productIdStr != null ? productIdStr : ""));
-            return;
-        }
-
-        try {
-            rating = Integer.parseInt(ratingStr);
-        } catch (Exception ex) {
-            rating = 0;
-        }
-        if (rating < 1 || rating > 5) {
-            if (session != null) session.setAttribute("reviewError", "Vui lòng chọn từ 1 đến 5 sao.");
-            resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
-            return;
-        }
-
-        if (comment == null) comment = "";
-        comment = comment.trim();
-        if (comment.length() > 2000) comment = comment.substring(0, 2000);
-        if (reviewTitle == null) reviewTitle = "";
-
-        // Save review (convert ids to int if your DAO expects int)
-        boolean ok = reviewDAO.addReview((int) productId, customerId.intValue(), rating, comment);
-        if (ok) {
-            if (session != null) session.setAttribute("reviewSuccess", "Cảm ơn bạn đã gửi đánh giá.");
-            System.out.println("[productReviewServlet] Review saved: productId=" + productId + " customerId=" + customerId + " rating=" + rating);
-        } else {
-            if (session != null) session.setAttribute("reviewError", "Có lỗi khi lưu đánh giá. Vui lòng thử lại.");
-            System.out.println("[productReviewServlet] Review save failed: productId=" + productId + " customerId=" + customerId);
-        }
-
-        resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
-    }
-
-    /**
-     * Try to resolve numeric customer id from session using common keys and reflection.
-     * Returns null if not found.
-     */
-    private Long resolveCustomerId(HttpSession session) {
-        if (session == null) return null;
-
-        // 1) explicit numeric attribute (customerId)
-        Object v = session.getAttribute("customerId");
-        if (v != null) {
-            Long id = toLong(v);
-            if (id != null) return id;
-        }
-
-        // 2) try several common attribute names
-        for (String key : SESSION_USER_KEYS) {
-            Object obj = session.getAttribute(key);
-            if (obj == null) continue;
-            // if it's a number or string
-            Long id = toLong(obj);
-            if (id != null) return id;
-            // if it's a user object, try reflection to find id getters
-            id = extractIdFromUserObject(obj);
-            if (id != null) return id;
-        }
-
-        // 3) no id found
-        return null;
-    }
-
-    private Long toLong(Object o) {
-        if (o == null) return null;
-        if (o instanceof Number) return ((Number) o).longValue();
-        try {
-            String s = String.valueOf(o);
-            if (s == null || s.trim().isEmpty()) return null;
-            return Long.parseLong(s);
-        } catch (Exception ex) {
-            return null;
-        }
-    }
-
-    private Long extractIdFromUserObject(Object obj) {
-        if (obj == null) return null;
-        String[] methodNames = new String[] { "getCustomerId", "getId", "getUserId", "getIdUser", "getAccountId", "getUserID" };
-        for (String mName : methodNames) {
-            try {
-                Method m = obj.getClass().getMethod(mName);
-                Object res = m.invoke(obj);
-                Long id = toLong(res);
-                if (id != null) return id;
-            } catch (NoSuchMethodException nsme) {
-                // ignore, try next
-            } catch (Exception ex) {
-                // other reflection error, ignore and continue
+            String message = "Product ID không hợp lệ.";
+            if (isAjax) {
+                resp.setContentType("application/json;charset=UTF-8");
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                resp.getWriter().write("{\"success\":false,\"message\":\"" + jsonEscape(message) + "\"}");
+            } else {
+                if (session != null) session.setAttribute("reviewError", message);
+                resp.sendRedirect(req.getContextPath() + "/product?id=" + (productIdStr != null ? URLEncoder.encode(productIdStr, "UTF-8") : ""));
             }
+            return;
         }
-        return null;
-    }
 
-    @Override
-    public String getServletInfo() {
-        return "Handle product review submissions (robust auth check & debug logging)";
+        ReviewDAO reviewDao = new ReviewDAO();
+        OrderDAO orderDao = new OrderDAO();
+
+        try {
+            if ("delete".equalsIgnoreCase(action)) {
+                boolean ok = reviewDao.deleteReviewByUserProduct(productId, userId);
+                String message = ok ? "Đã xóa đánh giá." : "Không tìm thấy đánh giá để xóa.";
+                if (isAjax) {
+                    resp.setContentType("application/json;charset=UTF-8");
+                    resp.setStatus(HttpServletResponse.SC_OK);
+                    resp.getWriter().write("{\"success\":" + (ok ? "true" : "false") + ",\"message\":\"" + jsonEscape(message) + "\"}");
+                } else {
+                    if (session != null) {
+                        if (ok) session.setAttribute("reviewSuccess", message);
+                        else session.setAttribute("reviewError", message);
+                    }
+                    resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
+                }
+                return;
+            }
+
+            // read rating/title/comment
+            String ratingStr = req.getParameter("rating");
+            int rating = 0;
+            try { rating = Integer.parseInt(ratingStr); } catch (Exception ignored) {}
+            String reviewTitle = req.getParameter("reviewTitle");
+            String comment = req.getParameter("comment");
+            if (reviewTitle == null) reviewTitle = "";
+            if (comment == null) comment = "";
+
+            // validate for create/edit
+            if (rating < 1 || rating > 5) {
+                String message = "Vui lòng chọn số sao hợp lệ (1-5).";
+                if (isAjax) {
+                    resp.setContentType("application/json;charset=UTF-8");
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    resp.getWriter().write("{\"success\":false,\"message\":\"" + jsonEscape(message) + "\"}");
+                } else {
+                    if (session != null) session.setAttribute("reviewError", message);
+                    resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
+                }
+                return;
+            }
+            if (comment.trim().length() < 20) {
+                String message = "Nội dung đánh giá phải có ít nhất 20 ký tự.";
+                if (isAjax) {
+                    resp.setContentType("application/json;charset=UTF-8");
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    resp.getWriter().write("{\"success\":false,\"message\":\"" + jsonEscape(message) + "\"}");
+                } else {
+                    if (session != null) session.setAttribute("reviewError", message);
+                    resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
+                }
+                return;
+            }
+
+            if ("edit".equalsIgnoreCase(action)) {
+                boolean updated = reviewDao.updateReviewByUserProduct(productId, userId, rating, reviewTitle, comment);
+                String message = updated ? "Đã cập nhật đánh giá." : "Không tìm thấy đánh giá để cập nhật.";
+                if (isAjax) {
+                    resp.setContentType("application/json;charset=UTF-8");
+                    resp.setStatus(HttpServletResponse.SC_OK);
+                    resp.getWriter().write("{\"success\":" + (updated ? "true" : "false") + ",\"message\":\"" + jsonEscape(message) + "\"}");
+                } else {
+                    if (session != null) {
+                        if (updated) session.setAttribute("reviewSuccess", message);
+                        else session.setAttribute("reviewError", message);
+                    }
+                    resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
+                }
+                return;
+            }
+
+            // default: create
+            boolean purchased = orderDao.hasCustomerPurchasedProduct(userId, productId);
+            if (!purchased) {
+                String message = "Bạn chỉ có thể đánh giá sản phẩm sau khi mua.";
+                if (isAjax) {
+                    resp.setContentType("application/json;charset=UTF-8");
+                    resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    resp.getWriter().write("{\"success\":false,\"message\":\"" + jsonEscape(message) + "\"}");
+                } else {
+                    if (session != null) session.setAttribute("reviewError", message);
+                    resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
+                }
+                return;
+            }
+            boolean already = reviewDao.userHasReviewedProduct(userId, productId);
+            if (already) {
+                String message = "Bạn đã gửi đánh giá cho sản phẩm này. Bạn có thể chỉnh sửa hoặc xóa.";
+                if (isAjax) {
+                    resp.setContentType("application/json;charset=UTF-8");
+                    resp.setStatus(HttpServletResponse.SC_CONFLICT);
+                    resp.getWriter().write("{\"success\":false,\"message\":\"" + jsonEscape(message) + "\"}");
+                } else {
+                    if (session != null) session.setAttribute("reviewError", message);
+                    resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
+                }
+                return;
+            }
+
+            // insert review (may throw SQLException)
+            reviewDao.insertReview(productId, userId, rating, reviewTitle, comment);
+
+            String successMsg = "Cảm ơn! Đánh giá của bạn đã được gửi.";
+            if (isAjax) {
+                // optionally you can return new average rating or new review HTML fragment
+                resp.setContentType("application/json;charset=UTF-8");
+                resp.setStatus(HttpServletResponse.SC_OK);
+                String json = "{\"success\":true,\"message\":\"" + jsonEscape(successMsg) + "\",\"redirect\":\"" + jsonEscape(req.getContextPath() + "/product?id=" + productId) + "\"}";
+                resp.getWriter().write(json);
+            } else {
+                if (session != null) session.setAttribute("reviewSuccess", successMsg);
+                resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
+            }
+            return;
+
+        } catch (SQLException ex) {
+            // Log directly without a stored logger variable
+            Logger.getLogger(productReviewServlet.class.getName())
+                  .log(Level.SEVERE, "SQL error while handling review", ex);
+            String message = "Có lỗi khi lưu đánh giá, vui lòng thử lại sau.";
+            if (isAjax) {
+                resp.setContentType("application/json;charset=UTF-8");
+                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                resp.getWriter().write("{\"success\":false,\"message\":\"" + jsonEscape(message) + "\"}");
+            } else {
+                if (session != null) session.setAttribute("reviewError", message);
+                resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
+            }
+            return;
+        } catch (Exception ex) {
+            // Log directly without a stored logger variable
+            Logger.getLogger(productReviewServlet.class.getName())
+                  .log(Level.SEVERE, "Unexpected error while handling review", ex);
+            throw new ServletException("Lỗi khi xử lý đánh giá.", ex);
+        }
     }
 }

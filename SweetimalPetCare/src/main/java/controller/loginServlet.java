@@ -97,10 +97,23 @@ public class loginServlet extends HttpServlet {
         session.setAttribute("user", user);
         session.setAttribute("loginOk", Boolean.TRUE);
 
-        if ("login".equals(view)) {
-            response.sendRedirect(request.getContextPath() + "/home");
-        } else {
-            response.sendRedirect(request.getContextPath() + "/home");
+        switch (user.getRoleEnum()) {
+            case ADMIN:
+                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+                break;
+
+            case STAFF:
+                response.sendRedirect(request.getContextPath() + "/staff/dashboard");
+                break;
+
+            case VET:
+                response.sendRedirect(request.getContextPath() + "/vet/dashboard");
+                break;
+
+            case CUSTOMER:
+            default:
+                response.sendRedirect(request.getContextPath() + "/home");
+                break;
         }
     }
 
@@ -113,5 +126,4 @@ public class loginServlet extends HttpServlet {
     public String getServletInfo() {
         return "Short description";
     }// </editor-fold>
-
 }

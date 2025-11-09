@@ -10,8 +10,11 @@
         <title>Tin tức thú cưng</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    </head>
-    <body class="bg-gray-50 text-gray-800">
+        <style>
+            body.news-page #page-loader { display: none !important; }
+        </style>
+        </head>
+    <body class="bg-gray-50 text-gray-800 news-page">
         <%@include file="/WEB-INF/include/header.jsp" %>
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

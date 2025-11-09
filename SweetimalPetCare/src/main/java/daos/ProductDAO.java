@@ -12,8 +12,6 @@ import model.Product;
 import model.ProductVariant;
 
 /**
- * ProductDAO - full implementation (style: prepare statement directly from getConnection(),
- * close ResultSet/PreparedStatement explicitly like getProductById).
  *
  * @author Pham Nguyen Xuan Mai - CE190106
  */
@@ -589,4 +587,5 @@ public class ProductDAO extends DBContext {
         }
         return list;
     }
+  
 }
