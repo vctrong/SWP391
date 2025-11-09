@@ -69,6 +69,14 @@ public class accountSettingServlet extends HttpServlet {
         if (user == null) {
             response.sendRedirect(request.getContextPath() + "/login?redirect=/settings");
         } else {
+            // Check if user has booking data so the JSP can hide the delete option
+            try {
+                boolean hasBooking = new daos.UserDAO().hasBookings(user.getId());
+                request.setAttribute("hasBooking", hasBooking);
+            } catch (Exception ex) {
+                // if check fails, default to conservative behavior (assume has bookings)
+                request.setAttribute("hasBooking", true);
+            }
             request.getRequestDispatcher("/WEB-INF/pages/settings.jsp").forward(request, response);
         }
     }
@@ -99,6 +107,22 @@ public class accountSettingServlet extends HttpServlet {
                 session.invalidate(); // Log them out
                 response.sendRedirect("login?msg=Account deactivated successfully");
             } else if ("delete".equalsIgnoreCase(action)) {
+                // Prevent hard delete if user has bookings
+                boolean hasBooking = false;
+                try {
+                    hasBooking = userDAO.hasBookings(user.getId());
+                } catch (Exception ex) {
+                    // on error, treat as having bookings to be safe
+                    hasBooking = true;
+                }
+                if (hasBooking) {
+                    request.setAttribute("error", "Bạn không thể xóa tài khoản vì bạn đã có lịch đặt trước. Bạn chỉ có thể vô hiệu hóa tài khoản.");
+                    // Re-run the GET logic: mark hasBooking so JSP renders correctly
+                    request.setAttribute("hasBooking", true);
+                    request.getRequestDispatcher("/WEB-INF/pages/settings.jsp").forward(request, response);
+                    return;
+                }
+
                 userDAO.deleteUser(user.getId());
                 session.invalidate();
                 response.sendRedirect("login?msg=Account deleted successfully");

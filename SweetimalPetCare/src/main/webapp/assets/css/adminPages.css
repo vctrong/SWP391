@@ -1,0 +1,66 @@
+/*
+Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/CascadeStyleSheet.css to edit this template
+*/
+/* 
+    Created on : Oct 31, 2025, 3:40:47 PM
+    Author     : Vo Chi Trong - CE191062
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+:root {
+    --brand-1: #0ea5a4; /* teal-ish */
+    --brand-2: #0891b2; /* sky-ish */
+}
+
+/* Simple card shadow */
+.card {
+    box-shadow: 0 1px 6px rgba(16,24,40,0.04);
+}
+
+/* make FullCalendar height consistent */
+#calendar {
+    min-height: 400px;
+}
+
+/* Mobile sidebar overlay content alignment */
+#mobileSidebar aside {
+    width: 260px;
+}
+
+/* small utilities */
+.hidden-on-mobile {
+    display: none;
+}
+@media (min-width: 768px) {
+    .hidden-on-mobile {
+        display: block;
+    }
+}
+
+/* ---
+   Sidebar Nav (Từ lần trước)
+   --- */
+
+/* Định dạng icon SVG chung trong nav */
+.nav-link svg {
+    width: 20px;
+    height: 20px;
+    stroke: #6b7280; /* Tailwind text-gray-500 */
+    stroke-width: 1.5;
+    flex-shrink: 0;
+}
+
+/* Trạng thái Active mới:
+  Đơn giản, chuyên nghiệp. Chỉ đổi màu nền và màu chữ/icon.
+*/
+.nav-active {
+    background-color: #f3f4f6; /* Tailwind bg-gray-100 */
+    color: var(--brand-2); /* Màu xanh cyan chủ đạo */
+    font-weight: 600;
+}
+
+/* Khi active, icon cũng đổi màu theo chữ */
+.nav-active svg {
+    stroke: var(--brand-2);
+}
