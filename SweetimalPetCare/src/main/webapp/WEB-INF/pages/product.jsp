@@ -3,7 +3,7 @@
 <%@taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 <%@taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt"%>
 <%@page import="model.Product, model.ProductVariant, model.ProductImg, model.Review, java.util.*, java.text.NumberFormat, java.util.Locale, java.net.URLEncoder"%>
-<script src="${pageContext.request.contextPath}/assets/js/loading.js"></script>
+<%@include file="/WEB-INF/include/library.jsp" %>
 
 <%!
     // Simple HTML escaper
@@ -36,6 +36,7 @@
 %>
 
 <%
+    // --- server-side data same as before ---
     Product product = (Product) request.getAttribute("product");
     List<Product> relatedProducts = (List<Product>) request.getAttribute("relatedProducts");
     List<ProductVariant> variants = (List<ProductVariant>) request.getAttribute("variants");
@@ -61,14 +62,12 @@
         defaultPrice = minPrice;
     }
 
-    // Expose loggedIn flag for JSTL/EL
     boolean loggedIn = (session.getAttribute("user") != null)
             || (session.getAttribute("userId") != null)
             || (session.getAttribute("customerId") != null)
             || (request.getUserPrincipal() != null);
     request.setAttribute("loggedIn", Boolean.valueOf(loggedIn));
 
-    // currentUrl for redirect when not logged in
     String currentUrl = request.getRequestURI() + (request.getQueryString() != null ? "?" + request.getQueryString() : "");
     String encodedRedirect = "/";
     try {
@@ -135,7 +134,7 @@
 
                             <img src="${pageContext.request.contextPath}${img.imageUrl}" alt="${img.caption}"
                                  class="thumb w-16 h-16 object-cover rounded-lg cursor-pointer border-2 ${thumbBorder} hover:border-red-400 transition duration-300"
-                                 onclick="showImage(${loop.index})" />
+                                 data-index="${loop.index}" />
                         </c:forEach>
                     </div>
                 </c:if>
@@ -183,7 +182,7 @@
                     Thương hiệu: <%= (product != null && product.getBrandName() != null) ? product.getBrandName() : "N/A" %>
                 </p>
 
-                <%-- Attributes, price, add to cart, etc. (kept same as before) --%>
+                <%-- Attributes, price, add to cart, etc. --%>
                 <% if (variants != null && !variants.isEmpty()) { %>
                     <%-- Build attribute groups and price/stock maps server-side as before --%>
                     <%
@@ -240,8 +239,7 @@
                                         class="attr-btn relative border rounded-lg px-4 py-2 hover:bg-gray-100 transition select-none <%= outOfStock ? "opacity-50 border-gray-300 out-of-stock" : "" %>"
                                         data-attr-name="<%= safeAttrName %>"
                                         data-attr-value="<%= safeVal %>"
-                                        data-price="<%= priceForVal %>"
-                                        onclick="selectAttr(this, '<%= safeAttrName %>', '<%= safeVal %>', <%= priceForVal %>)">
+                                        data-price="<%= priceForVal %>">
                                     <%= val %>
                                 </button>
                             <% } %>
@@ -495,658 +493,55 @@
 
     <%@ include file="/WEB-INF/include/footer.jsp" %>
 
-    <script>
-        // Build variantsData array
-        const variantsData = [
-            <% if (variants != null) {
-                for (int i = 0; i < variants.size(); i++) {
-                    ProductVariant v = variants.get(i);
-                    String attr = v.getAttributeJson();
-                    double price = v.getPrice();
-                    String img = v.getImageUrl();
-                    int stock = v.getStockQuantity();
-                    long vid = v.getVariantId();
-                    if (img == null || img.isEmpty()) {
-                        img = "/assets/img/no-image.png";
-                    }
-            %>
-            {
-                id: <%= vid %>,
-                attr: '<%= attr != null ? attr.replaceAll("'", "\\\\'") : "" %>',
-                price: <%= price %>,
-                img: '<%= request.getContextPath() + img %>',
-                stock: <%= stock %>
-            }<%= (i < variants.size() - 1) ? "," : "" %>
-            <% }
-            } %>
-        ];
-
-        // Globals
-        window.selectedVariantId = null;
-        window.selectedVariantStock = undefined;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const mainImg = document.getElementById('mainImg');
-            const priceDisplay = document.getElementById('priceDisplay');
-            const totalPrice = document.getElementById('totalPrice');
-            const qtyEl = document.getElementById('qty');
-            const btnInc = document.getElementById('btnInc');
-            const btnDec = document.getElementById('btnDec');
-            const buyBtn = document.getElementById('buyBtn');
-            const stockInfo = document.getElementById('stockInfo');
-            const qtyAlert = document.getElementById('qtyAlert');
-            const hiddenVariantInput = document.getElementById('hiddenVariantId');
-
-            let currentUnitPrice = <%= Double.toString(defaultPrice) %>;
-            let maxQty = 99;
-            const selectedAttrs = {};
-
-            function formatVND(n) {
-                const num = Number(n) || 0;
-                return num.toLocaleString('vi-VN') + "₫";
-            }
-
-            function showQtyAlert(msg) {
-                if (!qtyAlert) return;
-                qtyAlert.textContent = msg;
-                qtyAlert.classList.remove('hidden');
-                qtyAlert.style.opacity = 1;
-                clearTimeout(qtyAlert._hideTimer);
-                qtyAlert._hideTimer = setTimeout(() => {
-                    qtyAlert.style.transition = 'opacity 240ms';
-                    qtyAlert.style.opacity = 0;
-                    setTimeout(() => {
-                        qtyAlert.classList.add('hidden');
-                        qtyAlert.style.transition = '';
-                    }, 250);
-                }, 1400);
-            }
-
-            function updateButtonsState() {
-                let qty = parseInt(qtyEl.value, 10);
-                if (isNaN(qty)) qty = 0;
-                if (qty > maxQty) qty = maxQty;
-                qtyEl.value = (qty === 0 && maxQty !== 0) ? "" : qty;
-
-                if (btnDec) btnDec.disabled = qty <= 1;
-                if (btnInc) btnInc.disabled = (maxQty === 0) || (qty >= maxQty);
-
-                if (btnDec) {
-                    if (btnDec.disabled) btnDec.classList.add('opacity-50', 'cursor-not-allowed');
-                    else btnDec.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-                if (btnInc) {
-                    if (btnInc.disabled) btnInc.classList.add('opacity-50', 'cursor-not-allowed');
-                    else btnInc.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            }
-
-            function updateTotalFromInput(animate = true) {
-                let qty = parseInt(qtyEl.value, 10);
-                if (isNaN(qty) || qty === 0) {
-                    totalPrice.textContent = formatVND(0);
-                } else {
-                    if (qty < 1) qty = 1;
-                    if (qty > maxQty) qty = maxQty;
-                    totalPrice.textContent = formatVND(currentUnitPrice * qty);
-                }
-
-                if (animate && !isNaN(parseInt(qtyEl.value, 10))) {
-                    totalPrice.style.transition = "transform 0.08s";
-                    totalPrice.style.transform = "scale(1.05)";
-                    setTimeout(() => totalPrice.style.transform = "scale(1)", 90);
-                }
-
-                updateButtonsState();
-            }
-
-            window.changeQty = function (n) {
-                let qty = parseInt(qtyEl.value, 10);
-                if (isNaN(qty)) qty = 0;
-                let target = qty + n;
-
-                if (target < 1) {
-                    target = 1;
-                    showQtyAlert("Số lượng tối thiểu là 1");
-                }
-                if (target > maxQty) {
-                    if (maxQty === 0) {
-                        showQtyAlert("Sản phẩm tạm hết hàng");
-                        qtyEl.value = maxQty;
-                        updateTotalFromInput();
-                        return;
-                    } else {
-                        showQtyAlert("Bạn đã đạt giới hạn: " + maxQty);
-                        target = maxQty;
-                    }
-                }
-
-                qtyEl.value = target;
-                updateTotalFromInput();
-            };
-
-            window.handleQtyInput = function (event) {
-                const input = event.target;
-                const digits = input.value.replace(/\D/g, "");
-                input.value = digits;
-
-                const val = parseInt(digits, 10);
-                if (!isNaN(val) && val > maxQty) {
-                    showQtyAlert("Bạn đã đạt giới hạn: " + maxQty);
-                }
-
-                updateTotalFromInput(false);
-                if (event instanceof KeyboardEvent && event.key === "Enter") input.blur();
-            };
-
-            if (btnInc) {
-                btnInc.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); changeQty(1); });
-            }
-            if (btnDec) {
-                btnDec.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); changeQty(-1); });
-            }
-
-            // selectAttr(btn, name, value, price, visual)
-            window.selectAttr = function (btn, name, value, price, visual) {
-                if (visual === undefined) visual = true;
-                const key = name.toLowerCase();
-
-                selectedAttrs[key] = value;
-                const label = document.getElementById('selected-' + key);
-                if (label) label.textContent = value;
-
-                // Remove highlight from all attribute buttons
-                document.querySelectorAll('.attr-btn').forEach(b => {
-                    b.classList.remove("border-red-500", "text-red-600", "shadow-md", "z-10");
-                });
-
-                // Find matched variant
-                let matchedVariant = null;
-                for (const v of variantsData) {
-                    try {
-                        const obj = v.attr ? JSON.parse(v.attr) : {};
-                        let match = true;
-                        for (const selKey in selectedAttrs) {
-                            const want = String(selectedAttrs[selKey]);
-                            let found = false;
-                            for (const k in obj) {
-                                if (k.toLowerCase() === selKey) {
-                                    if (String(obj[k]) === want) found = true;
-                                }
-                            }
-                            if (!found) { match = false; break; }
+    <!-- Inject runtime CONFIG (JSON) for the external JS -->
+    <script type="text/javascript">
+        window.PRODUCT_CONFIG = {
+            contextPath: '<%= request.getContextPath() %>',
+            productId: <%= (product != null ? product.getProductId() : 0) %>,
+            loggedIn: <%= loggedIn ? "true" : "false" %>,
+            userHasPurchased: <%= userHasPurchased ? "true" : "false" %>,
+            userHasReviewed: <%= userHasReviewed ? "true" : "false" %>,
+            defaultPrice: <%= Double.toString(defaultPrice) %>,
+            variantsData: [
+                <% if (variants != null) {
+                    for (int i = 0; i < variants.size(); i++) {
+                        ProductVariant v = variants.get(i);
+                        String attr = v.getAttributeJson();
+                        double price = v.getPrice();
+                        String img = v.getImageUrl();
+                        int stock = v.getStockQuantity();
+                        long vid = v.getVariantId();
+                        if (img == null || img.isEmpty()) {
+                            img = "/assets/img/no-image.png";
                         }
-                        if (match) { matchedVariant = v; break; }
-                    } catch (e) {
-                        // ignore parse problems
+                %>
+                {
+                    id: <%= vid %>,
+                    attr: '<%= attr != null ? attr.replaceAll("'", "\\\\'") : "" %>',
+                    price: <%= price %>,
+                    img: '<%= request.getContextPath() + img %>',
+                    stock: <%= stock %>
+                }<%= (i < variants.size() - 1) ? "," : "" %>
+                <% }
+                } %>
+            ],
+            images: [
+                <% if (productImages != null) {
+                    for (int i = 0; i < productImages.size(); i++) {
+                        ProductImg pi = productImages.get(i);
+                        String url = pi.getImageUrl();
+                        out.print("'" + request.getContextPath() + url + "'");
+                        if (i < productImages.size() - 1) out.print(",");
                     }
-                }
-
-                if (matchedVariant) {
-                    // highlight buttons corresponding to matchedVariant
-                    try {
-                        const obj = matchedVariant.attr ? JSON.parse(matchedVariant.attr) : {};
-                        for (const k in obj) {
-                            if (!obj.hasOwnProperty(k)) continue;
-                            const normKey = k.toLowerCase();
-                            const normVal = String(obj[k]);
-                            const b = document.querySelector(`.attr-btn[data-attr-name="${normKey}"][data-attr-value="${normVal}"]`);
-                            if (b) b.classList.add("border-red-500", "text-red-600", "shadow-md", "z-10");
-                        }
-                    } catch (e) { /* ignore */ }
-
-                    window.selectedVariantId = matchedVariant.id;
-                    window.selectedVariantStock = matchedVariant.stock;
-
-                    // update hidden input for form
-                    if (hiddenVariantInput) hiddenVariantInput.value = String(matchedVariant.id);
-
-                    currentUnitPrice = matchedVariant.price;
-                    if (priceDisplay) priceDisplay.textContent = formatVND(currentUnitPrice);
-
-                    maxQty = (typeof matchedVariant.stock === 'number' && matchedVariant.stock >= 0) ? matchedVariant.stock : 99;
-
-                    if (maxQty <= 0) {
-                        if (stockInfo) stockInfo.textContent = "Tạm thời hết hàng";
-                        if (buyBtn) { buyBtn.disabled = true; buyBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
-                        qtyEl.value = 0;
-                        updateTotalFromInput();
-                        updateButtonsState();
-                    } else {
-                        if (stockInfo) stockInfo.textContent = "Còn " + maxQty + " sản phẩm";
-                        if (buyBtn) { buyBtn.disabled = false; buyBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
-                        let q = parseInt(qtyEl.value, 10);
-                        if (isNaN(q) || q <= 0) qtyEl.value = 1;
-                        if (!isNaN(q) && q > maxQty) qtyEl.value = maxQty;
-                        updateTotalFromInput();
-                    }
-
-                    if (matchedVariant.img && mainImg) {
-                        mainImg.style.opacity = 0;
-                        setTimeout(() => { mainImg.src = matchedVariant.img; mainImg.style.opacity = 1; }, 200);
-                    }
-                } else {
-                    // No full match yet. If visual and btn provided, highlight only clicked button for feedback
-                    if (visual && btn) btn.classList.add("border-red-500", "text-red-600", "shadow-md", "z-10");
-
-                    // Do not leave selectedVariantId null if there's a reasonable fallback – keep product purchasable
-                    window.selectedVariantId = null;
-                    window.selectedVariantStock = undefined;
-
-                    currentUnitPrice = price;
-                    if (priceDisplay) priceDisplay.textContent = formatVND(price);
-                    maxQty = 99;
-                    if (stockInfo) stockInfo.textContent = "";
-                    if (buyBtn) buyBtn.disabled = false, buyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-
-                    let q0 = parseInt(qtyEl.value, 10);
-                    if (isNaN(q0) || q0 <= 0) qtyEl.value = 1;
-                    updateTotalFromInput();
-                }
-            };
-
-            // Initialize selections: ensure there's always a selected variant (or fallback to first variant)
-            function initializeSelectedAttributes() {
-                // Try to detect existing visually-marked buttons (server-side) first
-                const preselectedBtns = document.querySelectorAll('.attr-btn.border-red-500, .attr-btn.text-red-600');
-                let applied = false;
-                preselectedBtns.forEach(btn => {
-                    const name = btn.dataset && btn.dataset.attrName;
-                    const value = btn.dataset && btn.dataset.attrValue;
-                    const price = btn.dataset && btn.dataset.price ? Number(btn.dataset.price) : undefined;
-                    if (name && value) {
-                        // visual=true so user sees selected option
-                        selectAttr(btn, name, value, price, true);
-                        applied = true;
-                    }
-                });
-
-                // If nothing preselected, choose a sensible default:
-                // - Prefer variant with minimum price (cheapest) that exists in variantsData
-                // - Otherwise, select first available option for each attribute group
-                if (!applied) {
-                    // find cheapest variant
-                    let defaultVariant = null;
-                    if (Array.isArray(variantsData) && variantsData.length > 0) {
-                        defaultVariant = variantsData.reduce((acc, v) => {
-                            if (!acc) return v;
-                            return (v.price < acc.price) ? v : acc;
-                        }, null);
-                    }
-
-                    if (defaultVariant && defaultVariant.attr) {
-                        // try to select attribute buttons that match this variant (visual highlight)
-                        try {
-                            const obj = JSON.parse(defaultVariant.attr);
-                            for (const k in obj) {
-                                if (!obj.hasOwnProperty(k)) continue;
-                                const normKey = k.toLowerCase();
-                                const normVal = String(obj[k]);
-                                const btn = document.querySelector(`.attr-btn[data-attr-name="${normKey}"][data-attr-value="${normVal}"]`);
-                                if (btn) {
-                                    // use visual highlight for better UX
-                                    selectAttr(btn, normKey, normVal, btn.dataset && btn.dataset.price ? Number(btn.dataset.price) : defaultVariant.price, true);
-                                } else {
-                                    // if matching button not found (parsing mismatch), fall back later
-                                }
-                            }
-                            applied = true;
-                        } catch (e) {
-                            // parsing error – ignore and fall back to per-group first option
-                        }
-                    }
-
-                    if (!applied) {
-                        // Select the first non-out-of-stock button in each attribute group
-                        const attrBtns = Array.from(document.querySelectorAll('.attr-btn'));
-                        const groups = {};
-                        attrBtns.forEach(b => {
-                            const name = b.dataset && b.dataset.attrName;
-                            if (!name) return;
-                            if (!groups[name]) groups[name] = [];
-                            groups[name].push(b);
-                        });
-
-                        Object.keys(groups).forEach(name => {
-                            const buttons = groups[name];
-                            // pick first not out-of-stock; else pick first
-                            let pick = buttons.find(x => !x.classList.contains('out-of-stock'));
-                            if (!pick) pick = buttons[0];
-                            if (pick) {
-                                const value = pick.dataset && pick.dataset.attrValue;
-                                const price = pick.dataset && pick.dataset.price ? Number(pick.dataset.price) : undefined;
-                                selectAttr(pick, name, value, price, true);
-                            }
-                        });
-                    }
-
-                    // After selecting per-group, if still no matched variant (selectedVariantId null), fallback to first variant in variantsData
-                    if ((!window.selectedVariantId || window.selectedVariantId === null) && Array.isArray(variantsData) && variantsData.length > 0) {
-                        // prefer a variant with stock > 0, otherwise just first
-                        let fallback = variantsData.find(v => typeof v.stock === 'number' && v.stock > 0) || variantsData[0];
-                        // apply fallback: set hidden input and UI price/stock
-                        window.selectedVariantId = fallback.id;
-                        window.selectedVariantStock = fallback.stock;
-                        if (hiddenVariantInput) hiddenVariantInput.value = String(fallback.id);
-                        currentUnitPrice = fallback.price;
-                        if (priceDisplay) priceDisplay.textContent = formatVND(currentUnitPrice);
-                        maxQty = (typeof fallback.stock === 'number' && fallback.stock >= 0) ? fallback.stock : 99;
-                        if (maxQty <= 0) {
-                            if (stockInfo) stockInfo.textContent = "Tạm thời hết hàng";
-                            if (buyBtn) { buyBtn.disabled = true; buyBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
-                            qtyEl.value = 0;
-                        } else {
-                            if (stockInfo) stockInfo.textContent = "Còn " + maxQty + " sản phẩm";
-                            if (buyBtn) { buyBtn.disabled = false; buyBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
-                            if (isNaN(parseInt(qtyEl.value, 10)) || parseInt(qtyEl.value, 10) <= 0) qtyEl.value = 1;
-                        }
-                        if (fallback.img && mainImg) { mainImg.style.opacity = 0; setTimeout(() => { mainImg.src = fallback.img; mainImg.style.opacity = 1; }, 200); }
-
-                        // Try to highlight attribute buttons that correspond to this fallback variant, if possible
-                        if (fallback.attr) {
-                            try {
-                                const obj = JSON.parse(fallback.attr);
-                                for (const k in obj) {
-                                    if (!obj.hasOwnProperty(k)) continue;
-                                    const normKey = k.toLowerCase();
-                                    const normVal = String(obj[k]);
-                                    const b = document.querySelector(`.attr-btn[data-attr-name="${normKey}"][data-attr-value="${normVal}"]`);
-                                    if (b) b.classList.add("border-red-500", "text-red-600", "shadow-md", "z-10");
-                                }
-                            } catch (e) { /* ignore */ }
-                        }
-                    }
-                }
-
-                // If there are no variants, set hiddenVariantId to mainVariant if present (server-side case)
-                <% if ((variants == null || variants.isEmpty()) && product != null && product.getMainVariant() != null) { %>
-                    if (hiddenVariantInput) hiddenVariantInput.value = '<%= product.getMainVariant().getVariantId() %>';
-                    window.selectedVariantId = <%= product.getMainVariant().getVariantId() %>;
-                    window.selectedVariantStock = <%= product.getMainVariant().getStockQuantity() %>;
-                <% } %>
-
-                if ((isNaN(parseInt(qtyEl.value, 10)) || parseInt(qtyEl.value, 10) <= 0) && maxQty > 0) qtyEl.value = 1;
-
-                updateButtonsState();
-                updateTotalFromInput();
-            }
-
-            initializeSelectedAttributes();
-
-            // Hook form submit (ensure variantId is always set; if not, set fallback)
-const addForm = document.getElementById('addToCartForm');
-if (addForm) {
-  addForm.addEventListener('submit', function (e) {
-    // validate and set hidden fields, then allow submit
-    const hiddenVariant = document.getElementById('hiddenVariantId');
-    const hiddenQuantity = document.getElementById('hiddenQuantity');
-    const qtyEl = document.getElementById('qty');
-
-    // determine variant
-    let variantId = (hiddenVariant && hiddenVariant.value) ? hiddenVariant.value.trim() : '';
-    if (!variantId && window.selectedVariantId) variantId = String(window.selectedVariantId);
-
-    // Final fallback: if still no variantId but variantsData available, pick first available variant
-    if (!variantId && Array.isArray(variantsData) && variantsData.length > 0) {
-      const fallback = variantsData.find(v => typeof v.stock === 'number' && v.stock > 0) || variantsData[0];
-      if (fallback) variantId = String(fallback.id);
-      if (hiddenVariant) hiddenVariant.value = variantId;
-    }
-
-    if (!variantId) {
-      e.preventDefault();
-      alert('Vui lòng chọn biến thể sản phẩm trước khi đặt hàng.');
-      return;
-    }
-
-    // normalize qty
-    let q = 1;
-    if (qtyEl && qtyEl.value) {
-      const qi = parseInt(qtyEl.value.replace(/\D/g, ''), 10);
-      if (!isNaN(qi) && qi > 0) q = qi;
-    }
-    if (hiddenVariant) hiddenVariant.value = variantId;
-    if (hiddenQuantity) hiddenQuantity.value = String(q);
-
-    // do not call e.preventDefault() -> form will submit to action attribute
-    // optionally disable submit button briefly to avoid double-submit
-    const submitBtn = addForm.querySelector('button[type="submit"], #buyBtn');
-    if (submitBtn) { submitBtn.disabled = true; setTimeout(() => submitBtn.disabled = false, 1500); }
-  });
-}
-
-            // Tab switching
-            const tabBtns = document.querySelectorAll('.tab-btn');
-            tabBtns.forEach(btn => btn.addEventListener('click', function(){
-                tabBtns.forEach(b => b.classList.remove('text-red-500','border-b-2','border-red-500'));
-                document.getElementById('tab-desc').classList.add('hidden');
-                document.getElementById('tab-reviews').classList.add('hidden');
-                this.classList.add('text-red-500','border-b-2','border-red-500');
-                const tab = this.dataset.tab;
-                if(tab === 'desc') document.getElementById('tab-desc').classList.remove('hidden');
-                if(tab === 'reviews') document.getElementById('tab-reviews').classList.remove('hidden');
-            }));
-
-            // REVIEW: attach toggle only if exists (loggedIn path)
-            const toggleBtn = document.getElementById('toggleReviewForm');
-            const purchaseNotice = document.getElementById('purchaseNotice');
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', () => {
-                    // priority: if user already reviewed -> show message about single review and do not open form
-                    const hasReviewed = String(toggleBtn.dataset.hasReviewed) === 'true';
-                    if (hasReviewed) {
-                        if (purchaseNotice) {
-                            purchaseNotice.textContent = "Bạn chỉ có thể gửi 1 phản hồi. Vui lòng xóa hoặc chỉnh sửa đánh giá hiện có nếu muốn thay đổi.";
-                            purchaseNotice.classList.remove('hidden');
-                        }
-                        const rf = document.getElementById('reviewForm');
-                        if (rf && !rf.classList.contains('hidden')) rf.classList.add('hidden');
-                        return;
-                    }
-
-                    // second check: must have purchased to write a review
-                    const hasPurchased = String(toggleBtn.dataset.hasPurchased) === 'true';
-                    const rf = document.getElementById('reviewForm');
-
-                    if (!hasPurchased) {
-                        if (purchaseNotice) {
-                            purchaseNotice.textContent = "Bạn phải mua sản phẩm mới được viết đánh giá.";
-                            purchaseNotice.classList.remove('hidden');
-                        }
-                        if (rf && !rf.classList.contains('hidden')) rf.classList.add('hidden');
-                        return;
-                    }
-
-                    // user has not reviewed and has purchased -> toggle form and clear notice
-                    if (purchaseNotice) {
-                        purchaseNotice.textContent = "";
-                        purchaseNotice.classList.add('hidden');
-                    }
-                    if (rf) rf.classList.toggle('hidden');
-                });
-            }
-
-            // Star rating listeners...
-            const ratingInput = document.getElementById('ratingInput');
-            const stars = document.querySelectorAll('#starRating .star');
-            if (ratingInput && stars && stars.length > 0) {
-                stars.forEach(star => {
-                    star.addEventListener('mouseover', () => {
-                        stars.forEach(s => { s.textContent = "☆"; s.classList.remove("text-yellow-400"); });
-                        const v = parseInt(star.dataset.value, 10) || 0;
-                        for (let i = 0; i < v; i++) {
-                            stars[i].textContent = "★";
-                            stars[i].classList.add("text-yellow-400");
-                        }
-                    });
-                    star.addEventListener('click', () => { ratingInput.value = star.dataset.value; });
-                    star.addEventListener('mouseout', () => {
-                        const sel = parseInt(ratingInput.value, 10) || 0;
-                        stars.forEach((s, idx) => {
-                            s.textContent = (idx < sel) ? "★" : "☆";
-                            if (idx < sel) s.classList.add("text-yellow-400"); else s.classList.remove("text-yellow-400");
-                        });
-                    });
-                });
-            }
-
-            // Add client-side validation for the review form...
-            const reviewFormInner = document.getElementById('reviewFormInner');
-            if (reviewFormInner) {
-                reviewFormInner.addEventListener('submit', function(e) {
-                    let ok = true;
-                    const ratingVal = parseInt(ratingInput.value, 10) || 0;
-                    const ratingErrorEl = document.getElementById('ratingError');
-
-                    const commentEl = document.getElementById('reviewComment');
-                    const commentErrorEl = document.getElementById('commentError');
-
-                    // Client-side validation
-                    if (ratingVal < 1) { ratingErrorEl.classList.remove('hidden'); ok = false; } else { ratingErrorEl.classList.add('hidden'); }
-                    if (!commentEl.value || commentEl.value.trim().length < 20) { commentErrorEl.classList.remove('hidden'); ok = false; } else { commentErrorEl.classList.add('hidden'); }
-
-                    if (!ok) { e.preventDefault(); const firstErr = document.querySelector('.text-red-500:not(.hidden)'); if (firstErr) firstErr.scrollIntoView({behavior: 'smooth', block: 'center'}); return false; }
-
-                    // If reached here, submit via AJAX (prevent default)
-                    e.preventDefault();
-                    submitReviewAjax(reviewFormInner);
-                });
-            }
-
-            // safe image thumbnail handlers
-            const thumbEls = document.querySelectorAll('.thumb');
-            thumbEls.forEach((t, i) => t.addEventListener('click', () => showImage(i)));
-        });
-
-        // Image helpers outside DOMContentLoaded for use by inline onclick
-        let currentIndex = 0;
-        const images = [
-            <% if (productImages != null) {
-                for (int i = 0; i < productImages.size(); i++) {
-                    String url = productImages.get(i).getImageUrl();
-                    out.print("'" + request.getContextPath() + url + "'");
-                    if (i < productImages.size() - 1) {
-                        out.print(",");
-                    }
-                }
-            } %>
-        ];
-        function showImage(index) {
-            if (!images || index < 0 || index >= images.length) return;
-            const mainImgEl = document.getElementById('mainImg');
-            if (!mainImgEl) return;
-            mainImgEl.style.opacity = 0;
-            setTimeout(() => {
-                mainImgEl.src = images[index];
-                mainImgEl.style.opacity = 1;
-            }, 200);
-            document.querySelectorAll('.thumb').forEach((t, i) => {
-                t.classList.toggle('border-red-500', i === index);
-                t.classList.toggle('border-gray-200', i !== index);
-            });
-            currentIndex = index;
-        }
-        function nextImage() { showImage((currentIndex + 1) % images.length); }
-        function prevImage() { showImage((currentIndex - 1 + images.length) % images.length); }
-
-        /* ---------------------
-           AJAX submit for review
-           - sends X-Requested-With and Accept: application/json
-           - expects JSON { success: bool, message: string, redirect?: string, login?: true }
-           - on success: follow redirect if present, otherwise show success and optionally inject new review
-           --------------------- */
-        function showMessage(type, text) {
-            // simple floating message
-            let id = 'ajaxReviewFlash';
-            let el = document.getElementById(id);
-            if (!el) {
-                el = document.createElement('div');
-                el.id = id;
-                el.style.position = 'fixed';
-                el.style.top = '84px';
-                el.style.right = '20px';
-                el.style.zIndex = 99999;
-                el.style.padding = '10px 14px';
-                el.style.borderRadius = '6px';
-                el.style.color = '#fff';
-                el.style.maxWidth = '380px';
-                el.style.boxShadow = '0 6px 20px rgba(0,0,0,.12)';
-                document.body.appendChild(el);
-            }
-            el.textContent = text;
-            el.style.background = (type === 'success') ? '#16a34a' : '#ef4444';
-            el.style.display = 'block';
-            clearTimeout(el._timer);
-            el._timer = setTimeout(() => { el.style.display = 'none'; }, 4000);
-        }
-
-        function submitReviewAjax(form) {
-            const submitBtn = form.querySelector('button[type="submit"], #submitReviewBtn');
-            if (submitBtn) submitBtn.disabled = true;
-
-            // prepare body
-            const body = new URLSearchParams(new FormData(form)).toString();
-
-            fetch(form.action, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                },
-                body: body,
-                credentials: 'same-origin'
-            })
-            .then(async resp => {
-                const text = await resp.text();
-                let json = null;
-                try { json = text ? JSON.parse(text) : null; } catch (err) { console.error('Invalid JSON', text); }
-
-                if (!resp.ok) {
-                    if (json && json.message) {
-                        showMessage('error', json.message);
-                    } else {
-                        showMessage('error', 'Lỗi server. Vui lòng thử lại.');
-                    }
-                    // if unauthorized and server suggests login, redirect user
-                    if (json && json.login) {
-                        const ctx = '<%= request.getContextPath() %>';
-                        const redirectTo = ctx + '/login?redirect=' + encodeURIComponent(window.location.href);
-                        window.location.href = redirectTo;
-                    }
-                    throw new Error('HTTP ' + resp.status);
-                }
-
-                if (json) {
-                    if (json.success) {
-                        if (json.redirect) {
-                            // prefer server-suggested redirect (PRG)
-                            window.location.href = json.redirect;
-                            return;
-                        }
-                        // success without redirect: show message and optionally append new review HTML if server provided it
-                        showMessage('success', json.message || 'Gửi đánh giá thành công');
-                        // Optionally: reload reviews list or reload page (here we reload to reflect new review)
-                        setTimeout(() => window.location.reload(), 900);
-                    } else {
-                        showMessage('error', json.message || 'Không thể gửi đánh giá');
-                        if (json.login) {
-                            const ctx = '<%= request.getContextPath() %>';
-                            window.location.href = ctx + '/login?redirect=' + encodeURIComponent(window.location.href);
-                        }
-                    }
-                } else {
-                    // no json -> reload as fallback
-                    window.location.reload();
-                }
-            })
-            .catch(err => {
-                console.error('Review submit error:', err);
-            })
-            .finally(() => {
-                if (submitBtn) submitBtn.disabled = false;
-            });
-        }
+                } %>
+            ]
+        };
     </script>
+
+    <!-- Load small helper if you have it -->
+    <script src="${pageContext.request.contextPath}/assets/js/loading.js"></script>
+
+    <!-- Externalized product JS -->
+    <script src="${pageContext.request.contextPath}/assets/js/product.js"></script>
 </body>
 </html>

@@ -17,8 +17,8 @@ import model.Product;
 import model.ProductCategory;
 
 /**
- *
- * @author Pham Nguyen Xuan Mai - CE190106
+ * Updated shopServlet: always forwards to /WEB-INF/pages/shop.jsp.
+ * The JSP itself checks X-Requested-With and renders either full page or fragment.
  */
 @WebServlet(name = "ShopServlet", urlPatterns = {"/shop"})
 public class shopServlet extends HttpServlet {
@@ -32,12 +32,9 @@ public class shopServlet extends HttpServlet {
         BrandDAO brandDAO = new BrandDAO();
         ProductCategoryDAO categoryDAO = new ProductCategoryDAO();
 
-        // --- NEW: lấy giá tối đa trong DB và đưa vào request ---
-        Integer maxPriceInDb = prvant.getMaxPrice(); // implement method in DAO (see below)
+        Integer maxPriceInDb = prvant.getMaxPrice();
         request.setAttribute("maxPriceInDb", maxPriceInDb);
-        // -------------------------------------------------------
 
-        // Lấy danh sách brand/category được chọn (nhiều checkbox)
         String[] brandIds = request.getParameterValues("brand");
         String[] categoryIds = request.getParameterValues("category");
 
@@ -55,7 +52,6 @@ public class shopServlet extends HttpServlet {
             }
         }
 
-        // Lấy min/max price
         Double minPrice = null, maxPrice = null;
         String minStr = request.getParameter("minPrice");
         String maxStr = request.getParameter("maxPrice");
@@ -66,7 +62,6 @@ public class shopServlet extends HttpServlet {
             // ignore
         }
 
-        // Stock filter
         String[] stockArr = request.getParameterValues("stock");
         String stockFilter = null;
         if (stockArr != null && stockArr.length > 0) {
@@ -79,13 +74,34 @@ public class shopServlet extends HttpServlet {
             if (hasOut && !hasIn) stockFilter = "outOfStock";
         }
 
-        // Sorting param (new)
-        String sort = request.getParameter("sort"); // values: featured, best_selling, name_asc, name_desc, price_asc, price_desc, date_asc, date_desc
+        String sort = request.getParameter("sort");
 
-        // Lấy products để hiển thị (Áp stockFilter nếu user chọn) - truyền sort vào DAO
-        List<Product> products = productDAO.getProductsWithFilter(categoryList, brandList, minPrice, maxPrice, stockFilter, sort);
+        int currentPage = 1;
+        int pageSize = 12;
+        String pageParam = request.getParameter("page");
+        String pageSizeParam = request.getParameter("pageSize");
+        try {
+            if (pageParam != null) currentPage = Math.max(1, Integer.parseInt(pageParam));
+        } catch (NumberFormatException ignored) {}
+        try {
+            if (pageSizeParam != null) {
+                int ps = Integer.parseInt(pageSizeParam);
+                if (ps == 9 || ps == 12 || ps == 18 || ps == 24) pageSize = ps;
+                else if (ps > 0) pageSize = ps;
+            }
+        } catch (NumberFormatException ignored) {}
 
-        // Đếm variant-level in/out stock
+        int totalProducts = productDAO.countProductsWithFilter(categoryList, brandList, minPrice, maxPrice, stockFilter, sort);
+        if (totalProducts < 0) totalProducts = 0;
+
+        int totalPages = (totalProducts + pageSize - 1) / pageSize;
+        if (totalPages < 1) totalPages = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        int offset = (currentPage - 1) * pageSize;
+
+        List<Product> products = productDAO.getProductsWithFilterPaged(categoryList, brandList, minPrice, maxPrice, stockFilter, sort, pageSize, offset);
+
         int inStockCount = productDAO.countVariantsInStock(categoryList, brandList, minPrice, maxPrice);
         int outStockCount = productDAO.countVariantsOutOfStock(categoryList, brandList, minPrice, maxPrice);
 
@@ -98,9 +114,14 @@ public class shopServlet extends HttpServlet {
         request.setAttribute("inStockCount", inStockCount);
         request.setAttribute("outStockCount", outStockCount);
 
-        // forward giữ param sort để select chọn đúng
         request.setAttribute("sort", sort);
 
+        request.setAttribute("totalProducts", totalProducts);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("currentPage", currentPage);
+        request.setAttribute("pageSize", pageSize);
+
+        // Always forward to the single JSP. The JSP will decide whether to render full page or fragment
         request.getRequestDispatcher("/WEB-INF/pages/shop.jsp").forward(request, response);
     }
 
