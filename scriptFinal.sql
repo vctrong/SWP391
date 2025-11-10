@@ -219,6 +219,21 @@ CREATE TABLE ProductVariant (
 );
 CREATE INDEX IX_ProductVariant_Product ON ProductVariant(product_id);
 
+/* ============== BỔ SUNG: CART ITEMS (GỘP) ============== */
+    CREATE TABLE CartItems (
+        cart_item_id    BIGINT IDENTITY PRIMARY KEY,
+        user_id         BIGINT NOT NULL FOREIGN KEY REFERENCES Users(user_id) ON DELETE CASCADE, -- Món hàng thuộc về user nào
+        variant_id      BIGINT NOT NULL FOREIGN KEY REFERENCES ProductVariant(variant_id),
+        quantity        INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
+        added_at        DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT UQ_User_Variant UNIQUE (user_id, variant_id) -- Một user chỉ có 1 dòng cho mỗi loại sản phẩm trong giỏ
+    );
+    PRINT 'Table CartItems (merged version) created.';
+    CREATE INDEX IX_CartItems_User ON CartItems(user_id);
+
+
+
+
 /* ============== 6. ORDER DOMAIN (BASIC) ============== */
 CREATE TABLE OrderStatus (
     order_status_code VARCHAR(30) PRIMARY KEY,

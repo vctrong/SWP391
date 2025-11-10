@@ -14,16 +14,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import model.service.service;
-import model.service.serviceCate;
 
 /**
  *
  * @author Vo Chi Trong - CE191062
  */
-@WebServlet(name = "serviceAdminServlet", urlPatterns = {"/admin/service"})
-public class serviceServlet extends HttpServlet {
+@WebServlet(name = "addServicePackagesServlet", urlPatterns = {"/admin/addServicePackage"})
+public class addServicePackagesServlet extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -42,15 +39,16 @@ public class serviceServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet serviceServlet</title>");
+            out.println("<title>Servlet addServicePackagesServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet serviceServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet addServicePackagesServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
     }
 
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
      *
@@ -62,13 +60,7 @@ public class serviceServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        ServiceDAO sDAO = new ServiceDAO();
-
-        ArrayList<service> listService = sDAO.getServiceAdmin();
-        request.setAttribute("listCate", sDAO.getServiceCate());
-        request.setAttribute("listService", listService);
-        request.setAttribute("listSeriviceForListPackage", sDAO.getServiceForListPackage());
-        request.getRequestDispatcher("/WEB-INF/admin/services.jsp").forward(request, response);
+        response.sendRedirect(request.getContextPath() + "/admin/service");
     }
 
     /**
@@ -85,58 +77,47 @@ public class serviceServlet extends HttpServlet {
 
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
-
         HttpSession session = request.getSession();
 
-        String serviceCode = request.getParameter("service_code");
-        String serviceName = request.getParameter("service_name");
-        String serviceCategoryIdStr = request.getParameter("service_category_id");
-        String baseDurationStr = request.getParameter("base_duration_min");
-        String currentPriceStr = request.getParameter("current_price");
+        String packageCode = request.getParameter("package_code");
+        String packageName = request.getParameter("package_name");
+        String packagePriceStr = request.getParameter("package_price");
         String status = request.getParameter("status");
         String descriptionBase = request.getParameter("description");
+        String desctiption = descriptionBase == null ? "" : descriptionBase.trim();
+        BigDecimal price = null;
 
-        String description = descriptionBase == null ? "" : descriptionBase.trim();
-
-        if (serviceCode == null || serviceName == null) {
-            session.setAttribute("message", "Lỗi: Vui lòng không để trống Mã dịch vụ và Tên dịch vụ.");
+        if (packageCode == null || packageCode.trim().isEmpty()
+                || packageName == null || packageName.trim().isEmpty()) {
+            session.setAttribute("message", "Lỗi: Vui lòng không để trống Mã gói và Tên gói.");
             session.setAttribute("messageType", "error");
             response.sendRedirect(request.getContextPath() + "/admin/service?create=fail");
             return;
         }
-
-        long serviceCategoryId = 0;
-        int baseDurationMin = 0;
-        BigDecimal currentPrice = null;
-
         try {
-            serviceCategoryId = Long.parseLong(serviceCategoryIdStr);
-            baseDurationMin = Integer.parseInt(baseDurationStr);
-            currentPrice = new BigDecimal(currentPriceStr);
-        } catch (NumberFormatException | NullPointerException e) {
-            session.setAttribute("message", "Lỗi: ID, Thời lượng hoặc Giá tiền không hợp lệ (null, sai định dạng, hoặc là số âm).");
+            price = new BigDecimal(packagePriceStr);
+        } catch (NumberFormatException e) {
+            session.setAttribute("message", "Lỗi: Giá gói không hợp lệ (null, sai định dạng, hoặc là số âm).");
             session.setAttribute("messageType", "error");
             response.sendRedirect(request.getContextPath() + "/admin/service?create=fail");
             return;
         }
         ServiceDAO sDAO = new ServiceDAO();
-        if (sDAO.exitsServiceCode(serviceCode)) {
-            session.setAttribute("message", "Lỗi: Mã dịch vụ '" + serviceCode + "' đã tồn tại.");
+        if (sDAO.exitsPackageCode(packageCode)) {
+            session.setAttribute("message", "Lỗi: Mã gói dịch vụ '" + packageCode + "' đã tồn tại.");
             System.out.println(session.getAttribute("message"));
             session.setAttribute("messageType", "error");
-            response.sendRedirect(request.getContextPath() + "/admin/service?create=failMadichVu");
+            response.sendRedirect(request.getContextPath() + "/admin/service?createPackage=fail");
             return;
         }
-        int createService = sDAO.createService(serviceCategoryId, serviceCode,
-                serviceName, description, baseDurationMin, currentPrice, status);
-        if (createService > 0) {
-            session.setAttribute("message", "Thêm mới dịch vụ thành công!");
+        if (sDAO.createServicePackage(packageCode, packageName, desctiption, status, price) > 0) {
+            session.setAttribute("message", "Thêm Gói dịch vụ thành công!");
             session.setAttribute("messageType", "success");
-            response.sendRedirect(request.getContextPath() + "/admin/service?create=succsess");
+            response.sendRedirect(request.getContextPath() + "/admin/service?createPackage=succsess");
         } else {
-            session.setAttribute("message", "Lỗi: Không thể thêm dịch vụ. Vui lòng kiểm tra lại CSDL.");
+            session.setAttribute("message", "Lỗi: Không thể thêm Gói dịch vụ. Vui lòng kiểm tra CSDL.");
             session.setAttribute("messageType", "error");
-            response.sendRedirect(request.getContextPath() + "/admin/service?create=fail");
+            response.sendRedirect(request.getContextPath() + "/admin/service?createPackage=fail");
         }
 
     }
