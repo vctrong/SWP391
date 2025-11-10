@@ -125,7 +125,6 @@
         </section>
 
         <!-- Dịch vụ nổi bật -->
-        <!-- Dịch vụ nổi bật -->
         <section id="services" class="relative -mt-10 bg-gradient-to-br from-sky-50 via-cyan-50 to-white py-24 overflow-hidden rounded-t-[3rem]">
             <!-- Background Decorations -->
             <div class="absolute top-0 left-0 w-80 h-80 bg-sky-200 rounded-full blur-3xl opacity-20"></div>
@@ -256,7 +255,7 @@
                     </div>
                 </div>
 
-                <a href="/shop"
+                <a href="${pageContext.request.contextPath}/shop"
                    class="mt-12 inline-flex items-center justify-center bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-cyan-600 hover:-translate-y-0.5 transition-all duration-300">
                     <i class="fa-solid fa-paw mr-2"></i> Đến cửa hàng
                 </a>

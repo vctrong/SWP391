@@ -1,0 +1,547 @@
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt"%>
+<%@page import="model.Product, model.ProductVariant, model.ProductImg, model.Review, java.util.*, java.text.NumberFormat, java.util.Locale, java.net.URLEncoder"%>
+<%@include file="/WEB-INF/include/library.jsp" %>
+
+<%!
+    // Simple HTML escaper
+    private String escapeHtml(String s) {
+        if (s == null) return "";
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '&': sb.append("&amp;"); break;
+                case '<': sb.append("&lt;"); break;
+                case '>': sb.append("&gt;"); break;
+                case '"': sb.append("&quot;"); break;
+                case '\'': sb.append("&#x27;"); break;
+                default: sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    // Normalize comment: convert CRLF/CR to LF, collapse multiple blank lines, trim ends
+    private String normalizeComment(String s) {
+        if (s == null) return "";
+        s = s.replaceAll("\\r\\n?", "\n");
+        s = s.replaceAll("\\n\\s*\\n+", "\n\n");
+        s = s.replaceAll("^[\\s\\u00A0]+", "");
+        s = s.replaceAll("[\\s\\u00A0]+$", "");
+        return s;
+    }
+%>
+
+<%
+    // --- server-side data same as before ---
+    Product product = (Product) request.getAttribute("product");
+    List<Product> relatedProducts = (List<Product>) request.getAttribute("relatedProducts");
+    List<ProductVariant> variants = (List<ProductVariant>) request.getAttribute("variants");
+    List<ProductImg> productImages = (List<ProductImg>) request.getAttribute("productImages");
+    List<Review> reviews = (List<Review>) request.getAttribute("reviews");
+    Boolean userHasPurchasedAttr = (Boolean) request.getAttribute("userHasPurchased");
+    Boolean userHasReviewedAttr = (Boolean) request.getAttribute("userHasReviewed");
+    boolean userHasPurchased = userHasPurchasedAttr != null ? userHasPurchasedAttr.booleanValue() : false;
+    boolean userHasReviewed = userHasReviewedAttr != null ? userHasReviewedAttr.booleanValue() : false;
+
+    NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
+    double defaultPrice = 0;
+    if (product != null && product.getMainVariant() != null) defaultPrice = product.getMainVariant().getPrice();
+
+    // For client-side initial selection
+    double minPrice = defaultPrice;
+    ProductVariant minPriceVariant = null;
+    if (variants != null && !variants.isEmpty()) {
+        minPrice = Double.MAX_VALUE;
+        for (ProductVariant v : variants) {
+            if (v.getPrice() < minPrice) { minPrice = v.getPrice(); minPriceVariant = v; }
+        }
+        defaultPrice = minPrice;
+    }
+
+    boolean loggedIn = (session.getAttribute("user") != null)
+            || (session.getAttribute("userId") != null)
+            || (session.getAttribute("customerId") != null)
+            || (request.getUserPrincipal() != null);
+    request.setAttribute("loggedIn", Boolean.valueOf(loggedIn));
+
+    String currentUrl = request.getRequestURI() + (request.getQueryString() != null ? "?" + request.getQueryString() : "");
+    String encodedRedirect = "/";
+    try {
+        encodedRedirect = URLEncoder.encode(currentUrl, "UTF-8");
+    } catch (Exception e) {
+        encodedRedirect = "/";
+    }
+    request.setAttribute("encodedRedirect", encodedRedirect);
+%>
+
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <title><%= (product != null) ? product.getProductName() : "Sản phẩm" %></title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <style>
+        .rating-stars i { font-size: 20px; margin-right: 6px; vertical-align: middle; }
+        .rating-value { margin-left: 8px; color: #4b5563; }
+        .item-img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; }
+        .muted { color: #6b7280; }
+        .summary-box { position: sticky; top: 20px; }
+        .small-muted { font-size: .9rem; color: #6b7280; display:block; margin-top:4px; }
+        pre.debug { background:#f8f9fa; border:1px solid #e9ecef; padding:12px; overflow:auto; max-height:300px; }
+        .out-of-stock::after { content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: red; transform: rotate(-20deg); }
+    </style>
+</head>
+<body>
+    <%@ include file="/WEB-INF/include/header.jsp" %>
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="text-sm text-gray-500 mb-6 font-medium">
+            <a href="${pageContext.request.contextPath}/shop" class="hover:text-red-500 transition">🏠 Trang Chủ</a> ›
+            <span class="text-gray-700"><%= (product != null) ? product.getProductName() : "Không tìm thấy" %></span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+
+            <div class="flex flex-col items-center">
+                <div class="relative w-full h-96 bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <img id="mainImg"
+                         src="<%= request.getContextPath() + ((productImages != null && !productImages.isEmpty()) ? productImages.get(0).getImageUrl() : "/assets/img/no-image.png") %>"
+                         alt="<%= (product != null) ? product.getProductName() : "Không có hình ảnh" %>"
+                         class="w-full h-full object-contain transition-all duration-500 ease-in-out opacity-100">
+                    <button type="button" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center shadow-md" onclick="prevImage()">&#10094;</button>
+                    <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center shadow-md" onclick="nextImage()">&#10095;</button>
+                </div>
+
+                <c:if test="${not empty productImages}">
+                    <div class="flex gap-2 mt-3 justify-center flex-wrap">
+                        <c:forEach var="img" items="${productImages}" varStatus="loop">
+                            <c:choose>
+                                <c:when test="${loop.index == 0}">
+                                    <c:set var="thumbBorder" value="border-red-500" />
+                                </c:when>
+                                <c:otherwise>
+                                    <c:set var="thumbBorder" value="border-gray-200" />
+                                </c:otherwise>
+                            </c:choose>
+
+                            <img src="${pageContext.request.contextPath}${img.imageUrl}" alt="${img.caption}"
+                                 class="thumb w-16 h-16 object-cover rounded-lg cursor-pointer border-2 ${thumbBorder} hover:border-red-400 transition duration-300"
+                                 data-index="${loop.index}" />
+                        </c:forEach>
+                    </div>
+                </c:if>
+            </div>
+
+            <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                <h1 class="text-3xl font-bold text-gray-900 leading-tight">
+                    <%= (product != null) ? product.getProductName() : "Không có sản phẩm" %>
+                </h1>
+
+                <% 
+                    Number avgAttr = null;
+                    Object rawAvg = request.getAttribute("avgRating");
+                    if (rawAvg instanceof Number) avgAttr = (Number) rawAvg;
+                    double avgRating = avgAttr != null ? avgAttr.doubleValue() : 0.0;
+                    if (avgRating < 0) avgRating = 0.0;
+                    if (avgRating > 5) avgRating = 5.0;
+                %>
+
+                <div class="flex items-center mt-2">
+                    <span class="rating-stars" role="img" aria-label="<%= String.format(Locale.forLanguageTag("vi-VN"), "%.1f/5", avgRating) %>">
+                        <%
+                            for (int i = 1; i <= 5; i++) {
+                                if (avgRating >= i) {
+                        %>
+                                    <i class="fa-solid fa-star" style="color:#f59e0b" aria-hidden="true"></i>
+                        <%
+                                } else if (avgRating >= i - 0.5) {
+                        %>
+                                    <i class="fa-solid fa-star-half-stroke" style="color:#f59e0b" aria-hidden="true"></i>
+                        <%
+                                } else {
+                        %>
+                                    <i class="fa-regular fa-star" style="color:#e5e7eb" aria-hidden="true"></i>
+                        <%
+                                }
+                            }
+                        %>
+                    </span>
+
+                    <span class="rating-value"><%= String.format(Locale.forLanguageTag("vi-VN"), "%.1f", avgRating) %>/5</span>
+                </div>
+
+                <p class="text-gray-600 mt-2 text-lg">
+                    Thương hiệu: <%= (product != null && product.getBrandName() != null) ? product.getBrandName() : "N/A" %>
+                </p>
+
+                <%-- Attributes, price, add to cart, etc. --%>
+                <% if (variants != null && !variants.isEmpty()) { %>
+                    <%-- Build attribute groups and price/stock maps server-side as before --%>
+                    <%
+                        Map<String, List<String>> attrMap = new LinkedHashMap<>();
+                        Map<String, Double> priceMap = new HashMap<>();
+                        Map<String, Integer> stockMap = new HashMap<>();
+                        for (ProductVariant v : variants) {
+                            String attrStr = v.getAttributeJson();
+                            int qty = v.getStockQuantity();
+                            double price = v.getPrice();
+                            if (attrStr != null && !attrStr.isEmpty()) {
+                                try {
+                                    String cleaned = attrStr.replaceAll("[{}\"]", "");
+                                    String[] parts = cleaned.split(":");
+                                    if (parts.length == 2) {
+                                        String key = parts[0].trim();
+                                        String val = parts[1].trim();
+                                        String displayKey = key.substring(0, 1).toUpperCase() + key.substring(1).toLowerCase();
+                                        if (!attrMap.containsKey(displayKey)) attrMap.put(displayKey, new ArrayList<String>());
+                                        if (!attrMap.get(displayKey).contains(val)) {
+                                            attrMap.get(displayKey).add(val);
+                                            stockMap.put(displayKey + ":" + val, qty);
+                                            priceMap.put(displayKey + ":" + val, price);
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    // ignore parsing errors
+                                }
+                            }
+                        }
+                    %>
+
+                    <% for (Map.Entry<String, List<String>> entry : attrMap.entrySet()) {
+                        String attrName = entry.getKey();
+                        List<String> values = entry.getValue();
+                        String attrKeyLower = attrName.toLowerCase();
+                        String initSelectedVal = (minPriceVariant != null) ? (minPriceVariant.getAttributeJson() != null ? minPriceVariant.getAttributeJson().replaceAll("[{}\"]", "").split(":")[1].trim() : null) : null;
+                    %>
+                    <div class="mb-4">
+                        <p class="font-semibold text-gray-700 text-lg mb-2">
+                            <%= attrName %>:
+                            <span id="selected-<%= attrKeyLower %>" class="text-red-500 font-medium"><%= (initSelectedVal != null) ? initSelectedVal : values.get(0) %></span>
+                        </p>
+
+                        <div class="flex flex-wrap gap-3">
+                            <% for (String val : values) {
+                                String key = attrName + ":" + val;
+                                boolean outOfStock = stockMap.getOrDefault(key, 1) <= 0;
+                                double priceForVal = priceMap.getOrDefault(key, minPrice);
+                                String safeAttrName = attrKeyLower.replace("'", "\\'");
+                                String safeVal = val.replace("'", "\\'");
+                            %>
+                                <button type="button"
+                                        class="attr-btn relative border rounded-lg px-4 py-2 hover:bg-gray-100 transition select-none <%= outOfStock ? "opacity-50 border-gray-300 out-of-stock" : "" %>"
+                                        data-attr-name="<%= safeAttrName %>"
+                                        data-attr-value="<%= safeVal %>"
+                                        data-price="<%= priceForVal %>">
+                                    <%= val %>
+                                </button>
+                            <% } %>
+                        </div>
+                    </div>
+                    <% } %>
+
+                    <div class="mt-4 pb-4 border-b border-gray-200">
+                        <div id="priceDisplay" class="text-red-500 text-4xl font-extrabold mt-1">
+                            <%= currencyFormat.format(minPrice) %>₫
+                        </div>
+                        <div id="stockInfo" class="text-sm text-gray-500 mt-1"></div>
+                    </div>
+                <% } else { %>
+                    <div class="mt-4 pb-4 border-b border-gray-200">
+                        <div id="priceDisplay" class="text-red-500 text-4xl font-extrabold mt-1">
+                            <%= currencyFormat.format(defaultPrice) %>₫
+                        </div>
+                        <div id="stockInfo" class="text-sm text-gray-500 mt-1"></div>
+                    </div>
+                <% } %>
+
+                <%-- Quantity and add to cart (same as before) --%>
+                <div class="mt-6 space-y-4">
+                    <div class="flex items-center gap-4">
+                        <p class="font-semibold text-gray-700">Số lượng:</p>
+                        <div id="qtyWrap" class="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden relative z-10">
+                            <button id="btnDec" data-action="dec" class="px-4 py-2 font-bold hover:bg-gray-100 hover:text-red-500" type="button">−</button>
+                            <input id="qty" type="text" value="1" class="w-16 text-center font-bold text-lg border-0 focus:outline-none" oninput="handleQtyInput(event)">
+                            <button id="btnInc" data-action="inc" class="px-4 py-2 font-bold hover:bg-gray-100 hover:text-red-500" type="button">+</button>
+                        </div>
+                        <div id="qtyAlert" class="text-sm text-red-500 ml-3 hidden"></div>
+                    </div>
+
+                    <div class="text-lg font-semibold text-gray-800">
+                        Tổng số tiền:
+                        <span id="totalPrice" class="text-red-500"><%= currencyFormat.format(defaultPrice) %>₫</span>
+                    </div>
+                </div>
+
+                <form id="addToCartForm" method="post" action="<%= request.getContextPath() %>/cart">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="productId" value="<%= (product != null) ? product.getProductId() : 0 %>">
+                    <input type="hidden" name="variantId" id="hiddenVariantId" value="">
+                    <input type="hidden" name="quantity" id="hiddenQuantity" value="1">
+                    <div class="mt-8">
+                        <button id="buyBtn" type="submit" class="w-full bg-blue-600 text-white py-4 rounded-full font-bold text-lg shadow-md hover:shadow-lg hover:bg-blue-700 transition">Đặt Hàng</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Description & Reviews -->
+        <div class="mt-12 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div class="flex gap-6 border-b mb-4">
+                <button class="tab-btn font-semibold pb-2 border-b-2 border-red-500 text-red-500" data-tab="desc">📝 Mô tả</button>
+                <button class="tab-btn font-semibold pb-2 text-gray-500 hover:text-red-500" data-tab="reviews">⭐ Phản hồi</button>
+            </div>
+
+            <div id="tab-desc" class="tab-content">
+                <p class="text-gray-700 leading-relaxed text-lg">
+                    <%= (product != null && product.getDescription() != null) ? product.getDescription() : "Chưa có mô tả cho sản phẩm này." %>
+                </p>
+            </div>
+
+            <div id="tab-reviews" class="tab-content hidden">
+                <h3 class="text-lg font-bold mb-3">Khách hàng đánh giá</h3>
+
+                <c:set var="currentUserId" value="${null}" />
+                <c:choose>
+                    <c:when test="${not empty sessionScope.customerId}">
+                        <c:set var="currentUserId" value="${sessionScope.customerId}" />
+                    </c:when>
+                    <c:when test="${not empty sessionScope.userId}">
+                        <c:set var="currentUserId" value="${sessionScope.userId}" />
+                    </c:when>
+                    <c:when test="${not empty sessionScope.user}">
+                        <c:set var="currentUserId" value="${sessionScope.user.id}" />
+                    </c:when>
+                </c:choose>
+
+                <div id="reviewsList">
+                <c:if test="${not empty reviews}">
+                    <c:forEach var="r" items="${reviews}">
+                        <div class="border-b py-3" id="review-block-${r.reviewId}">
+                            <p class="font-semibold flex items-center justify-between">
+                                <span class="flex items-center">
+                                    <span class="mr-3 font-medium text-gray-800">${fn:escapeXml(r.userName)}</span>
+                                    <span class="text-yellow-500">
+                                        <c:forEach begin="1" end="${r.rating}">★</c:forEach>
+                                    </span>
+                                </span>
+
+                                <span class="flex items-center gap-2">
+                                    <c:if test="${not empty currentUserId and r.customerId == currentUserId}">
+                                        <form method="post" action="${pageContext.request.contextPath}/product/review" class="inline">
+                                            <input type="hidden" name="productId" value="${r.productId}" />
+                                            <input type="hidden" name="action" value="delete" />
+                                            <input type="hidden" name="reviewId" value="${r.reviewId}" />
+                                            <button type="submit" onclick="return confirm('Bạn có chắc muốn xóa đánh giá này?');"
+                                                    class="text-sm text-red-600 hover:underline ml-2">Xóa</button>
+                                        </form>
+
+                                        <button type="button" onclick="document.getElementById('edit-review-${r.reviewId}').classList.toggle('hidden')"
+                                                class="text-sm text-blue-600 hover:underline ml-2">Sửa</button>
+                                    </c:if>
+                                </span>
+                            </p>
+
+                            <% 
+                                Object rObj = pageContext.getAttribute("r");
+                                String rawComment = "";
+                                if (rObj != null) {
+                                    try { rawComment = ((model.Review) rObj).getComment(); } catch (Exception ex) { rawComment = String.valueOf(rObj); }
+                                }
+                                String safe = normalizeComment(rawComment);
+                            %>
+                            <p class="text-gray-700 mt-3 whitespace-pre-wrap"><%= escapeHtml(safe) %></p>
+                            <p class="text-xs text-gray-400 mt-2">${r.createdAt}</p>
+
+                            <div id="edit-review-${r.reviewId}" class="hidden mt-3 p-3 bg-gray-50 border rounded">
+                                <form method="post" action="${pageContext.request.contextPath}/product/review" class="space-y-3">
+                                    <input type="hidden" name="productId" value="${r.productId}" />
+                                    <input type="hidden" name="action" value="edit" />
+                                    <input type="hidden" name="reviewId" value="${r.reviewId}" />
+                                    <div>
+                                        <label class="block text-sm font-semibold mt-2">Nội dung</label>
+                                        <textarea name="comment" class="w-full border p-2 rounded" rows="4">${fn:escapeXml(r.comment)}</textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold mt-2">Số sao</label>
+                                        <select name="rating" class="border rounded p-1">
+                                            <c:forEach var="i" begin="1" end="5">
+                                                <option value="${i}" ${i == r.rating ? 'selected' : ''}>${i}</option>
+                                            </c:forEach>
+                                        </select>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded">Lưu</button>
+                                        <button type="button" onclick="document.getElementById('edit-review-${r.reviewId}').classList.add('hidden')" class="ml-2 text-gray-600">Hủy</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </c:forEach>
+                </c:if>
+                </div>
+
+                <c:if test="${empty reviews}">
+                    <p class="text-gray-500">Chưa có phản hồi nào.</p>
+                </c:if>
+
+                <div class="mt-4">
+                    <c:choose>
+                        <c:when test="${loggedIn}">
+                            <button id="toggleReviewForm" type="button" data-product-id="${product.productId}" data-has-purchased="${userHasPurchased}" data-has-reviewed="${userHasReviewed}" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mt-4">✍️ Viết đánh giá</button>
+                            <span id="purchaseNotice" class="ml-3 text-sm text-red-500 hidden"></span>
+                        </c:when>
+                        <c:otherwise>
+                            <a href="${pageContext.request.contextPath}/login?redirect=${encodedRedirect}" class="inline-block bg-yellow-400 text-white px-4 py-2 rounded hover:bg-yellow-500 mt-4">🔐 Đăng nhập để viết đánh giá</a>
+                            <p class="text-sm text-gray-500 mt-2">Bạn cần đăng nhập để gửi đánh giá.</p>
+                        </c:otherwise>
+                    </c:choose>
+                </div>
+
+                <c:if test="${loggedIn}">
+                    <div id="reviewForm" class="hidden bg-gray-50 p-4 rounded-lg border mt-4">
+                        <!-- NOTE: id="reviewFormInner" used by AJAX script below -->
+                        <form action="${pageContext.request.contextPath}/product/review" method="post" class="space-y-4" id="reviewFormInner">
+                            <input type="hidden" name="productId" value="<%= (product != null) ? product.getProductId() : 0 %>">
+                            <div>
+                                <label class="block font-semibold mb-2">Xếp hạng của bạn:</label>
+                                <div id="starRating" class="flex space-x-1 text-3xl cursor-pointer">
+                                    <span data-value="1" class="star">☆</span>
+                                    <span data-value="2" class="star">☆</span>
+                                    <span data-value="3" class="star">☆</span>
+                                    <span data-value="4" class="star">☆</span>
+                                    <span data-value="5" class="star">☆</span>
+                                </div>
+                                <input type="hidden" id="ratingInput" name="rating" value="0" required>
+                                <p id="ratingError" class="text-red-500 text-sm hidden">Vui lòng chọn số sao đánh giá.</p>
+                            </div>
+
+                            <div>
+                                <label class="block font-semibold mb-1">Nội dung đánh giá</label>
+                                <textarea name="comment" required class="w-full border p-2 rounded" id="reviewComment"></textarea>
+                                <p id="commentError" class="text-red-500 text-sm hidden">Nội dung phải có ít nhất 20 ký tự.</p>
+                            </div>
+
+                            <button id="submitReviewBtn" type="submit" class="bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition">Gửi đánh giá</button>
+                        </form>
+                    </div>
+                </c:if>
+            </div>
+        </div>
+
+        <!-- RELATED PRODUCTS: restored block -->
+        <div class="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h3 class="text-xl font-bold mb-4">Sản phẩm liên quan</h3>
+
+            <c:if test="${not empty relatedProducts}">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <c:forEach var="rp" items="${relatedProducts}">
+                        <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col">
+                            <a href="product?id=${rp.productId}" class="block h-28 mb-3">
+                                <c:choose>
+                                    <c:when test="${not empty rp.mainVariant and not empty rp.mainVariant.imageUrl}">
+                                        <c:choose>
+                                            <c:when test="${fn:startsWith(rp.mainVariant.imageUrl, 'http')}">
+                                                <img src="${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
+                                            </c:when>
+                                            <c:otherwise>
+                                                <img src="${pageContext.request.contextPath}${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <img src="${pageContext.request.contextPath}/images/no-image.png" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
+                                    </c:otherwise>
+                                </c:choose>
+                            </a>
+
+                            <div class="flex-1">
+                                <a href="product?id=${rp.productId}" class="text-sm font-semibold hover:text-red-500 block mb-1">${rp.productName}</a>
+                                <p class="text-xs text-gray-500">Thương hiệu: ${rp.brandName}</p>
+                                <div class="mt-2">
+                                    <c:choose>
+                                        <c:when test="${not empty rp.mainVariant and rp.mainVariant.price ne 0}">
+                                            <p class="text-red-600 font-bold text-sm">
+                                                <fmt:formatNumber value="${rp.mainVariant.price}" type="number" groupingUsed="true"/>₫
+                                            </p>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <p class="text-gray-500 italic text-sm">Liên hệ</p>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
+                            </div>
+                        </div>
+                    </c:forEach>
+                </div>
+            </c:if>
+
+            <c:if test="${empty relatedProducts}">
+                <p class="text-gray-500">Không có sản phẩm liên quan.</p>
+            </c:if>
+        </div>
+
+    </div>
+    </div>
+
+    <%@ include file="/WEB-INF/include/footer.jsp" %>
+
+    <!-- Inject runtime CONFIG (JSON) for the external JS -->
+    <script type="text/javascript">
+        window.PRODUCT_CONFIG = {
+            contextPath: '<%= request.getContextPath() %>',
+            productId: <%= (product != null ? product.getProductId() : 0) %>,
+            loggedIn: <%= loggedIn ? "true" : "false" %>,
+            userHasPurchased: <%= userHasPurchased ? "true" : "false" %>,
+            userHasReviewed: <%= userHasReviewed ? "true" : "false" %>,
+            defaultPrice: <%= Double.toString(defaultPrice) %>,
+            variantsData: [
+                <% if (variants != null) {
+                    for (int i = 0; i < variants.size(); i++) {
+                        ProductVariant v = variants.get(i);
+                        String attr = v.getAttributeJson();
+                        double price = v.getPrice();
+                        String img = v.getImageUrl();
+                        int stock = v.getStockQuantity();
+                        long vid = v.getVariantId();
+                        if (img == null || img.isEmpty()) {
+                            img = "/assets/img/no-image.png";
+                        }
+                %>
+                {
+                    id: <%= vid %>,
+                    attr: '<%= attr != null ? attr.replaceAll("'", "\\\\'") : "" %>',
+                    price: <%= price %>,
+                    img: '<%= request.getContextPath() + img %>',
+                    stock: <%= stock %>
+                }<%= (i < variants.size() - 1) ? "," : "" %>
+                <% }
+                } %>
+            ],
+            images: [
+                <% if (productImages != null) {
+                    for (int i = 0; i < productImages.size(); i++) {
+                        ProductImg pi = productImages.get(i);
+                        String url = pi.getImageUrl();
+                        out.print("'" + request.getContextPath() + url + "'");
+                        if (i < productImages.size() - 1) out.print(",");
+                    }
+                } %>
+            ]
+        };
+    </script>
+
+    <!-- Load small helper if you have it -->
+    <script src="${pageContext.request.contextPath}/assets/js/loading.js"></script>
+
+    <!-- Externalized product JS -->
+    <script src="${pageContext.request.contextPath}/assets/js/product.js"></script>
+</body>
+</html>

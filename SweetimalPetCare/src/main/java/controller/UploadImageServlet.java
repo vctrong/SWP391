@@ -4,7 +4,6 @@
  */
 package controller;
 
-import daos.LoginDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -12,15 +11,19 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import model.Users;
+import jakarta.servlet.http.Part;
+import java.io.File;
+import java.nio.file.Paths;
 
 /**
  *
- * @author Vo Chi Trong - CE191062
+ * @author Pham Nguyen Xuan Mai - CE190106
  */
-@WebServlet(name = "loginServlet", urlPatterns = {"/login"})
-public class loginServlet extends HttpServlet {
+@WebServlet(name = "UploadImageServlet", urlPatterns = {"/uploadImg"})
+public class UploadImageServlet extends HttpServlet {
+
+    // Đường dẫn thật trên máy
+    private static final String UPLOAD_DIR = "D:/SWP391_project/SWP391/products_img";
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -39,15 +42,16 @@ public class loginServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet loginServlet</title>");
+            out.println("<title>Servlet UploadImageServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet loginServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet UploadImageServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
     }
 
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
      *
@@ -59,7 +63,7 @@ public class loginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher("WEB-INF/login/login.jsp").forward(request, response);
+        processRequest(request, response);
     }
 
     /**
@@ -73,57 +77,37 @@ public class loginServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String username = request.getParameter("username");
-        String password = request.getParameter("password");
-        String view = request.getParameter("view");
-
-        LoginDAO lDAO = new LoginDAO();
-        Users user = lDAO.login(username, password);
-
-        HttpSession session = request.getSession(true); // always ensure a session exists
-
-        if (user == null) {
-            session.setAttribute("loginFail", "Tên đăng nhập hoặc mật khẩu không đúng.");
-            response.sendRedirect(request.getContextPath() + "/login?view=fail");
-            return;
+        // Đảm bảo thư mục tồn tại
+        File uploadDir = new File(UPLOAD_DIR);
+        if (!uploadDir.exists()) {
+            uploadDir.mkdirs();
         }
 
-        if (user.getActive() == 0) {
-            session.setAttribute("loginFail", "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ hỗ trợ.");
-            response.sendRedirect(request.getContextPath() + "/login?view=inactive");
-            return;
+        // Lặp qua tất cả file được chọn
+        for (Part part : request.getParts()) {
+            if (part.getName().equals("images") && part.getSize() > 0) {
+                String fileName = Paths.get(part.getSubmittedFileName()).getFileName().toString();
+
+                // Lưu file vào thư mục thật
+                part.write(UPLOAD_DIR + File.separator + fileName);
+
+                // (Tùy chọn) Lưu vào DB:
+                // new ProductDAO().saveImagePath(productId, "uploads/" + fileName);
+            }
         }
 
-        session.setAttribute("user", user);
-        session.setAttribute("loginOk", Boolean.TRUE);
-
-        switch (user.getRoleEnum()) {
-            case ADMIN:
-                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
-                break;
-
-            case STAFF:
-                response.sendRedirect(request.getContextPath() + "/staff/dashboard");
-                break;
-
-            case VET:
-                response.sendRedirect(request.getContextPath() + "/vet/dashboard");
-                break;
-
-            case CUSTOMER:
-            default:
-                response.sendRedirect(request.getContextPath() + "/home");
-                break;
-        }
+        // Sau khi upload xong, quay lại trang admin
+        response.sendRedirect("admin-upload.jsp?success=true");
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
+/**
+ * Returns a short description of the servlet.
+ *
+ * @return a String containing servlet description
+ */
+@Override
+public String getServletInfo() {
         return "Short description";
     }// </editor-fold>
+
 }

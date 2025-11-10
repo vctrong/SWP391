@@ -1,0 +1,127 @@
+package daos;
+
+import db.DBContext;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import model.ProductVariant;
+
+/**
+ *
+ * @author Pham Nguyen Xuan Mai - CE190106
+ */
+public class ProductVariantDAO extends DBContext {
+
+    // Lấy tất cả variant của 1 product
+    public List<ProductVariant> getVariantsByProductId(long productId) {
+        List<ProductVariant> list = new ArrayList<>();
+        try {
+            String sql = "SELECT variant_id, product_id, sku, attribute_json, price, "
+                    + "stock_quantity, image_url, is_active, created_at "
+                    + "FROM ProductVariant WHERE product_id = ?";
+            PreparedStatement ps = getConnection().prepareStatement(sql);
+            ps.setLong(1, productId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                ProductVariant v = mapRowToVariant(rs);
+                list.add(v);
+            }
+            rs.close();
+            ps.close();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            Logger.getLogger(ProductVariantDAO.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return list;
+    }
+
+    // Lấy 1 variant "chính" (ví dụ TOP 1 theo created_at hoặc theo is_active)
+    public ProductVariant getMainVariantByProductId(long productId) {
+        try {
+            String sql = "SELECT TOP 1 variant_id, product_id, sku, attribute_json, price, "
+                    + "stock_quantity, image_url, is_active, created_at "
+                    + "FROM ProductVariant "
+                    + "WHERE product_id = ? AND is_active = 1 "
+                    + "ORDER BY created_at ASC";
+            PreparedStatement ps = getConnection().prepareStatement(sql);
+            ps.setLong(1, productId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                ProductVariant v = mapRowToVariant(rs);
+                rs.close();
+                ps.close();
+                return v;
+            }
+            rs.close();
+            ps.close();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            Logger.getLogger(ProductVariantDAO.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+
+    // Map ResultSet -> ProductVariant (tách ra cho gọn)
+    private ProductVariant mapRowToVariant(ResultSet rs) throws SQLException {
+        ProductVariant v = new ProductVariant();
+        v.setVariantId(rs.getLong("variant_id"));
+        v.setProductId(rs.getLong("product_id"));
+        v.setSku(rs.getString("sku"));
+        v.setAttributeJson(rs.getString("attribute_json"));
+
+        // Lấy price (DB kiểu decimal/number) an toàn:
+        BigDecimal priceBd = rs.getBigDecimal("price");
+        if (priceBd != null) {
+            v.setPrice(priceBd.doubleValue()); // model dùng double
+        } else {
+            v.setPrice(0.0);
+        }
+
+        // Nếu cột có thể NULL và bạn muốn phân biệt NULL với 0, bạn có thể kiểm tra rs.wasNull() sau getInt.
+        v.setStockQuantity(rs.getInt("stock_quantity"));
+
+        v.setImageUrl(rs.getString("image_url"));
+        v.setActive(rs.getBoolean("is_active"));
+        v.setCreatedAt(rs.getTimestamp("created_at"));
+
+        return v;
+    }
+    
+      
+    /**
+     * Trả về giá lớn nhất (unit: ví dụ đ = đồng) giữa các variant.
+     * Trả về null nếu không có giá nào.
+     */
+    public Integer getMaxPrice() {
+        String sql = "SELECT MAX(price) AS max_price FROM ProductVariant WHERE is_active = 1";
+
+        try (
+             PreparedStatement ps = getConnection().prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                BigDecimal max = rs.getBigDecimal("max_price");
+                if (max == null) {
+                    return null;
+                }
+                // Bỏ phần thập phân (làm tròn lên) rồi làm tròn lên theo bước 1000
+                long value = max.setScale(0, RoundingMode.CEILING).longValue();
+                long roundedThousand = ((value + 999) / 1000) * 1000L;
+
+                if (roundedThousand > Integer.MAX_VALUE) {
+                    return Integer.MAX_VALUE;
+                }
+                return (int) roundedThousand;
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+}
