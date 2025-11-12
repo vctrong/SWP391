@@ -371,27 +371,12 @@
 
     <!-- Sort form: preserve existing filters -->
     <form id="sortForm" method="get" action="shop" class="flex items-center gap-3">
-        <c:forEach var="c" items="${paramValues.category}">
-            <input type="hidden" name="category" value="${c}" />
-        </c:forEach>
-        <c:forEach var="b" items="${paramValues.brand}">
-            <input type="hidden" name="brand" value="${b}" />
-        </c:forEach>
-        <c:forEach var="s" items="${paramValues.stock}">
-            <input type="hidden" name="stock" value="${s}" />
-        </c:forEach>
-
-        <c:if test="${not empty param.minPrice}">
-            <input type="hidden" name="minPrice" value="${param.minPrice}" />
-        </c:if>
-        <c:if test="${not empty param.maxPrice}">
-            <input type="hidden" name="maxPrice" value="${param.maxPrice}" />
-        </c:if>
-
+        <!-- Preserve sort if present (this is OK to keep as hidden) -->
         <c:if test="${not empty param.sort}">
             <input type="hidden" name="sort" value="${param.sort}" />
         </c:if>
 
+        <!-- Page size select -->
         <c:set var="currentPageSize" value="${empty param.pageSize ? (empty pageSize ? 12 : pageSize) : param.pageSize}" />
         <label for="pageSizeSelect" class="text-sm text-gray-600 hidden md:inline">Hiển thị</label>
         <select id="pageSizeSelect" name="pageSize" class="border rounded px-2 py-1 text-sm bg-white">
@@ -415,6 +400,26 @@
             <option value="date_asc" <c:if test="${param.sort == 'date_asc'}">selected</c:if>>Ngày (cũ → mới)</option>
             <option value="date_desc" <c:if test="${param.sort == 'date_desc'}">selected</c:if>>Ngày (mới → cũ)</option>
         </select>
+
+        <!-- Non-JS fallback: render hidden inputs only for users without JS -->
+        <noscript>
+            <c:forEach var="c" items="${paramValues.category}">
+                <input type="hidden" name="category" value="${c}" />
+            </c:forEach>
+            <c:forEach var="b" items="${paramValues.brand}">
+                <input type="hidden" name="brand" value="${b}" />
+            </c:forEach>
+            <c:forEach var="s" items="${paramValues.stock}">
+                <input type="hidden" name="stock" value="${s}" />
+            </c:forEach>
+
+            <c:if test="${not empty param.minPrice}">
+                <input type="hidden" name="minPrice" value="${param.minPrice}" />
+            </c:if>
+            <c:if test="${not empty param.maxPrice}">
+                <input type="hidden" name="maxPrice" value="${param.maxPrice}" />
+            </c:if>
+        </noscript>
     </form>
 </div>
 
