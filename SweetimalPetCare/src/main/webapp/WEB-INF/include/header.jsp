@@ -62,7 +62,7 @@
                hover:text-blue-600 hover:border-blue-400
                ${fn:contains(current, '/news') ? 'active' : ''}">Tin tức</a>
 
-            <c:if test="${not empty user}">
+            <c:if test="${not empty user and user.roleEnum == 'CUSTOMER'}">
                 <a href="${pageContext.request.contextPath}/booking-history"
                    class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                    hover:text-blue-600 hover:border-blue-400
