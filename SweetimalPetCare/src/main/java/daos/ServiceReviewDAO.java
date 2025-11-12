@@ -190,11 +190,12 @@ public class ServiceReviewDAO extends DBContext {
         return false;
     }
 
-    // Delete a review (only the owner can delete)
+    // Delete a review (only the owner can delete). If a staff reply exists, remove it first.
     public boolean deleteReview(long reviewId, long customerId) {
-        String sql = "DELETE FROM Reviews WHERE review_id = ? AND customer_id = ?";
         try {
-            int n = executeQuery(sql, new Object[]{reviewId, customerId});
+            // Remove reply if exists to avoid FK constraint
+            executeQuery("DELETE FROM ReviewReply WHERE review_id = ?", new Object[]{reviewId});
+            int n = executeQuery("DELETE FROM Reviews WHERE review_id = ? AND customer_id = ?", new Object[]{reviewId, customerId});
             return n > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -202,11 +203,11 @@ public class ServiceReviewDAO extends DBContext {
         return false;
     }
 
-    // Admin/Staff/Vet delete: can remove any review by id
+    // Admin/Staff/Vet delete: can remove any review by id. Delete reply first if present.
     public boolean adminDeleteReview(long reviewId) {
-        String sql = "DELETE FROM Reviews WHERE review_id = ?";
         try {
-            int n = executeQuery(sql, new Object[]{reviewId});
+            executeQuery("DELETE FROM ReviewReply WHERE review_id = ?", new Object[]{reviewId});
+            int n = executeQuery("DELETE FROM Reviews WHERE review_id = ?", new Object[]{reviewId});
             return n > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
