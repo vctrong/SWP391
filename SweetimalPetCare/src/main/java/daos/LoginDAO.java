@@ -35,23 +35,6 @@ public class LoginDAO extends db.DBContext {
         }
     }
 
-    private String hashSHA256(String raw) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] mess = md.digest(raw.getBytes());
-
-            StringBuilder sb = new StringBuilder();
-            for (byte b : mess) {
-                sb.append(String.format("%02x", b));
-            }
-
-            return sb.toString();
-        } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(UserDAO.class.getName()).log(Level.SEVERE, null, ex);
-            return "";
-        }
-    }
-
     public Users login(String username, String password) {
         try {
             String base = "select u.user_id, u.username, u.full_name, u.email,\n"
@@ -61,15 +44,7 @@ public class LoginDAO extends db.DBContext {
                     + "where username = ? and password_hash = ?\n"
                     + "group by u.user_id, u.full_name, u.username, u.email, u.phone, u.is_active, u.birthday, u.gender,\n"
                     + "u.is_active, u.avatar_url, u.role_id, u.created_at";
-            // Try MD5 first (legacy)
             ResultSet rs = this.executeSelectQuery(base, new Object[]{username, hashMd5(password)});
-            if (rs.next()) {
-                return new Users(rs.getInt(1), rs.getString(2), rs.getString(3),
-                        rs.getString(4), rs.getString(5), rs.getInt(6), rs.getInt(7),
-                        rs.getString(8), rs.getInt(9), rs.getDate(10), rs.getDate(11), rs.getInt(12));
-            }
-            // If not found, try SHA-256 (new)
-            rs = this.executeSelectQuery(base, new Object[]{username, hashSHA256(password)});
             if (rs.next()) {
                 return new Users(rs.getInt(1), rs.getString(2), rs.getString(3),
                         rs.getString(4), rs.getString(5), rs.getInt(6), rs.getInt(7),
