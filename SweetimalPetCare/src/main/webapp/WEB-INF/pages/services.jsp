@@ -69,10 +69,12 @@
                                 </a>
                             </c:when>
                             <c:otherwise>
-                                <a href="${pageContext.request.contextPath}/booking?serviceId=${s.id}"
-                                   class="w-full block text-center bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-5 py-3 rounded-xl font-semibold shadow-sm hover:shadow-lg focus:outline-none transition-all duration-300 hover:from-sky-600 hover:to-cyan-600">
-                                    <i class="fa-solid fa-calendar-check mr-2"></i>Đặt lịch ngay
-                                </a>
+                                <c:if test="${sessionScope.user.roleEnum == 'CUSTOMER'}">
+                                    <a href="${pageContext.request.contextPath}/booking?serviceId=${s.id}"
+                                       class="w-full block text-center bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-5 py-3 rounded-xl font-semibold shadow-sm hover:shadow-lg focus:outline-none transition-all duration-300 hover:from-sky-600 hover:to-cyan-600">
+                                        <i class="fa-solid fa-calendar-check mr-2"></i>Đặt lịch ngay
+                                    </a>
+                                </c:if>
                             </c:otherwise>
                         </c:choose>
 
