@@ -8,6 +8,21 @@
 			"args": [],
 			"isBackground": false,
 			"group": "build"
+		},
+		{
+			"label": "Maven package (skip tests)",
+			"type": "shell",
+			"command": "mvn",
+			"args": [
+				"-q",
+				"-DskipTests",
+				"package"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$maven"
+			],
+			"group": "build"
 		}
 	]
 }
