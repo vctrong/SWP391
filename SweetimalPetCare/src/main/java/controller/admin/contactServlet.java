@@ -12,6 +12,10 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.sql.SQLException;
+import java.util.List;
+import daos.ConsultationRequestDAO;
+import model.ConsultationRequest;
 
 /**
  *
@@ -55,6 +59,41 @@ public class contactServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
+        final int pageSize = 15; // fixed page size as requested
+        int page = 1;
+        String pageParam = request.getParameter("page");
+        if (pageParam != null) {
+            try {
+                page = Integer.parseInt(pageParam);
+            } catch (NumberFormatException ignore) {}
+        }
+        if (page < 1) page = 1;
+
+        ConsultationRequestDAO dao = new ConsultationRequestDAO();
+        List<ConsultationRequest> crList = null;
+        int totalItems = 0;
+        int totalPages = 0;
+        try {
+            totalItems = dao.countAll();
+            totalPages = (totalItems + pageSize - 1) / pageSize; // ceil division
+            if (totalPages == 0) {
+                page = 1; // no data, default page 1
+            } else if (page > totalPages) {
+                page = totalPages; // clamp to last page
+            }
+            int offset = (page - 1) * pageSize;
+            crList = dao.listPaged(offset, pageSize);
+        } catch (SQLException e) {
+            request.setAttribute("loadError", "Không thể tải danh sách: " + e.getMessage());
+            System.err.println("[contactServlet] Failed loading consultation requests: " + e.getMessage());
+        }
+
+        request.setAttribute("consultationRequests", crList);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalItems", totalItems);
+        request.setAttribute("pageSize", pageSize);
+
         request.getRequestDispatcher("/WEB-INF/admin/contacts.jsp").forward(request, response);
     } 
 
