@@ -21,11 +21,11 @@ public class BrandDAO extends db.DBContext {
 
     // 🟢 Lấy tất cả thương hiệu
     public List<Brand> getAllBrands() {
-        try {
-            List<Brand> list = new ArrayList<>();
-            String qr = "SELECT brand_id, brand_name, description FROM Brand";
-            PreparedStatement ps = getConnection().prepareStatement(qr);
-            ResultSet rs = ps.executeQuery();
+        List<Brand> list = new ArrayList<>();
+        String qr = "SELECT brand_id, brand_name, description FROM Brand";
+        try (PreparedStatement ps = getConnection().prepareStatement(qr);
+             ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 Brand b = new Brand();
                 b.setBrandId(rs.getInt("brand_id"));
@@ -33,28 +33,25 @@ public class BrandDAO extends db.DBContext {
                 b.setDescription(rs.getString("description"));
                 list.add(b);
             }
-            rs.close();
-            ps.close();
-            return list;
         } catch (SQLException ex) {
             Logger.getLogger(BrandDAO.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return null;
+        return list;
     }
 
     // 🟢 Lấy thương hiệu kèm số lượng sản phẩm
     public List<Brand> getBrandsWithCount() {
-        try {
-            List<Brand> list = new ArrayList<>();
-            String qr = "SELECT b.brand_id, b.brand_name, b.description, "
-                    + "COUNT(DISTINCT p.product_id) AS product_count "
-                    + "FROM Brand b "
-                    + "LEFT JOIN Product p ON b.brand_id = p.brand_id "
-                    + "GROUP BY b.brand_id, b.brand_name, b.description "
-                    + "ORDER BY b.brand_name";
+        List<Brand> list = new ArrayList<>();
+        String qr = "SELECT b.brand_id, b.brand_name, b.description, "
+                + "COUNT(DISTINCT p.product_id) AS product_count "
+                + "FROM Brand b "
+                + "LEFT JOIN Product p ON b.brand_id = p.brand_id "
+                + "GROUP BY b.brand_id, b.brand_name, b.description "
+                + "ORDER BY b.brand_name";
 
-            PreparedStatement ps = getConnection().prepareStatement(qr);
-            ResultSet rs = ps.executeQuery();
+        try (PreparedStatement ps = getConnection().prepareStatement(qr);
+             ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 Brand b = new Brand();
                 b.setBrandId(rs.getInt("brand_id"));
@@ -63,33 +60,26 @@ public class BrandDAO extends db.DBContext {
                 b.setProductCount(rs.getInt("product_count"));
                 list.add(b);
             }
-            rs.close();
-            ps.close();
-            return list;
         } catch (SQLException ex) {
             Logger.getLogger(BrandDAO.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return null;
+        return list;
     }
 
     // 🟢 Lấy chi tiết thương hiệu theo ID
     public Brand getBrandById(int id) {
-        try {
-            String qr = "SELECT brand_id, brand_name, description FROM Brand WHERE brand_id = ?";
-            PreparedStatement ps = getConnection().prepareStatement(qr);
+        String qr = "SELECT brand_id, brand_name, description FROM Brand WHERE brand_id = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(qr)) {
             ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                Brand b = new Brand();
-                b.setBrandId(rs.getInt("brand_id"));
-                b.setBrandName(rs.getString("brand_name"));
-                b.setDescription(rs.getString("description"));
-                rs.close();
-                ps.close();
-                return b;
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Brand b = new Brand();
+                    b.setBrandId(rs.getInt("brand_id"));
+                    b.setBrandName(rs.getString("brand_name"));
+                    b.setDescription(rs.getString("description"));
+                    return b;
+                }
             }
-            rs.close();
-            ps.close();
         } catch (SQLException ex) {
             Logger.getLogger(BrandDAO.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -139,7 +129,7 @@ public class BrandDAO extends db.DBContext {
         sql.append("GROUP BY b.brand_id, b.brand_name, b.description ");
         sql.append("ORDER BY b.brand_name");
 
-        try ( PreparedStatement ps = getConnection().prepareStatement(sql.toString())) {
+        try (PreparedStatement ps = getConnection().prepareStatement(sql.toString())) {
             int index = 1;
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 for (int id : categoryIds) {
@@ -153,17 +143,16 @@ public class BrandDAO extends db.DBContext {
                 ps.setDouble(index++, maxPrice);
             }
 
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Brand b = new Brand();
-                b.setBrandId(rs.getInt("brand_id"));
-                b.setBrandName(rs.getString("brand_name"));
-                b.setDescription(rs.getString("description"));
-                b.setProductCount(rs.getInt("product_count"));
-                list.add(b);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Brand b = new Brand();
+                    b.setBrandId(rs.getInt("brand_id"));
+                    b.setBrandName(rs.getString("brand_name"));
+                    b.setDescription(rs.getString("description"));
+                    b.setProductCount(rs.getInt("product_count"));
+                    list.add(b);
+                }
             }
-            rs.close();
-            ps.close();
         } catch (SQLException ex) {
             Logger.getLogger(BrandDAO.class.getName()).log(Level.SEVERE, null, ex);
         }

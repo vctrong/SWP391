@@ -22,6 +22,7 @@ import model.Product;
 import model.ProductImg;
 import model.ProductVariant;
 import model.Review;
+import model.ReviewReply;
 import model.Users;
 
 /**
@@ -36,7 +37,6 @@ public class productServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // All page-loading logic is in doGet (no external helper methods)
         String idParam = request.getParameter("id");
         if (idParam == null || idParam.isEmpty()) {
             response.sendRedirect(request.getContextPath() + "/shop");
@@ -46,7 +46,7 @@ public class productServlet extends HttpServlet {
         try {
             int productId = Integer.parseInt(idParam);
 
-            // 1. Load product
+            // 1. Load product (ProductDAO is authoritative for product detail)
             ProductDAO productDAO = new ProductDAO();
             Product product = productDAO.getProductById(productId);
             if (product == null) {
@@ -54,22 +54,34 @@ public class productServlet extends HttpServlet {
                 return;
             }
 
-            // 2. Variants
+            // 2. Variants (all active variants for detail page)
             List<ProductVariant> variants = productDAO.getVariantsByProductId(productId);
             request.setAttribute("variants", variants);
 
-            // 3. Product images
+            // 3. Product images (robust: don't let missing table break page)
             ProductImgDAO productImgDAO = new ProductImgDAO();
-            List<ProductImg> productImages = productImgDAO.findByProductId(productId);
+            List<ProductImg> productImages;
+            try {
+                productImages = productImgDAO.findByProductId(productId);
+            } catch (Exception ex) {
+                LOGGER.log(Level.WARNING, "Error loading product images for product " + productId, ex);
+                productImages = java.util.Collections.emptyList();
+            }
             request.setAttribute("productImages", productImages);
 
-            // 4. Brand name mapping
-            BrandDAO brandDAO = new BrandDAO();
-            List<Brand> brands = brandDAO.getAllBrands();
-            Map<Integer, String> brandMap = new HashMap<>();
-            for (Brand b : brands) brandMap.put(b.getBrandId(), b.getBrandName());
-            if (product.getBrandId() != null) {
-                product.setBrandName(brandMap.get(product.getBrandId()));
+            // 4. Brand name: use BrandDAO.getBrandById (no fallback)
+            try {
+                BrandDAO brandDAO = new BrandDAO();
+                if (product.getBrandId() != null) {
+                    Brand b = brandDAO.getBrandById(product.getBrandId());
+                    if (b != null) {
+                        product.setBrandName(b.getBrandName());
+                    } else {
+                        LOGGER.log(Level.FINE, "Brand not found for id {0}", product.getBrandId());
+                    }
+                }
+            } catch (Exception ex) {
+                LOGGER.log(Level.WARNING, "Unable to resolve brand name for product " + productId, ex);
             }
 
             // 5. Reviews and average rating
@@ -77,26 +89,46 @@ public class productServlet extends HttpServlet {
             List<Review> reviews = reviewDAO.getReviewsByProduct(productId);
             double avgRating = reviewDAO.getAverageRatingByProduct(productId);
 
-            // 6. Related products
+            // Build replies map for product reviews (so JSP can show reply content)
+            Map<Long, ReviewReply> repliesMap = new HashMap<>();
+            if (reviews != null) {
+                for (Review r : reviews) {
+                    Integer ridObj = r.getReviewId();
+                    if (ridObj == null) continue;
+                    long rid = ridObj.longValue();
+                    try {
+                        ReviewReply rep = reviewDAO.getReplyByReviewId(rid);
+                        if (rep != null) repliesMap.put(rid, rep);
+                    } catch (Exception ex) {
+                        LOGGER.log(Level.FINER, "Error fetching reply for review id " + rid, ex);
+                    }
+                }
+            }
+
+            // 6. Related products (ProductDAO.getRelatedProductsByCategory)
             List<Product> relatedProducts;
             try {
                 int categoryId = product.getProductCategoryId();
                 relatedProducts = productDAO.getRelatedProductsByCategory(categoryId, productId, 6);
             } catch (Exception ex) {
-                LOGGER.log(Level.WARNING, "Cannot load related products", ex);
+                LOGGER.log(Level.WARNING, "Cannot load related products for product " + productId, ex);
                 relatedProducts = java.util.Collections.emptyList();
             }
 
             // 7. User from session only (do not read customerId from request)
             HttpSession session = request.getSession(false);
             Integer userId = null;
+            Users sessionUser = null;
             if (session != null) {
                 Object userObj = session.getAttribute("user");
                 if (userObj instanceof Users) {
-                    userId = ((Users) userObj).getId();
+                    sessionUser = (Users) userObj;
+                    userId = sessionUser.getId();
+                    // REQUEST attribute "user" so EL ${user} works like service pages
+                    request.setAttribute("user", sessionUser);
+                    request.setAttribute("userId", sessionUser.getId());
+                    request.setAttribute("customerId", sessionUser.getId());
                 }
-                // if your application stores a different user type, you can add handling here,
-                // but per request we only use session attribute "user".
             }
 
             // 8. Check purchase/review status if user logged in
@@ -107,25 +139,26 @@ public class productServlet extends HttpServlet {
                     OrderDAO orderDao = new OrderDAO();
                     userHasPurchased = orderDao.hasCustomerPurchasedProduct(userId, productId);
                 } catch (Exception ex) {
-                    LOGGER.log(Level.WARNING, "Error checking purchase status", ex);
+                    LOGGER.log(Level.WARNING, "Error checking purchase status for user " + userId, ex);
                     userHasPurchased = false;
                 }
 
                 try {
                     userHasReviewed = reviewDAO.userHasReviewedProduct(userId, productId);
                 } catch (Exception ex) {
-                    LOGGER.log(Level.WARNING, "Error checking reviewed status", ex);
+                    LOGGER.log(Level.WARNING, "Error checking reviewed status for user " + userId, ex);
                     userHasReviewed = false;
                 }
             }
 
-            // 9. Set attributes and forward
+            // 9. Set attributes and forward to JSP
             request.setAttribute("product", product);
             request.setAttribute("reviews", reviews);
             request.setAttribute("avgRating", avgRating);
             request.setAttribute("relatedProducts", relatedProducts);
             request.setAttribute("userHasPurchased", Boolean.valueOf(userHasPurchased));
             request.setAttribute("userHasReviewed", Boolean.valueOf(userHasReviewed));
+            request.setAttribute("repliesMap", repliesMap);
 
             request.getRequestDispatcher("/WEB-INF/pages/product.jsp").forward(request, response);
 
@@ -141,17 +174,15 @@ public class productServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // All POST logic inside doPost; use session 'user' only to determine reviewer identity
+        // POST: add review (use session user only)
         HttpSession session = request.getSession(false);
         if (session == null) {
-            // not logged in -> redirect to login (adjust path if needed)
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
         Object userObj = session.getAttribute("user");
         if (!(userObj instanceof Users)) {
-            // user not valid -> redirect to login
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
@@ -176,17 +207,15 @@ public class productServlet extends HttpServlet {
             int productId = Integer.parseInt(productIdParam);
             int rating = Integer.parseInt(ratingParam);
 
-            // Optional: validate rating range (1..5)
             if (rating < 1 || rating > 5) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Rating must be between 1 and 5");
                 return;
             }
 
-            // Insert review using ReviewDAO
             ReviewDAO reviewDAO = new ReviewDAO();
             reviewDAO.addReview(productId, customerId, rating, comment);
 
-            // PRG: redirect to GET product page to avoid re-post on refresh
+            // PRG: redirect to GET product page
             response.sendRedirect(request.getContextPath() + "/product?id=" + productId);
 
         } catch (NumberFormatException ex) {
@@ -200,6 +229,6 @@ public class productServlet extends HttpServlet {
 
     @Override
     public String getServletInfo() {
-        return "Product detail controller with variants and reviews and related products (doGet/doPost only)";
+        return "Product detail controller with variants, images, reviews and related products";
     }
 }

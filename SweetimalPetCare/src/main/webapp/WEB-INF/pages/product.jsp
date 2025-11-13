@@ -36,7 +36,7 @@
 %>
 
 <%
-    // --- server-side data same as before ---
+    // --- server-side data ---
     Product product = (Product) request.getAttribute("product");
     List<Product> relatedProducts = (List<Product>) request.getAttribute("relatedProducts");
     List<ProductVariant> variants = (List<ProductVariant>) request.getAttribute("variants");
@@ -63,8 +63,6 @@
     }
 
     boolean loggedIn = (session.getAttribute("user") != null)
-            || (session.getAttribute("userId") != null)
-            || (session.getAttribute("customerId") != null)
             || (request.getUserPrincipal() != null);
     request.setAttribute("loggedIn", Boolean.valueOf(loggedIn));
 
@@ -78,6 +76,20 @@
     request.setAttribute("encodedRedirect", encodedRedirect);
 %>
 
+<%-- Use sessionScope.user as the single source of truth --%>
+<c:set var="effectiveUser" value="${sessionScope.user}" />
+<c:set var="isLoggedIn" value="${not empty effectiveUser}" />
+<c:if test="${isLoggedIn}">
+    <c:set var="currentUserId" value="${effectiveUser.id}" />
+    <c:set var="isCustomer" value="${effectiveUser.role == 1}" />
+    <c:set var="isStaff" value="${effectiveUser.role != 1}" />
+</c:if>
+<c:if test="${not isLoggedIn}">
+    <c:set var="currentUserId" value="${null}" />
+    <c:set var="isCustomer" value="false" />
+    <c:set var="isStaff" value="false" />
+</c:if>
+
 <!doctype html>
 <html lang="vi">
 <head>
@@ -85,10 +97,7 @@
     <title><%= (product != null) ? product.getProductName() : "Sản phẩm" %></title>
 
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Font Awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
     <style>
         .rating-stars i { font-size: 20px; margin-right: 6px; vertical-align: middle; }
         .rating-value { margin-left: 8px; color: #4b5563; }
@@ -308,19 +317,6 @@
             <div id="tab-reviews" class="tab-content hidden">
                 <h3 class="text-lg font-bold mb-3">Khách hàng đánh giá</h3>
 
-                <c:set var="currentUserId" value="${null}" />
-                <c:choose>
-                    <c:when test="${not empty sessionScope.customerId}">
-                        <c:set var="currentUserId" value="${sessionScope.customerId}" />
-                    </c:when>
-                    <c:when test="${not empty sessionScope.userId}">
-                        <c:set var="currentUserId" value="${sessionScope.userId}" />
-                    </c:when>
-                    <c:when test="${not empty sessionScope.user}">
-                        <c:set var="currentUserId" value="${sessionScope.user.id}" />
-                    </c:when>
-                </c:choose>
-
                 <div id="reviewsList">
                 <c:if test="${not empty reviews}">
                     <c:forEach var="r" items="${reviews}">
@@ -358,7 +354,51 @@
                                 String safe = normalizeComment(rawComment);
                             %>
                             <p class="text-gray-700 mt-3 whitespace-pre-wrap"><%= escapeHtml(safe) %></p>
-                            <p class="text-xs text-gray-400 mt-2">${r.createdAt}</p>
+                            <p class="text-xs text-gray-400 mt-2"><fmt:formatDate value="${r.createdAt}" pattern="dd/MM/yyyy HH:mm"/></p>
+
+                            <!-- ===== Product review: reply section ===== -->
+                            <c:set var="reply" value="${(not empty repliesMap) ? repliesMap[r.reviewId] : null}" />
+                            <c:if test="${empty reply}">
+                                <!-- SHOW reply form only to STAFF/ADMIN/VET (non-customer) -->
+                                <c:if test="${isStaff}">
+                                    <div class="mt-4 p-3 border border-gray-200 rounded bg-gray-50">
+                                        <form method="post" action="${pageContext.request.contextPath}/product/review" class="space-y-2">
+                                            <input type="hidden" name="productId" value="${product.productId}" />
+                                            <input type="hidden" name="reviewId" value="${r.reviewId}" />
+                                            <input type="hidden" name="action" value="replyCreate" />
+                                            <label class="text-sm text-gray-600">Phản hồi cho khách</label>
+                                            <textarea name="replyContent" rows="3" maxlength="1000" class="w-full border rounded p-2" placeholder="Nhập phản hồi..."></textarea>
+                                            <div class="mt-2">
+                                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Gửi phản hồi</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </c:if>
+                            </c:if>
+
+                            <c:if test="${not empty reply}">
+                                <div class="mt-4 p-3 border border-gray-200 rounded bg-gray-50">
+                                    <div class="text-sm text-gray-600 font-medium">Phản hồi từ nhân viên</div>
+                                    <textarea class="w-full mt-2 border rounded p-2 bg-white" rows="3" disabled>${fn:escapeXml(reply.replyContent)}</textarea>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <div class="text-xs text-gray-500">
+                                            <fmt:formatDate value="${reply.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
+                                        </div>
+                                        <div>
+                                            <!-- Allow staff/admin (non-customer) to delete reply -->
+                                            <c:if test="${isStaff}">
+                                                <form method="post" action="${pageContext.request.contextPath}/product/review" style="display:inline" onsubmit="return confirm('Xóa phản hồi này?');">
+                                                    <input type="hidden" name="action" value="replyDelete" />
+                                                    <input type="hidden" name="productId" value="${product.productId}" />
+                                                    <input type="hidden" name="reviewId" value="${r.reviewId}" />
+                                                    <button type="submit" class="text-sm text-red-600 hover:underline">Xóa</button>
+                                                </form>
+                                            </c:if>
+                                        </div>
+                                    </div>
+                                </div>
+                            </c:if>
+                            <!-- ===== end reply section ===== -->
 
                             <div id="edit-review-${r.reviewId}" class="hidden mt-3 p-3 bg-gray-50 border rounded">
                                 <form method="post" action="${pageContext.request.contextPath}/product/review" class="space-y-3">
@@ -394,9 +434,12 @@
 
                 <div class="mt-4">
                     <c:choose>
-                        <c:when test="${loggedIn}">
+                        <c:when test="${isCustomer}">
                             <button id="toggleReviewForm" type="button" data-product-id="${product.productId}" data-has-purchased="${userHasPurchased}" data-has-reviewed="${userHasReviewed}" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mt-4">✍️ Viết đánh giá</button>
                             <span id="purchaseNotice" class="ml-3 text-sm text-red-500 hidden"></span>
+                        </c:when>
+                        <c:when test="${isLoggedIn and not isCustomer}">
+                            <div class="mt-4 text-sm text-gray-500">Bạn đang đăng nhập với tư cách <strong><c:out value="${effectiveUser.roleEnum != null ? effectiveUser.roleEnum : effectiveUser.role}"/></strong>.</div>
                         </c:when>
                         <c:otherwise>
                             <a href="${pageContext.request.contextPath}/login?redirect=${encodedRedirect}" class="inline-block bg-yellow-400 text-white px-4 py-2 rounded hover:bg-yellow-500 mt-4">🔐 Đăng nhập để viết đánh giá</a>
@@ -405,7 +448,7 @@
                     </c:choose>
                 </div>
 
-                <c:if test="${loggedIn}">
+                <c:if test="${isCustomer}">
                     <div id="reviewForm" class="hidden bg-gray-50 p-4 rounded-lg border mt-4">
                         <!-- NOTE: id="reviewFormInner" used by AJAX script below -->
                         <form action="${pageContext.request.contextPath}/product/review" method="post" class="space-y-4" id="reviewFormInner">
@@ -436,7 +479,7 @@
             </div>
         </div>
 
-        <!-- RELATED PRODUCTS: restored block -->
+        <!-- RELATED PRODUCTS -->
         <div class="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h3 class="text-xl font-bold mb-4">Sản phẩm liên quan</h3>
 
@@ -489,11 +532,9 @@
         </div>
 
     </div>
-    </div>
 
     <%@ include file="/WEB-INF/include/footer.jsp" %>
 
-    <!-- Inject runtime CONFIG (JSON) for the external JS -->
     <script type="text/javascript">
         window.PRODUCT_CONFIG = {
             contextPath: '<%= request.getContextPath() %>',
@@ -538,10 +579,7 @@
         };
     </script>
 
-    <!-- Load small helper if you have it -->
     <script src="${pageContext.request.contextPath}/assets/js/loading.js"></script>
-
-    <!-- Externalized product JS -->
     <script src="${pageContext.request.contextPath}/assets/js/product.js"></script>
 </body>
 </html>

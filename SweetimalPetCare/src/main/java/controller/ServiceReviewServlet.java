@@ -99,7 +99,7 @@ public class ServiceReviewServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException { 
         request.setCharacterEncoding("UTF-8");
     String sid = request.getParameter("serviceId");
     String action = Optional.ofNullable(request.getParameter("action")).orElse("create");

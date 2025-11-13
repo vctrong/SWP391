@@ -39,7 +39,6 @@ public class Review {
         this.userName = userName;
     }
 
-
     // Convenience constructor for creating a new product review
     public Review(Integer productId, Integer customerId, Integer rating, String comment) {
         this.productId = productId;
