@@ -1,11 +1,15 @@
 #!/bin/sh
 set -e
 
-# If PORT is set by Render, replace the default connector port in server.xml
-if [ -n "$PORT" ]; then
-  # Try common pattern; replace port="8080" with the runtime PORT
-  sed -i "s/port=\"8080\"/port=\"${PORT}\"/g" /usr/local/tomcat/conf/server.xml || true
+# Normalize line endings (remove CR) to avoid Windows CRLF issues
+if [ -f /usr/local/tomcat/conf/server.xml ]; then
+  tr -d '\r' < /usr/local/tomcat/conf/server.xml > /tmp/server.xml && mv /tmp/server.xml /usr/local/tomcat/conf/server.xml || true
 fi
 
-# exec the container's main process (Tomcat)
+if [ -n "$PORT" ]; then
+  # Replace first occurrence of port="NNNN" with port="$PORT"
+  sed -i "0,/port=\"[0-9]\+\"/s//port=\"${PORT}\"/" /usr/local/tomcat/conf/server.xml || \
+  sed -i "s/port=\"[0-9]\+\"/port=\"${PORT}\"/" /usr/local/tomcat/conf/server.xml || true
+fi
+
 exec "$@"
