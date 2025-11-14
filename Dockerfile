@@ -1,32 +1,29 @@
 # ===============================
-# GIAI ĐOẠN 1: BUILD (Maven)
+# BUILD STAGE
 # ===============================
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copy Maven files
-COPY pom.xml .
-COPY src ./src
+# Copy đúng đường dẫn đến pom.xml và src trong thư mục SweetimalPetCare
+COPY SweetimalPetCare/pom.xml .
+COPY SweetimalPetCare/src ./src
 
-# Build WAR
+# Build WAR file
 RUN mvn clean package -DskipTests
 
-
 # ===============================
-# GIAI ĐOẠN 2: RUN (Tomcat)
+# RUN STAGE
 # ===============================
 FROM tomcat:9.0.85-jdk17-temurin
 WORKDIR /usr/local/tomcat
 
-# Render uses PORT env
-ENV PORT 8080
+ENV PORT=8080
 EXPOSE 8080
 
-# Xóa webapps mặc định
+# Clear default apps
 RUN rm -rf webapps/*
 
-# Copy WAR build sang Tomcat và đặt làm ROOT.war
-COPY --from=build /app/target/SweetimalPetCare-1.0-SNAPSHOT.war webapps/ROOT.war
+# Copy WAR file đã build
+COPY --from=build /app/target/*.war webapps/ROOT.war
 
-# Start Tomcat
 CMD ["catalina.sh", "run"]
