@@ -2,14 +2,17 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <link href="${pageContext.request.contextPath}/assets/css/header.css" rel="stylesheet" >
-<!-- Page loader (site-wide). Visible until window.load or when showPageLoader() is called -->
-<div id="page-loader" aria-hidden="false" class="fixed inset-0 bg-white z-50 flex items-center justify-center" style="transition:opacity .25s ease;">
-    <div class="flex items-center space-x-3">
-        <i class="fa-solid fa-circle-notch fa-2x animate-spin text-blue-600"></i>
-        <span class="text-gray-700 font-medium">Đang tải...</span>
+<!-- Page loader (site-wide). Can be disabled by setting request attribute disableLoader=true -->
+<c:if test="${not disableLoader}">
+    <div id="page-loader" aria-hidden="false" class="fixed inset-0 bg-white z-50 flex items-center justify-center" style="transition:opacity .25s ease;">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-circle-notch fa-2x animate-spin text-blue-600"></i>
+            <span class="text-gray-700 font-medium">Đang tải...</span>
+        </div>
+        <span class="sr-only">Loading</span>
     </div>
-    <span class="sr-only">Loading</span>
-</div>
+    
+</c:if>
 
 <c:set var="current" value="${pageContext.request.requestURI}" />
 
@@ -97,10 +100,10 @@
                 <a href="${pageContext.request.contextPath}/login"
                    class="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold
                    shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300">Đăng nhập</a>
-                <button
-                    class="inline-block px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 font-medium hover:scale-105 border border-transparent transition-all duration-300">
+                <a href="${pageContext.request.contextPath}/register"
+                   class="inline-block px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 font-medium hover:scale-105 border border-transparent transition-all duration-300">
                     Đăng ký
-                </button>
+                </a>
             </div>
         </c:if>
     </div>
