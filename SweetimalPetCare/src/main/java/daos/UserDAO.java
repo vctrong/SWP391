@@ -65,7 +65,7 @@ public class UserDAO extends db.DBContext {
 
     public boolean updatePasswordByEmail(String email, String rawNewPassword) {
         try {
-            String hash = hashSHA256(rawNewPassword);
+            String hash = hashMd5(rawNewPassword);
             String sql = "update users set password_hash = ? where email = ?";
             int n = this.executeQuery(sql, new Object[]{hash, email});
             return n > 0;
@@ -75,9 +75,9 @@ public class UserDAO extends db.DBContext {
         }
     }
 
-    public static String hashSHA256(String input) {
+    public static String hashMd5(String input) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] hashBytes = md.digest(input.getBytes());
             StringBuilder sb = new StringBuilder();
             for (byte b : hashBytes) {

@@ -8,14 +8,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <link href="${pageContext.request.contextPath}/assets/css/header.css" rel="stylesheet" >
-<!-- Page loader (site-wide). Visible until window.load or when showPageLoader() is called -->
-<div id="page-loader" aria-hidden="false" class="fixed inset-0 bg-white z-50 flex items-center justify-center" style="transition:opacity .25s ease;">
-    <div class="flex items-center space-x-3">
-        <i class="fa-solid fa-circle-notch fa-2x animate-spin text-blue-600"></i>
-        <span class="text-gray-700 font-medium">Đang tải...</span>
-    </div>
-    <span class="sr-only">Loading</span>
-</div>
 
 <c:set var="current" value="${pageContext.request.requestURI}" />
 

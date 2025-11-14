@@ -27,17 +27,21 @@ public class SendEmail {
 
         try {
            
-            Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(fromEmail, "Sweetimal Pet Care"));
+            MimeMessage message = new MimeMessage(session);
+            // Bảo đảm hiển thị tiếng Việt có dấu chuẩn UTF-8
+            try {
+                message.setFrom(new InternetAddress(fromEmail, "Sweetimal Pet Care", "UTF-8"));
+            } catch (java.io.UnsupportedEncodingException ex) {
+                message.setFrom(new InternetAddress(fromEmail));
+            }
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail));
-            message.setSubject("Mã xác nhận OTP - Sweetimal Pet Care");
+            message.setSubject("Mã xác nhận OTP - Sweetimal Pet Care", "UTF-8");
 
-         
-            message.setHeader("Content-Type", "text/plain; charset=UTF-8");
-            message.setText(
-                "Xin chào,\n\nMã OTP của bạn là: " + otpCode +
-                "\n\nVui lòng không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng,\nSweetimal Pet Care Team"
-            );
+            String body = "Xin chào,\n\n" +
+                    "Mã OTP của bạn là: " + otpCode + "\n\n" +
+                    "Vui lòng không chia sẻ mã này cho bất kỳ ai.\n\n" +
+                    "Trân trọng,\nSweetimal Pet Care Team";
+            message.setContent(body, "text/plain; charset=UTF-8");
 
            
             Transport.send(message);

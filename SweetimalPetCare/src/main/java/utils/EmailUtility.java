@@ -57,11 +57,9 @@ public class EmailUtility {
         props.put("mail.mime.charset", "UTF-8");
         props.put("mail.mime.allowutf8", "true");
         if (SMTP_SSL) {
-            // SMTPS on 465
             props.put("mail.smtp.ssl.enable", "true");
             props.put("mail.smtp.starttls.enable", "false");
         } else {
-            // STARTTLS on 587
             props.put("mail.smtp.starttls.enable", "true");
             props.put("mail.smtp.starttls.required", "true");
             props.put("mail.smtp.ssl.protocols", "TLSv1.2");
@@ -73,14 +71,14 @@ public class EmailUtility {
                 return new PasswordAuthentication(_user, _pass);
             }
         });
-
-        // session.setDebug(true); // uncomment for detailed SMTP logs
         MimeMessage message = new MimeMessage(session);
-        message.setFrom(new InternetAddress(_user));
+        try {
+            message.setFrom(new InternetAddress(_user, "Sweetimal Pet Care"));
+        } catch (java.io.UnsupportedEncodingException e) {
+            message.setFrom(new InternetAddress(_user));
+        }
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
-        // Encode subject with UTF-8 (MimeMessage handles RFC2047 encoding)
         message.setSubject(subject, "UTF-8");
-        // Plain text with UTF-8 to preserve Vietnamese accents
         message.setText(content, "UTF-8");
 
         Transport.send(message);
