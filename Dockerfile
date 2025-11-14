@@ -1,23 +1,24 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS build
-WORKDIR /app
+WORKDIR /build
 
-# copy maven files and build WAR
-COPY pom.xml .
-COPY src ./src
-RUN mvn clean package -DskipTests
+# Copy only the project subfolder that contains pom.xml and source
+COPY SweetimalPetCare/pom.xml /build/pom.xml
+COPY SweetimalPetCare/src /build/src
+
+# Build WAR using the pom in the subfolder
+RUN mvn -f /build/pom.xml clean package -DskipTests
 
 FROM tomcat:9.0.85-jdk17-temurin
 WORKDIR /usr/local/tomcat
 
-# Render cung cấp biến PORT động; để an toàn, vẫn đặt mặc định 8080
 ENV PORT=8080
 EXPOSE 8080
 
-# clear default webapps and copy built WAR as ROOT
+# Clear default webapps and copy built WAR as ROOT
 RUN rm -rf webapps/*
-COPY --from=build /app/target/*.war webapps/ROOT.war
+COPY --from=build /build/target/*.war webapps/ROOT.war
 
-# add entrypoint script that will patch server.xml to use $PORT
+# Entrypoint patches server.xml to use $PORT (keeps your docker-entrypoint.sh)
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
