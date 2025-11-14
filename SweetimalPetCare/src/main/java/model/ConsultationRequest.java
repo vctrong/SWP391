@@ -11,22 +11,23 @@ public class ConsultationRequest {
     private String customerName;
     private String email;
     private String phone;
-    private String subject;
+    private Integer consultationTypeId; 
+    private String consultationTypeName; 
     private String requestMessage;
-    private Long userId; // nullable
-    private String statusCode; // default PENDING
+    private Long userId; 
+    private String statusCode;
     private LocalDateTime createdAt;
 
     public ConsultationRequest() {
     }
 
     public ConsultationRequest(Long requestId, String customerName, String email, String phone,
-            String subject, String requestMessage, Long userId, String statusCode, LocalDateTime createdAt) {
+            Integer consultationTypeId, String requestMessage, Long userId, String statusCode, LocalDateTime createdAt) {
         this.requestId = requestId;
         this.customerName = customerName;
         this.email = email;
         this.phone = phone;
-        this.subject = subject;
+        this.consultationTypeId = consultationTypeId;
         this.requestMessage = requestMessage;
         this.userId = userId;
         this.statusCode = statusCode;
@@ -65,12 +66,20 @@ public class ConsultationRequest {
         this.phone = phone;
     }
 
-    public String getSubject() {
-        return subject;
+    public Integer getConsultationTypeId() {
+        return consultationTypeId;
     }
 
-    public void setSubject(String subject) {
-        this.subject = subject;
+    public void setConsultationTypeId(Integer consultationTypeId) {
+        this.consultationTypeId = consultationTypeId;
+    }
+
+    public String getConsultationTypeName() {
+        return consultationTypeName;
+    }
+
+    public void setConsultationTypeName(String consultationTypeName) {
+        this.consultationTypeName = consultationTypeName;
     }
 
     public String getRequestMessage() {
@@ -103,5 +112,11 @@ public class ConsultationRequest {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    // Convenience formatted date string for JSP (dd/MM/yyyy HH:mm)
+    public String getCreatedAtFormatted() {
+        if (createdAt == null) return "";
+        return createdAt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
     }
 }

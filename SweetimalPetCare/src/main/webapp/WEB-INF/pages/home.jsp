@@ -289,13 +289,12 @@
                         <input name="email" type="email" placeholder="Email của bạn" required maxlength="150" class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition" />
                     </div>
                     <div class="grid md:grid-cols-2 gap-4">
-                        <input name="phone" type="text" placeholder="Số điện thoại" maxlength="20" class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition" />
-                        <select name="subject" required class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition">
-                            <option value="">Chọn dịch vụ/sản phẩm</option>
-                            <option>Chăm sóc - Làm đẹp</option>
-                            <option>Thú y</option>
-                            <option>Huấn luyện thú cưng</option>
-                            <option>Hỏi đáp cửa hàng</option>
+                        <input name="phone" type="text" placeholder="Số điện thoại" maxlength="15" pattern="[0-9]{1,15}" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')" class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition" />
+                        <select name="consultation_type_id" required class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition">
+                            <option value="">Chọn loại tư vấn</option>
+                            <c:forEach var="t" items="${consultationTypes}">
+                                <option value="${t.typeId}">${fn:escapeXml(t.typeName)}</option>
+                            </c:forEach>
                         </select>
                     </div>
                     <textarea name="request_message" placeholder="Nội dung cần tư vấn" required class="w-full border border-sky-100 rounded-xl px-4 py-3 h-32 focus:ring-2 focus:ring-cyan-300 outline-none transition"></textarea>

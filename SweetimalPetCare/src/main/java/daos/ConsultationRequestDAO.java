@@ -13,13 +13,13 @@ public class ConsultationRequestDAO {
     private final DBContext db = new DBContext();
 
     public long create(ConsultationRequest cr) throws SQLException {
-        String sql = "INSERT INTO ConsultationRequests(customer_name, email, phone, subject, request_message, user_id, status_code, created_at) "
+        String sql = "INSERT INTO ConsultationRequests(customer_name, email, phone, consultation_type_id, request_message, user_id, status_code, created_at) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         Object[] params = new Object[]{
             cr.getCustomerName(),
             cr.getEmail(),
             cr.getPhone(),
-            cr.getSubject(),
+            cr.getConsultationTypeId(),
             cr.getRequestMessage(),
             cr.getUserId(),
             cr.getStatusCode(),
@@ -29,8 +29,9 @@ public class ConsultationRequestDAO {
     }
 
     public List<ConsultationRequest> listLatest(int limit) throws SQLException {
-        String sql = "SELECT request_id, customer_name, email, phone, subject, request_message, user_id, status_code, created_at "
-                + "FROM ConsultationRequests ORDER BY created_at DESC OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY";
+        String sql = "SELECT cr.request_id, cr.customer_name, cr.email, cr.phone, cr.consultation_type_id, ct.type_name AS consultation_type_name, cr.request_message, cr.user_id, cr.status_code, cr.created_at "
+            + "FROM ConsultationRequests cr LEFT JOIN ConsultationTypes ct ON cr.consultation_type_id = ct.type_id "
+            + "ORDER BY cr.created_at DESC OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY";
         ResultSet rs = null;
         List<ConsultationRequest> list = new ArrayList<>();
         try {
@@ -41,7 +42,8 @@ public class ConsultationRequestDAO {
                 cr.setCustomerName(rs.getString("customer_name"));
                 cr.setEmail(rs.getString("email"));
                 cr.setPhone(rs.getString("phone"));
-                cr.setSubject(rs.getString("subject"));
+                cr.setConsultationTypeId((Integer) rs.getObject("consultation_type_id"));
+                cr.setConsultationTypeName(rs.getNString("consultation_type_name"));
                 cr.setRequestMessage(rs.getString("request_message"));
                 Object uid = rs.getObject("user_id");
                 cr.setUserId(uid == null ? null : ((Number) uid).longValue());
@@ -73,8 +75,9 @@ public class ConsultationRequestDAO {
     }
 
     public List<ConsultationRequest> listPaged(int offset, int limit) throws SQLException {
-        String sql = "SELECT request_id, customer_name, email, phone, subject, request_message, user_id, status_code, created_at "
-                + "FROM ConsultationRequests ORDER BY created_at DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+        String sql = "SELECT cr.request_id, cr.customer_name, cr.email, cr.phone, cr.consultation_type_id, ct.type_name AS consultation_type_name, cr.request_message, cr.user_id, cr.status_code, cr.created_at "
+            + "FROM ConsultationRequests cr LEFT JOIN ConsultationTypes ct ON cr.consultation_type_id = ct.type_id "
+            + "ORDER BY cr.created_at DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
         ResultSet rs = null;
         List<ConsultationRequest> list = new ArrayList<>();
         try {
@@ -85,7 +88,8 @@ public class ConsultationRequestDAO {
                 cr.setCustomerName(rs.getString("customer_name"));
                 cr.setEmail(rs.getString("email"));
                 cr.setPhone(rs.getString("phone"));
-                cr.setSubject(rs.getString("subject"));
+                cr.setConsultationTypeId((Integer) rs.getObject("consultation_type_id"));
+                cr.setConsultationTypeName(rs.getNString("consultation_type_name"));
                 cr.setRequestMessage(rs.getString("request_message"));
                 Object uid = rs.getObject("user_id");
                 cr.setUserId(uid == null ? null : ((Number) uid).longValue());
@@ -101,15 +105,17 @@ public class ConsultationRequestDAO {
         return list;
     }
 
-    public String validate(ConsultationRequest cr) {
-        if (cr.getCustomerName() == null || cr.getCustomerName().trim().isEmpty()) return "Vui lòng nhập họ tên.";
-        if (cr.getEmail() == null || cr.getEmail().trim().isEmpty()) return "Vui lòng nhập email.";
-        if (cr.getSubject() == null || cr.getSubject().trim().isEmpty()) return "Vui lòng chọn chủ đề.";
-        if (cr.getRequestMessage() == null || cr.getRequestMessage().trim().isEmpty()) return "Vui lòng nhập nội dung.";
-        if (cr.getCustomerName().length() > 120) return "Tên quá dài.";
-        if (cr.getEmail().length() > 150) return "Email quá dài.";
-        if (cr.getPhone() != null && cr.getPhone().length() > 20) return "Số điện thoại quá dài.";
-        if (cr.getSubject().length() > 255) return "Chủ đề quá dài.";
-        return null;
+    
+
+    public boolean updateStatus(long requestId, String statusCode) throws SQLException {
+        String sql = "UPDATE ConsultationRequests SET status_code = ? WHERE request_id = ?";
+        int updated = db.executeQuery(sql, new Object[]{statusCode, requestId});
+        return updated > 0;
+    }
+
+    public boolean deleteById(long requestId) throws SQLException {
+        String sql = "DELETE FROM ConsultationRequests WHERE request_id = ?";
+        int deleted = db.executeQuery(sql, new Object[]{requestId});
+        return deleted > 0;
     }
 }

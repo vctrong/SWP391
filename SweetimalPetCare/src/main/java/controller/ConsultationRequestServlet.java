@@ -1,6 +1,9 @@
 package controller;
 
 import daos.ConsultationRequestDAO;
+import daos.ConsultationTypeDAO;
+import model.ConsultationType;
+import utils.ConsultationRequestValidator;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -24,15 +27,22 @@ public class ConsultationRequestServlet extends HttpServlet {
         String customerName = request.getParameter("customer_name");
         String email = request.getParameter("email");
         String phone = request.getParameter("phone");
-        String subject = request.getParameter("subject");
+        String consultationTypeParam = request.getParameter("consultation_type_id");
         String message = request.getParameter("request_message");
 
-        // Build model
         ConsultationRequest cr = new ConsultationRequest();
         cr.setCustomerName(customerName != null ? customerName.trim() : null);
         cr.setEmail(email != null ? email.trim() : null);
         cr.setPhone(phone != null ? phone.trim() : null);
-        cr.setSubject(subject != null ? subject.trim() : null);
+        Integer consultationTypeId = null;
+        if (consultationTypeParam != null && !consultationTypeParam.trim().isEmpty()) {
+            try {
+                consultationTypeId = Integer.valueOf(consultationTypeParam);
+            } catch (NumberFormatException ignore) {
+                consultationTypeId = null;
+            }
+        }
+        cr.setConsultationTypeId(consultationTypeId);
         cr.setRequestMessage(message != null ? message.trim() : null);
 
         HttpSession session = request.getSession(false);
@@ -48,9 +58,23 @@ public class ConsultationRequestServlet extends HttpServlet {
         cr.setCreatedAt(LocalDateTime.now());
 
         ConsultationRequestDAO dao = new ConsultationRequestDAO();
-        String validateMsg = dao.validate(cr);
+        if (consultationTypeId != null) {
+            try {
+                ConsultationTypeDAO typeDao = new ConsultationTypeDAO();
+                ConsultationType ct = typeDao.findById(consultationTypeId);
+                if (ct == null || ct.getActive() == null || !ct.getActive()) {
+                    String msg = java.net.URLEncoder.encode("Loại tư vấn không hợp lệ.", "UTF-8");
+                    response.sendRedirect(request.getContextPath() + "/home?cr_success=0&cr_msg=" + msg + "#contact");
+                    return;
+                }
+            } catch (Exception ex) {
+                String msg = java.net.URLEncoder.encode("Không thể kiểm tra loại tư vấn.", "UTF-8");
+                response.sendRedirect(request.getContextPath() + "/home?cr_success=0&cr_msg=" + msg + "#contact");
+                return;
+            }
+        }
+        String validateMsg = ConsultationRequestValidator.validate(cr);
         if (validateMsg != null) {
-            // Redirect back to home with error message and anchor to #contact
             String msg = java.net.URLEncoder.encode(validateMsg, "UTF-8");
             response.sendRedirect(request.getContextPath() + "/home?cr_success=0&cr_msg=" + msg + "#contact");
             return;

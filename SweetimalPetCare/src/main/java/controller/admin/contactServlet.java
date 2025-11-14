@@ -59,7 +59,7 @@ public class contactServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
-        final int pageSize = 15; // fixed page size as requested
+        final int pageSize = 15;
         int page = 1;
         String pageParam = request.getParameter("page");
         if (pageParam != null) {
@@ -75,11 +75,11 @@ public class contactServlet extends HttpServlet {
         int totalPages = 0;
         try {
             totalItems = dao.countAll();
-            totalPages = (totalItems + pageSize - 1) / pageSize; // ceil division
+            totalPages = (totalItems + pageSize - 1) / pageSize; 
             if (totalPages == 0) {
-                page = 1; // no data, default page 1
+                page = 1; 
             } else if (page > totalPages) {
-                page = totalPages; // clamp to last page
+                page = totalPages;
             }
             int offset = (page - 1) * pageSize;
             crList = dao.listPaged(offset, pageSize);
@@ -93,6 +93,25 @@ public class contactServlet extends HttpServlet {
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalItems", totalItems);
         request.setAttribute("pageSize", pageSize);
+
+        int startIndex = (totalItems == 0) ? 0 : ((page - 1) * pageSize + 1);
+        int endIndex = Math.min(page * pageSize, totalItems);
+        boolean hasPrev = page > 1;
+        boolean hasNext = totalPages > 0 && page < totalPages;
+        request.setAttribute("startIndex", startIndex);
+        request.setAttribute("endIndex", endIndex);
+        request.setAttribute("hasPrev", hasPrev);
+        request.setAttribute("hasNext", hasNext);
+        request.setAttribute("baseUrl", "/admin/contact");
+
+        java.util.List<Integer> pagesWindow = new java.util.ArrayList<>();
+        int window = 2;
+        int start = Math.max(1, page - window);
+        int finish = Math.min(totalPages, page + window);
+        for (int p = start; p <= finish; p++) pagesWindow.add(p);
+        request.setAttribute("pagesWindow", pagesWindow);
+        request.setAttribute("windowStart", start);
+        request.setAttribute("windowEnd", finish);
 
         request.getRequestDispatcher("/WEB-INF/admin/contacts.jsp").forward(request, response);
     } 
