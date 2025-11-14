@@ -13,6 +13,15 @@
         <title>Services Admin | Sweetimal Pet Care</title>
         <%@include file="/WEB-INF/include/library.jsp" %>
         <%@include file="includes/headAdmin.jsp" %>
+        <style>
+            /* Ẩn nút tăng giảm trên Chrome, Safari, Edge, Opera */
+            input[type="number"]::-webkit-outer-spin-button,
+            input[type="number"]::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+        </style>
     </head>
     <body  class="font-inter bg-gray-50 text-gray-800">
         <div class="min-h-screen flex">
@@ -26,6 +35,18 @@
                         <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                             <h3 class="text-lg font-semibold text-sky-700">🐾 Service Management</h3>
                             <div class="flex items-center gap-2">
+                                <div class="bg-gray-100 p-1 rounded-md flex items-center gap-1">
+                                    <i class="fa-solid fa-filter me-3"></i>
+                                    <button type="button" data-filter="all" class="filter-btn px-3 py-1.5 text-sm font-medium rounded-md bg-white text-sky-700 shadow-sm transition-all">
+                                        All
+                                    </button>
+                                    <button type="button" data-filter="Package" class="filter-btn px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-200 transition-all">
+                                        Package
+                                    </button>
+                                    <button type="button" data-filter="Service" class="filter-btn px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-200 transition-all">
+                                        Service
+                                    </button>
+                                </div>
                                 <input id="serviceSearch" placeholder="Search by name or code..."
                                        class="input-field w-64 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400" />
                                 <div class="relative inline-block text-left">
@@ -74,14 +95,12 @@
                         <!-- Table -->
                         <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
                             <div class="overflow-x-auto">
-                                <table class="w-full table-auto text-sm">
+                                <table class=" w-full table-auto text-sm">
                                     <thead class="bg-gray-100 text-gray-700">
                                         <tr>
                                             <th class="table-header-cell text-left px-4 py-3">ID</th>
                                             <th class="table-header-cell text-left px-4 py-3">Code</th>
                                             <th class="table-header-cell text-left px-4 py-3">Name</th>
-                                            <th class="table-header-cell text-left px-4 py-3">Category</th>
-                                            <th class="table-header-cell text-center px-4 py-3">Duration (min)</th>
                                             <th class="table-header-cell text-right px-4 py-3">Price (₫)</th>
                                             <th class="table-header-cell text-center px-4 py-3">Status</th>
                                             <th class="table-header-cell text-center px-4 py-3">Created At</th>
@@ -91,13 +110,11 @@
 
                                     <tbody id="servicesTableBody" class="divide-y divide-gray-200 text-gray-700">
                                         <c:forEach var="service" items="${listService}" >
-                                            <tr class="hover:bg-gray-50 transition">
-                                                <td class="px-4 py-2">${service.serviceId}</td>
-                                                <td class="px-4 py-2 font-medium text-sky-600">${service.serviceCode}</td>
-                                                <td class="px-4 py-2">${service.serviceName}</td>
-                                                <td class="px-4 py-2">${service.serviceCateName}</td>
-                                                <td class="px-4 py-2 text-center">${service.baseDurationMin}</td>
-                                                <td class="px-4 py-2 text-right"> <fmt:formatNumber value="${service.currentPrice}" groupingUsed="true" /> </td>
+                                            <tr data-category="${service.type}" class="filter-item hover:bg-gray-50 transition">
+                                                <td class="px-4 py-2">${service.id}</td>
+                                                <td class="px-4 py-2 font-medium text-sky-600">${service.code}</td>
+                                                <td class="px-4 py-2">${service.name}</td>
+                                                <td class="px-4 py-2 text-right"> <fmt:formatNumber value="${service.price}" groupingUsed="true" /> </td>
                                                 <td class="px-4 py-2 text-center">
                                                     <span class="px-2 py-1 text-xs font-semibold rounded-full
                                                           ${service.status == "ACTIVE" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}  ">
@@ -107,28 +124,32 @@
                                                 <td class="px-4 py-2 text-center"> <fmt:formatDate value="${service.createdAt}" pattern="dd/MM/yyyy" /> </td>
                                                 <td class="px-4 py-2 text-center">
                                                     <div class="flex justify-center gap-2">
-                                                        <form action="service-detail" method="get">
-                                                            <input type="hidden" name="id" value="6"/>
-                                                            <button type="submit"
-                                                                    class="px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white text-xs rounded-md">Detail</button>
-                                                        </form>
-                                                        <form action="service-edit" method="get">
-                                                            <input type="hidden" name="id" value="7"/>
-                                                            <button type="submit"
-                                                                    class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-md">Edit</button>
-                                                        </form>
+                                                        <button type="button"
+                                                                data-service-id="${service.id}"
+                                                                data-type="${service.type}"
+                                                                class="btn-view-detail-ajax px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white text-xs rounded-md transition-colors">
+                                                            Detail
+                                                        </button>
+                                                        <button type="button"
+                                                                data-service-id="${service.id}"
+                                                                data-type="${service.type}"
+                                                                class="btn-edit-ajax px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-md transition-colors">
+                                                            Edit
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
                                         </c:forEach>
 
-                                        <c:if test="0=0">
+                                        <tr id="filter-no-results" class="hidden">
+                                            <td colspan="9" class="text-center py-4 text-gray-500">No services match this filter.</td>
+                                        </tr>
+
+                                        <c:if test="${empty listService}">
                                             <tr>
                                                 <td colspan="9" class="text-center py-4 text-gray-500">No services found.</td>
                                             </tr> 
                                         </c:if>
-
-
                                     </tbody>
                                 </table>
                             </div>
@@ -137,11 +158,49 @@
                 </main>
             </div>
         </div>
+        <%@include file="/WEB-INF/modal/editServiceModal.jsp" %>
+        <%@include file="/WEB-INF/modal/detailServiceModal.jsp" %>
         <%@include file="/WEB-INF/modal/addServiceCate.jsp" %>
         <%@include file="/WEB-INF/modal/addServiceModal.jsp" %>
         <%@include file="/WEB-INF/modal/addPackageService.jsp" %>
+        <script>
+            const url = '${pageContext.request.contextPath}';
+        </script>
         <script src="${pageContext.request.contextPath}/assets/js/adminPages.js"></script>
         <script src="${pageContext.request.contextPath}/assets/js/modalHandle_admin.js"></script>
+        <script src="${pageContext.request.contextPath}/assets/js/searchService.js"></script>
+        <script src="${pageContext.request.contextPath}/assets/apiJs/serviceFetchAPI.js"></script>
+        <script src="${pageContext.request.contextPath}/assets/apiJs/sericeEdit.js"></script>
+
+        <c:if test="${not empty message}">
+            <script>
+            const Toast = Swal.mixin({
+                toast: true, // Bật chế độ toast
+                position: 'top-end', // Vị trí: góc trên bên phải
+                showConfirmButton: false, // Ẩn nút OK
+                timer: 3000, // Tự động tắt sau 3 giây
+                timerProgressBar: true, // Hiển thị thanh đếm lùi thời gian
+                showCloseButton: true,
+                didOpen: (toast) => {
+                    // Thêm 2 sự kiện này để khi rê chuột vào, toast sẽ không bị tắt
+//                    toast.addEventListener('mouseenter', Swal.stopTimer);
+//                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+            const messageType = '${sessionScope.messageType}';
+            const message = `${sessionScope.message}`;
+
+            Toast.fire({
+                icon: messageType, // icon sẽ tự động là 'success' hoặc 'error'
+                title: message      // Hiển thị nội dung thông báo
+            });
+            </script>
+
+            <c:remove var="message" scope="session" />
+            <c:remove var="messageType" scope="session" />
+        </c:if>
+
+
 
     </body>
 </html>

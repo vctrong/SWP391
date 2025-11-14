@@ -2,8 +2,10 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
  */
-package controller.admin;
+package controller.api;
 
+import com.google.gson.Gson;
+import daos.admin.ScheduleSlotDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -11,13 +13,16 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.sql.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
  * @author Vo Chi Trong - CE191062
  */
-@WebServlet(name = "bookingAdminServlet", urlPatterns = {"/admin/booking"})
-public class bookingServlet extends HttpServlet {
+@WebServlet(name = "GenerateScheduleServlet", urlPatterns = {"/api/GenerateSchedule"})
+public class GenerateScheduleServlet extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -36,16 +41,15 @@ public class bookingServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet bookingServlet</title>");
+            out.println("<title>Servlet GenerateScheduleServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet bookingServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet GenerateScheduleServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
      *
@@ -57,8 +61,7 @@ public class bookingServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        request.getRequestDispatcher("/WEB-INF/admin/bookings.jsp").forward(request, response);
+        processRequest(request, response);
     }
 
     /**
@@ -72,7 +75,33 @@ public class bookingServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        response.setContentType("application/json");
+        PrintWriter out = response.getWriter();
+        Gson gson = new Gson();
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            long staffId = Long.parseLong(request.getParameter("staffId"));
+            Date startDate = Date.valueOf(request.getParameter("startDate"));
+            Date endDate = Date.valueOf(request.getParameter("endDate"));
+            int startHour = Integer.parseInt(request.getParameter("startHour"));
+            int endHour = Integer.parseInt(request.getParameter("endHour"));
+            int duration = Integer.parseInt(request.getParameter("duration"));
+            String roomName = request.getParameter("roomName");
+            boolean skipLunch = request.getParameter("skipLunch") != null; // Checkbox gửi "on" hoặc null
+
+            ScheduleSlotDAO dao = new ScheduleSlotDAO();
+            int count = dao.generateSlots(staffId, startDate, endDate, startHour, endHour, duration, skipLunch, roomName);
+
+            result.put("success", true);
+            result.put("count", count);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        out.print(gson.toJson(result));
     }
 
     /**

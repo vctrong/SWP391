@@ -2,8 +2,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
  */
-package controller.admin;
+package controller.api;
 
+import com.google.gson.Gson;
+import daos.admin.ServiceDAO;
+import dto.ResquestServiceDTO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -11,13 +14,14 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
 
 /**
  *
  * @author Vo Chi Trong - CE191062
  */
-@WebServlet(name = "bookingAdminServlet", urlPatterns = {"/admin/booking"})
-public class bookingServlet extends HttpServlet {
+@WebServlet(name = "ServiceAPIServlet", urlPatterns = {"/api/ServiceAPI"})
+public class ServiceAPIServlet extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -36,16 +40,15 @@ public class bookingServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet bookingServlet</title>");
+            out.println("<title>Servlet ServiceAPIServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet bookingServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet ServiceAPIServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
      *
@@ -58,7 +61,6 @@ public class bookingServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        request.getRequestDispatcher("/WEB-INF/admin/bookings.jsp").forward(request, response);
     }
 
     /**
@@ -72,7 +74,46 @@ public class bookingServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        ServiceDAO sDAO = new ServiceDAO();
+        Gson gson = new Gson();
+        try ( PrintWriter out = response.getWriter();  BufferedReader reader = request.getReader()) {
+
+            ResquestServiceDTO rSDTO = gson.fromJson(reader, ResquestServiceDTO.class);
+            if (rSDTO == null || rSDTO.getType() == null) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print(gson.toJson(new Error("Dữ liệu yêu cầu không hợp lệ")));
+                return;
+            }
+
+            long id = rSDTO.getId();
+            System.out.println("day la id: " + id);
+            String type = rSDTO.getType();
+            System.out.println("day la type: " + type);
+            Object resultData = null;
+
+            if ("Service".equalsIgnoreCase(type)) {
+                resultData = sDAO.getServiceByID(id);
+            } else if ("Package".equalsIgnoreCase(type)) {
+                resultData = sDAO.getPackageServiceByID(id);
+                System.out.println("day la ket qua tim tu dao: " + sDAO.getPackageServiceByID(id));
+            }
+            if (resultData != null) {
+                out.print(gson.toJson(resultData));
+                System.out.println("day la resuDAa " + gson.toJson(resultData));
+            } else {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out.print(gson.toJson(new Error("Không tìm thấy dữ liệu với ID: " + id)));
+                System.out.println("Không tìm thấy dữ liệu với ID: " + id);
+            }
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            if (!response.isCommitted()) {
+                response.getWriter().print("{\"error\": \"Đã xảy ra lỗi phía máy chủ.\"}");
+            }
+        }
+
     }
 
     /**

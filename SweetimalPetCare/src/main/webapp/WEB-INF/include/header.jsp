@@ -19,7 +19,6 @@
 <header id="navbar"
         class="sticky top-0 left-0 w-full z-30 bg-white/40 backdrop-blur-md border-b border-sky-100 shadow-sm transition-all duration-500">
     <div class="container mx-auto flex justify-between items-center py-4 px-6">
-        <!-- Logo + Brand -->
         <div class="flex items-center space-x-3">
             <a href="${pageContext.request.contextPath}/home"
                class="flex items-center space-x-3 px-2 py-1 rounded-full transition-all transform hover:scale-105 hover:shadow-md hover:text-blue-600"
@@ -33,41 +32,40 @@
             </a>
         </div>
 
-        <!-- Nav Links -->
-        <nav class="hidden md:flex items-center space-x-2 text-gray-700 font-medium">
+        <nav class="hidden lg:flex items-center space-x-1 text-gray-700 font-medium">
             <a href="${pageContext.request.contextPath}/home"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               class="nav-link px-3 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                hover:text-blue-600 hover:border-blue-400
                ${fn:contains(current, '/home') ? 'active' : ''}">Trang chủ</a>
 
             <a href="${pageContext.request.contextPath}/services"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               class="nav-link px-3 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                hover:text-blue-600 hover:border-blue-400
                ${fn:contains(current, '/services') ? 'active' : ''}">Dịch vụ</a>
 
             <a href="${pageContext.request.contextPath}/shop"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               class="nav-link px-3 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                hover:text-blue-600 hover:border-blue-400
                ${fn:contains(current, '/shop') ? 'active' : ''}">Cửa hàng</a>
 
             <a href="${pageContext.request.contextPath}/contacts"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               class="nav-link px-3 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                hover:text-blue-600 hover:border-blue-400
                ${fn:contains(current, '/Contacts') ? 'active' : ''}">Liên hệ</a>
 
             <a href="${pageContext.request.contextPath}/aboutUs"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+               class="nav-link px-3 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                hover:text-blue-600 hover:border-blue-400
                ${fn:contains(current, '/aboutus') ? 'active' : ''}">Về chúng tôi</a>
-               
-               <a href="${pageContext.request.contextPath}/news"
-               class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+
+            <a href="${pageContext.request.contextPath}/news"
+               class="nav-link px-3 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                hover:text-blue-600 hover:border-blue-400
                ${fn:contains(current, '/news') ? 'active' : ''}">Tin tức</a>
 
             <c:if test="${not empty user and user.roleEnum == 'CUSTOMER'}">
                 <a href="${pageContext.request.contextPath}/booking-history"
-                   class="nav-link px-4 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
+                   class="nav-link px-3 py-2 rounded-full relative transition-all duration-300 transform hover:scale-105
                    hover:text-blue-600 hover:border-blue-400
                    ${fn:contains(current, '/bookingHistory') ? 'active' : ''}">
                     Lịch sử đặt lịch
@@ -75,22 +73,22 @@
             </c:if>
         </nav>
 
-        <!-- User / Auth Buttons -->
         <c:if test="${not empty user}">
-            <div class="space-x-4 flex items-center">          
+            <div class="space-x-4 flex items-center">
 
                 <div class="px-1 py-1 rounded-full transform hover:scale-105 hover:text-blue-600 transition">
                     <button id="userMenuButton"
                             class="flex items-center space-x-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-blue-600 hover:to-blue-700
-                            text-white px-4 py-2 rounded-full shadow-md hover:shadow-lg transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                            text-white px-4 py-2 rounded-full shadow-md hover:shadow-lg transition duration-300 focus:outline-none
+                            focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                            whitespace-nowrap">
                         ${user.fullName}
                     </button>
                 </div>
-                    
-                   <a href="${pageContext.request.contextPath}/cart"
+
+                <a href="${pageContext.request.contextPath}/cart"
                    class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white border shadow-sm hover:shadow-md transition mr-2">
                     <i class="fa-solid fa-cart-shopping text-gray-700"></i>
-                    <!--<span class="text-gray-700 font-medium whitespace-nowrap">Giỏ hàng</span>-->
                 </a>
             </div>
         </c:if>
@@ -106,6 +104,7 @@
                 </a>
             </div>
         </c:if>
+
     </div>
 </header>
 

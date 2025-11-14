@@ -13,49 +13,43 @@ import java.sql.Date;
  */
 public class service {
 
-    private long serviceId;
+    private long id;
     private long serviceCateId;
-    private String serviceCode;
-    private String serviceName;
+    private String code;
+    private String name;
     private String description;
     private int baseDurationMin;
-    private BigDecimal currentPrice;
+    private BigDecimal price;
     private String status;
     private Date createdAt;
     private String serviceCateName;
+    private String type;
 
     public service() {
     }
 
     public service(long serviceId, long serviceCateId, String serviceCode,
             String serviceName, String description, int baseDurationMin,
-            BigDecimal currentPrice, String status, Date createdAt, String serviceCateName) {
-        this.serviceId = serviceId;
+            BigDecimal currentPrice, String status, Date createdAt, String serviceCateName, String type) {
+        this.id = serviceId;
         this.serviceCateId = serviceCateId;
-        this.serviceCode = serviceCode;
-        this.serviceName = serviceName;
+        this.code = serviceCode;
+        this.name = serviceName;
         this.description = description;
         this.baseDurationMin = baseDurationMin;
-        this.currentPrice = currentPrice;
+        this.price = currentPrice;
         this.status = status;
         this.createdAt = createdAt;
         this.serviceCateName = serviceCateName;
+        this.type = type;
     }
 
-    public String getServiceCateName() {
-        return serviceCateName;
+    public long getId() {
+        return id;
     }
 
-    public void setServiceCateName(String serviceCateName) {
-        this.serviceCateName = serviceCateName;
-    }
-
-    public long getServiceId() {
-        return serviceId;
-    }
-
-    public void setServiceId(long serviceId) {
-        this.serviceId = serviceId;
+    public void setId(long id) {
+        this.id = id;
     }
 
     public long getServiceCateId() {
@@ -66,20 +60,20 @@ public class service {
         this.serviceCateId = serviceCateId;
     }
 
-    public String getServiceCode() {
-        return serviceCode;
+    public String getCode() {
+        return code;
     }
 
-    public void setServiceCode(String serviceCode) {
-        this.serviceCode = serviceCode;
+    public void setCode(String code) {
+        this.code = code;
     }
 
-    public String getServiceName() {
-        return serviceName;
+    public String getName() {
+        return name;
     }
 
-    public void setServiceName(String serviceName) {
-        this.serviceName = serviceName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getDescription() {
@@ -98,12 +92,12 @@ public class service {
         this.baseDurationMin = baseDurationMin;
     }
 
-    public BigDecimal getCurrentPrice() {
-        return currentPrice;
+    public BigDecimal getPrice() {
+        return price;
     }
 
-    public void setCurrentPrice(BigDecimal currentPrice) {
-        this.currentPrice = currentPrice;
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 
     public String getStatus() {
@@ -120,6 +114,22 @@ public class service {
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getServiceCateName() {
+        return serviceCateName;
+    }
+
+    public void setServiceCateName(String serviceCateName) {
+        this.serviceCateName = serviceCateName;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
 }

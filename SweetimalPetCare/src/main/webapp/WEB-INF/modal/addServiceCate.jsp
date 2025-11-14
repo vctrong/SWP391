@@ -24,7 +24,7 @@
         </div>
 
         <!-- Body -->
-        <form action="your-add-category-servlet" method="post" class="flex-1 overflow-y-auto">
+        <form action="${pageContext.request.contextPath}/admin/addServiceCate" method="post" class="flex-1 overflow-y-auto">
             <div class="p-6 space-y-4">
 
                 <!-- Category Name -->

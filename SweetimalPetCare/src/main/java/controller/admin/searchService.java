@@ -4,6 +4,9 @@
  */
 package controller.admin;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import daos.admin.ServiceDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -11,13 +14,15 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import model.service.service;
 
 /**
  *
  * @author Vo Chi Trong - CE191062
  */
-@WebServlet(name = "bookingAdminServlet", urlPatterns = {"/admin/booking"})
-public class bookingServlet extends HttpServlet {
+@WebServlet(name = "searchService", urlPatterns = {"/admin/searchService"})
+public class searchService extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -36,10 +41,10 @@ public class bookingServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet bookingServlet</title>");
+            out.println("<title>Servlet searchService</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet bookingServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet searchService at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
@@ -57,8 +62,16 @@ public class bookingServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String query = request.getParameter("query");
+        String filter = request.getParameter("filter");
 
-        request.getRequestDispatcher("/WEB-INF/admin/bookings.jsp").forward(request, response);
+        ServiceDAO sDAO = new ServiceDAO();
+        ArrayList<service> serviceSearch = sDAO.searchServices(query, filter);
+        Gson gson = new Gson();
+        String json = gson.toJson(serviceSearch);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(json);
     }
 
     /**

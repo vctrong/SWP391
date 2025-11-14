@@ -36,6 +36,16 @@ public class DBContext {
         return conn;
     }
 
+    public Connection openNewConnection() throws SQLException {
+        try {
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            return DriverManager.getConnection(DB_URL, DB_USER, DB_PWD);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, null, ex);
+            throw new SQLException("Driver not found", ex);
+        }
+    }
+
     public ResultSet executeSelectQuery(String qr, Object[] params) throws SQLException {
         PreparedStatement statement = this.getConnection().prepareStatement(qr);
         if (params != null) {

@@ -4,8 +4,10 @@
  */
 package model.service;
 
+import dto.serviceDTO;
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.util.ArrayList;
 
 /**
  *
@@ -13,49 +15,50 @@ import java.sql.Date;
  */
 public class servicePackage {
 
-    private long packageId;
-    private String packageCode;
-    private String packageName;
+    private long id;
+    private String code;
+    private String name;
     private String description;
     private String status;
-    private BigDecimal packagePrice;
+    private BigDecimal price;
     private Date createdAt;
+    private ArrayList<serviceDTO> item;
 
     public servicePackage() {
     }
 
     public servicePackage(long packageId, String packageCode, String packageName, String description, String status, BigDecimal packagePrice, Date createdAt) {
-        this.packageId = packageId;
-        this.packageCode = packageCode;
-        this.packageName = packageName;
+        this.id = packageId;
+        this.code = packageCode;
+        this.name = packageName;
         this.description = description;
         this.status = status;
-        this.packagePrice = packagePrice;
+        this.price = packagePrice;
         this.createdAt = createdAt;
     }
 
-    public long getPackageId() {
-        return packageId;
+    public long getId() {
+        return id;
     }
 
-    public void setPackageId(long packageId) {
-        this.packageId = packageId;
+    public void setId(long id) {
+        this.id = id;
     }
 
-    public String getPackageCode() {
-        return packageCode;
+    public String getCode() {
+        return code;
     }
 
-    public void setPackageCode(String packageCode) {
-        this.packageCode = packageCode;
+    public void setCode(String code) {
+        this.code = code;
     }
 
-    public String getPackageName() {
-        return packageName;
+    public String getName() {
+        return name;
     }
 
-    public void setPackageName(String packageName) {
-        this.packageName = packageName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getDescription() {
@@ -74,12 +77,12 @@ public class servicePackage {
         this.status = status;
     }
 
-    public BigDecimal getPackagePrice() {
-        return packagePrice;
+    public BigDecimal getPrice() {
+        return price;
     }
 
-    public void setPackagePrice(BigDecimal packagePrice) {
-        this.packagePrice = packagePrice;
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 
     public Date getCreatedAt() {
@@ -88,6 +91,14 @@ public class servicePackage {
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public ArrayList<serviceDTO> getItem() {
+        return item;
+    }
+
+    public void setItem(ArrayList<serviceDTO> item) {
+        this.item = item;
     }
 
 }
