@@ -103,11 +103,11 @@ public class loginServlet extends HttpServlet {
                 break;
 
             case STAFF:
-                response.sendRedirect(request.getContextPath() + "/staff/dashboard");
+                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                 break;
 
             case VET:
-                response.sendRedirect(request.getContextPath() + "/vet/dashboard");
+                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                 break;
 
             case CUSTOMER:

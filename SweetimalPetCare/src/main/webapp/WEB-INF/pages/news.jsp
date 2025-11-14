@@ -10,10 +10,13 @@
         <title>Tin tức thú cưng</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
         <style>
-            body.news-page #page-loader { display: none !important; }
+            body.news-page #page-loader {
+                display: none !important;
+            }
         </style>
-        </head>
+    </head>
     <body class="bg-gray-50 text-gray-800 news-page">
         <%@include file="/WEB-INF/include/header.jsp" %>
 

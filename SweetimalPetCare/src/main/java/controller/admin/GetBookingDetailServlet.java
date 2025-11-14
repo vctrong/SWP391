@@ -4,6 +4,8 @@
  */
 package controller.admin;
 
+import com.google.gson.Gson;
+import daos.admin.BookingDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -11,13 +13,14 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import model.bookingAdmin.Booking;
 
 /**
  *
  * @author Vo Chi Trong - CE191062
  */
-@WebServlet(name = "bookingAdminServlet", urlPatterns = {"/admin/booking"})
-public class bookingServlet extends HttpServlet {
+@WebServlet(name = "GetBookingDetailServlet", urlPatterns = {"/admin/GetBookingDetail"})
+public class GetBookingDetailServlet extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -36,10 +39,10 @@ public class bookingServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet bookingServlet</title>");
+            out.println("<title>Servlet GetBookingDetailServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet bookingServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet GetBookingDetailServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
@@ -57,8 +60,30 @@ public class bookingServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
 
-        request.getRequestDispatcher("/WEB-INF/admin/bookings.jsp").forward(request, response);
+        try ( PrintWriter out = response.getWriter()) {
+            String idStr = request.getParameter("id");
+
+            if (idStr != null) {
+                long id = Long.parseLong(idStr);
+                BookingDAO dao = new BookingDAO();
+                Booking b = dao.getBookingByID(id);
+
+                if (b != null) {
+                    // Chuyển Object thành JSON
+                    Gson gson = new Gson();
+                    out.print(gson.toJson(b));
+                } else {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND); // 404
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+
     }
 
     /**
@@ -72,7 +97,25 @@ public class bookingServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        try {
+            long id = Long.parseLong(request.getParameter("id"));
+            String newStatus = request.getParameter("status");
+
+            // 2. Gọi DAO update
+            BookingDAO dao = new BookingDAO();
+            boolean success = dao.updateBookingStatus(id, newStatus);
+
+            // 3. Trả về kết quả
+            if (success) {
+                response.setStatus(HttpServletResponse.SC_OK); // 200 OK
+            } else {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Update failed");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
