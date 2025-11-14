@@ -1,6 +1,3 @@
-// /assets/js/shop.js - updated: immediate AJAX for remove-filter-link and ajax-shop-link
-// Assumes window.CONTEXT_PATH is set in shop.jsp before this script loads.
-
 (function () {
     const sidebarSelector = '#shopSidebar';
     const productsSelector = '#productsSection';
@@ -8,45 +5,98 @@
     const sortFormSelector = '#sortForm';
     let debounceTimer = null;
 
-    function buildUrlFromForms() {
-        const CONTEXT_PATH = window.CONTEXT_PATH || '';
-        const base = new URL(CONTEXT_PATH + '/shop', window.location.origin).toString();
-        const url = new URL(base);
-        const filterForm = document.querySelector(filterFormSelector);
-        const sortForm = document.querySelector(sortFormSelector);
-        const forms = [filterForm, sortForm].filter(Boolean);
+    // Use current location as source of truth
+    function makeUrl() {
+        return new URL(window.location.href);
+    }
 
-        forms.forEach(form => {
-            const fd = new FormData(form);
-            if (fd.get('minPrice') === '') fd.delete('minPrice');
-            if (fd.get('maxPrice') === '') fd.delete('maxPrice');
+    function applyUiStateToParams(params) {
+        const minInput = document.querySelector('#filterForm input[name="minPrice"]');
+        const maxInput = document.querySelector('#filterForm input[name="maxPrice"]');
+        const minVal = minInput ? String(minInput.value || '').trim() : '';
+        const maxVal = maxInput ? String(maxInput.value || '').trim() : '';
+        if (minVal !== '' && minVal !== '0') params.set('minPrice', minVal);
+        else params.delete('minPrice');
+        if (maxVal !== '' && maxVal !== '0') params.set('maxPrice', maxVal);
+        else params.delete('maxPrice');
 
-            for (const [k, v] of fd.entries()) {
-                if (k === 'page') continue;
-                url.searchParams.append(k, v);
-            }
-        });
+        const sortSelect = document.querySelector('#sortForm select[name="sort"]');
+        const pageSizeSelect = document.querySelector('#pageSizeSelect');
+        if (sortSelect && sortSelect.value) params.set('sort', sortSelect.value);
+        else params.delete('sort');
+        if (pageSizeSelect && pageSizeSelect.value) params.set('pageSize', pageSizeSelect.value);
+        else params.delete('pageSize');
 
+        params.delete('page');
+    }
+
+    function toggleParam(params, name, value, add) {
+        const values = params.getAll(name);
+        if (add) {
+            if (!values.includes(value)) params.append(name, value);
+        } else {
+            const kept = values.filter(v => v !== value);
+            params.delete(name);
+            kept.forEach(v => params.append(name, v));
+        }
+    }
+
+    function buildUrlToggleFromLocation(name, value, add) {
+        const url = makeUrl();
+        const params = url.searchParams;
+        toggleParam(params, name, value, add);
+        applyUiStateToParams(params);
         return url.toString();
     }
 
-    function resolveHref(href) {
+    function buildUrlForRemoveFromHref(href) {
         try {
-            return new URL(href, window.location.href).toString();
-        } catch (e) {
-            return null;
+            const linkUrl = new URL(href, window.location.href);
+            const url = makeUrl();
+            const params = url.searchParams;
+
+            if (linkUrl.searchParams.has('removeCategory')) {
+                const val = linkUrl.searchParams.get('removeCategory');
+                toggleParam(params, 'category', val, false);
+            }
+            if (linkUrl.searchParams.has('removeBrand')) {
+                const val = linkUrl.searchParams.get('removeBrand');
+                toggleParam(params, 'brand', val, false);
+            }
+            if (linkUrl.searchParams.has('removeStock')) {
+                const val = linkUrl.searchParams.get('removeStock');
+                toggleParam(params, 'stock', val, false);
+            }
+            if (linkUrl.searchParams.has('removePrice')) {
+                params.delete('minPrice');
+                params.delete('maxPrice');
+            }
+
+            const hrefHasAnyParam = Array.from(linkUrl.searchParams.keys()).length > 0;
+            if (!hrefHasAnyParam) {
+                ['category', 'brand', 'stock', 'minPrice', 'maxPrice', 'page', 'sort'].forEach(k => params.delete(k));
+                applyUiStateToParams(params);
+                return url.toString();
+            }
+
+            applyUiStateToParams(params);
+            return url.toString();
+        } catch (err) {
+            console.error('buildUrlForRemoveFromHref error', err);
+            return href;
         }
+    }
+
+    function resolveHref(href) {
+        try { return new URL(href, window.location.href).toString(); } catch (e) { return null; }
     }
 
     function isShopUrl(urlString) {
         try {
             const u = new URL(urlString);
             const ctx = window.CONTEXT_PATH || '';
-            // Allow both /ctx/shop and /shop (if deployed at root)
             return u.pathname === (ctx + '/shop') || u.pathname.endsWith('/shop');
-        } catch (e) {
-            return false;
-        }
+        } catch (e) { return false; }
     }
 
     function showLoading(show) {
@@ -66,9 +116,7 @@
                 el.textContent = 'Đang tải...';
                 document.body.appendChild(el);
             }
-        } else {
-            if (el) el.remove();
-        }
+        } else { if (el) el.remove(); }
     }
 
     function parseAndReplace(htmlText, pushState = true, targetUrl = null) {
@@ -86,12 +134,10 @@
 
         if (pushState) {
             try {
-                const urlToPush = targetUrl || buildUrlFromForms();
-                history.pushState({}, '', urlToPush);
-            } catch (e) { /* ignore */ }
+                history.pushState({}, '', targetUrl || makeUrl().toString());
+            } catch (e) {}
         }
 
-        // re-bind events on updated DOM
         initShopAjax();
     }
 
@@ -108,28 +154,14 @@
             .then(html => parseAndReplace(html, pushState, url))
             .catch(err => {
                 console.error('Fetch error:', err);
-                // fallback full navigation
                 window.location.href = url;
             })
             .finally(() => showLoading(false));
     }
 
-    function validatePriceRange(minVal, maxVal) {
-        if (minVal && maxVal && parseInt(minVal) > parseInt(maxVal)) {
-            alert('Giá từ không được lớn hơn giá đến.');
-            return false;
-        }
-        if (minVal && parseInt(minVal) < 0) {
-            alert('Giá không được âm.');
-            return false;
-        }
-        return true;
-    }
-
     function initPriceSlider() {
         const sliderEl = document.getElementById('priceSlider');
         if (!sliderEl || typeof noUiSlider === 'undefined') return;
-
         if (sliderEl.noUiSlider) sliderEl.noUiSlider.destroy();
 
         const min = parseInt(sliderEl.getAttribute('data-min') || '0', 10);
@@ -175,91 +207,98 @@
         const filterForm = document.querySelector(filterFormSelector);
         const sortForm = document.querySelector(sortFormSelector);
 
-        if (!sidebar || !filterForm) return;
+        if (!sidebar) return;
 
-        // checkboxes: debounce (small)
-        sidebar.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-            cb.onchange = () => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    const url = buildUrlFromForms();
-                    fetchAndReplace(url);
-                }, 200);
-            };
+        // Delegated change handler: toggle param based on current location, then fetch fragment
+        sidebar.addEventListener('change', (e) => {
+            const target = e.target;
+            if (!target || !target.matches('input[type="checkbox"]')) return;
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const url = buildUrlToggleFromLocation(target.name, target.value, target.checked);
+                fetchAndReplace(url);
+            }, 150);
         });
 
-        // page size select: small debounce
+        // pageSize
         const pageSizeSelect = document.getElementById('pageSizeSelect');
         if (pageSizeSelect) {
             pageSizeSelect.onchange = () => {
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
-                    const url = buildUrlFromForms();
-                    fetchAndReplace(url);
+                    const url = makeUrl();
+                    const params = url.searchParams;
+                    applyUiStateToParams(params);
+                    url.search = params.toString();
+                    fetchAndReplace(url.toString());
                 }, 150);
             };
         }
 
-        // filterForm fallback submit
-        filterForm.onsubmit = (e) => {
-            e.preventDefault();
-            const minInput = filterForm.querySelector('input[name="minPrice"]');
-            const maxInput = filterForm.querySelector('input[name="maxPrice"]');
-            const minVal = minInput ? minInput.value : '';
-            const maxVal = maxInput ? maxInput.value : '';
-            if (!validatePriceRange(minVal, maxVal)) return;
-            if (minInput && minInput.value === '') minInput.removeAttribute('name');
-            if (maxInput && maxInput.value === '') maxInput.removeAttribute('name');
-            const url = buildUrlFromForms();
-            fetchAndReplace(url);
-        };
+        // filter submit
+        if (filterForm) {
+            filterForm.onsubmit = (e) => {
+                e.preventDefault();
+                const url = makeUrl();
+                const params = url.searchParams;
+                applyUiStateToParams(params);
+                url.search = params.toString();
+                fetchAndReplace(url.toString());
+            };
+        }
 
-        // apply price button: immediate (no debounce)
+        // apply price button
         const applyBtn = document.getElementById('applyPriceBtn');
         if (applyBtn) {
             applyBtn.onclick = (e) => {
                 e.preventDefault();
-                const minInput = filterForm.querySelector('input[name="minPrice"]');
-                const maxInput = filterForm.querySelector('input[name="maxPrice"]');
-                const minVal = minInput ? (minInput.value === '0' ? '' : minInput.value) : '';
-                const maxVal = maxInput ? (maxInput.value === '0' ? '' : maxInput.value) : '';
-                if (!validatePriceRange(minVal, maxVal)) return;
-                if (minInput && minInput.value === '') minInput.removeAttribute('name');
-                if (maxInput && maxInput.value === '') maxInput.removeAttribute('name');
-                const url = buildUrlFromForms();
-                fetchAndReplace(url);
+                const url = makeUrl();
+                const params = url.searchParams;
+                applyUiStateToParams(params);
+                url.search = params.toString();
+                fetchAndReplace(url.toString());
             };
         }
 
-        // sort select immediate
+        // sort handlers
         if (sortForm) {
             const sortSelect = sortForm.querySelector('select[name="sort"]');
             if (sortSelect) {
                 sortSelect.onchange = () => {
-                    const url = buildUrlFromForms();
-                    fetchAndReplace(url);
+                    const url = makeUrl();
+                    const params = url.searchParams;
+                    applyUiStateToParams(params);
+                    url.search = params.toString();
+                    fetchAndReplace(url.toString());
                 };
             }
             sortForm.onsubmit = (e) => {
                 e.preventDefault();
-                const url = buildUrlFromForms();
-                fetchAndReplace(url);
+                const url = makeUrl();
+                const params = url.searchParams;
+                applyUiStateToParams(params);
+                url.search = params.toString();
+                fetchAndReplace(url.toString());
             };
         }
 
-        // Immediate handlers for remove-filter-link (tag ×)
+        // remove-filter-link: parse remove* and remove from current location params, then fetch
         sidebar.querySelectorAll('a.remove-filter-link').forEach(a => {
             a.onclick = (e) => {
                 e.preventDefault();
-                const resolved = resolveHref(a.getAttribute('href'));
+                const href = a.getAttribute('href');
+                const resolved = resolveHref(href);
                 if (!resolved) return;
-                if (isShopUrl(resolved)) fetchAndReplace(resolved);
-                else window.location.href = resolved;
+                if (isShopUrl(resolved)) {
+                    const url = buildUrlForRemoveFromHref(href);
+                    fetchAndReplace(url);
+                } else {
+                    window.location.href = resolved;
+                }
             };
         });
 
-        // Immediate handlers for ajax-shop-link (brand links, pagination links)
-        // This gives same instant behavior as checkboxes.
+        // ajax-shop-link
         document.querySelectorAll('a.ajax-shop-link').forEach(a => {
             a.onclick = (e) => {
                 e.preventDefault();
@@ -273,7 +312,7 @@
             };
         });
 
-        // Delegation for other links inside sidebar/products (fallback)
+        // intercept other internal links
         sidebar.addEventListener('click', (e) => {
             const a = e.target.closest('a');
             if (!a) return;
@@ -290,10 +329,7 @@
             productsArea.addEventListener('click', (e) => {
                 const a = e.target.closest('a');
                 if (!a) return;
-                if (a.classList && a.classList.contains('ajax-shop-link')) {
-                    // already handled above by direct handler, but keep here for newly inserted nodes
-                    return;
-                }
+                if (a.classList && a.classList.contains('ajax-shop-link')) return;
                 const resolved = resolveHref(a.getAttribute('href'));
                 if (!resolved) return;
                 if (isShopUrl(resolved)) {

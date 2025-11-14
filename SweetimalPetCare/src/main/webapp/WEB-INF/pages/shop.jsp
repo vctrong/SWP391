@@ -25,11 +25,13 @@
             <script src="https://cdn.tailwindcss.com"></script>
         </head>
         <body class="bg-gray-50 font-sans">
+            
             <%@include file="/WEB-INF/include/header.jsp" %>
     </c:when>
 </c:choose>
 
 <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-4 gap-6 mt-20">
+    
 
     <!-- Sidebar -->
     <aside id="shopSidebar" class="bg-white p-4 rounded shadow h-fit space-y-4">
@@ -371,27 +373,12 @@
 
     <!-- Sort form: preserve existing filters -->
     <form id="sortForm" method="get" action="shop" class="flex items-center gap-3">
-        <c:forEach var="c" items="${paramValues.category}">
-            <input type="hidden" name="category" value="${c}" />
-        </c:forEach>
-        <c:forEach var="b" items="${paramValues.brand}">
-            <input type="hidden" name="brand" value="${b}" />
-        </c:forEach>
-        <c:forEach var="s" items="${paramValues.stock}">
-            <input type="hidden" name="stock" value="${s}" />
-        </c:forEach>
-
-        <c:if test="${not empty param.minPrice}">
-            <input type="hidden" name="minPrice" value="${param.minPrice}" />
-        </c:if>
-        <c:if test="${not empty param.maxPrice}">
-            <input type="hidden" name="maxPrice" value="${param.maxPrice}" />
-        </c:if>
-
+        <!-- Preserve sort if present (this is OK to keep as hidden) -->
         <c:if test="${not empty param.sort}">
             <input type="hidden" name="sort" value="${param.sort}" />
         </c:if>
 
+        <!-- Page size select -->
         <c:set var="currentPageSize" value="${empty param.pageSize ? (empty pageSize ? 12 : pageSize) : param.pageSize}" />
         <label for="pageSizeSelect" class="text-sm text-gray-600 hidden md:inline">Hiển thị</label>
         <select id="pageSizeSelect" name="pageSize" class="border rounded px-2 py-1 text-sm bg-white">
@@ -415,6 +402,26 @@
             <option value="date_asc" <c:if test="${param.sort == 'date_asc'}">selected</c:if>>Ngày (cũ → mới)</option>
             <option value="date_desc" <c:if test="${param.sort == 'date_desc'}">selected</c:if>>Ngày (mới → cũ)</option>
         </select>
+
+        <!-- Non-JS fallback: render hidden inputs only for users without JS -->
+        <noscript>
+            <c:forEach var="c" items="${paramValues.category}">
+                <input type="hidden" name="category" value="${c}" />
+            </c:forEach>
+            <c:forEach var="b" items="${paramValues.brand}">
+                <input type="hidden" name="brand" value="${b}" />
+            </c:forEach>
+            <c:forEach var="s" items="${paramValues.stock}">
+                <input type="hidden" name="stock" value="${s}" />
+            </c:forEach>
+
+            <c:if test="${not empty param.minPrice}">
+                <input type="hidden" name="minPrice" value="${param.minPrice}" />
+            </c:if>
+            <c:if test="${not empty param.maxPrice}">
+                <input type="hidden" name="maxPrice" value="${param.maxPrice}" />
+            </c:if>
+        </noscript>
     </form>
 </div>
 
@@ -428,140 +435,103 @@
             </c:forEach>
 
             <c:forEach var="p" items="${products}">
-                <c:set var="showProduct" value="${true}" />
-                <c:choose>
-                    <c:when test="${isOutFilter and not isInFilter}">
-                        <c:choose>
-                            <c:when test="${not empty p.mainVariant}">
-                                <c:if test="${p.mainVariant.stockQuantity != 0}">
-                                    <c:set var="showProduct" value="${false}" />
-                                </c:if>
-                            </c:when>
-                            <c:when test="${empty p.mainVariant}">
-                                <c:set var="showProduct" value="${false}" />
-                            </c:when>
-                        </c:choose>
-                    </c:when>
+                <!-- render product directly; filtering done on server (ShopDAO) -->
+                <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col relative">
+                    <c:if test="${not empty p.mainVariant and not empty p.mainVariant.discount and p.mainVariant.discount > 0}">
+                        <span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">Giảm giá</span>
+                    </c:if>
+                    <c:if test="${not empty p.mainVariant and p.mainVariant.stockQuantity == 0}">
+                        <span class="absolute top-2 left-2 bg-gray-300 text-xs px-2 py-1 rounded">Đã bán hết</span>
+                    </c:if>
 
-                    <c:when test="${isInFilter and not isOutFilter}">
-                        <c:choose>
-                            <c:when test="${not empty p.mainVariant}">
-                                <c:if test="${p.mainVariant.stockQuantity == 0}">
-                                    <c:set var="showProduct" value="${false}" />
-                                </c:if>
-                            </c:when>
-                            <c:when test="${empty p.mainVariant}">
-                                <c:set var="showProduct" value="${false}" />
-                            </c:when>
-                        </c:choose>
-                    </c:when>
+                    <div class="h-36 overflow-hidden rounded mb-3">
+                        <a href="product?id=${p.productId}">
+                            <c:choose>
+                                <c:when test="${not empty p.mainVariant and not empty p.mainVariant.imageUrl}">
+                                    <c:choose>
+                                        <c:when test="${fn:startsWith(p.mainVariant.imageUrl, 'http')}">
+                                            <img src="${p.mainVariant.imageUrl}"
+                                                 class="w-full h-full object-cover"
+                                                 alt="${p.productName} - Hình ảnh chính">
+                                        </c:when>
+                                        <c:otherwise>
+                                            <img src="${pageContext.request.contextPath}${p.mainVariant.imageUrl}"
+                                                 class="w-full h-full object-cover"
+                                                 alt="${p.productName} - Hình ảnh chính">
+                                        </c:otherwise>
+                                    </c:choose>
+                                </c:when>
 
-                    <c:otherwise/>
-                </c:choose>
+                                <c:otherwise>
+                                    <img src="${pageContext.request.contextPath}/images/no-image.png"
+                                         class="w-full h-full object-cover"
+                                         alt="Không có hình ảnh cho ${p.productName}">
+                                </c:otherwise>
+                            </c:choose>
+                        </a>
+                    </div>
 
-                <c:if test="${showProduct}">
-                    <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col relative">
-                        <c:if test="${not empty p.mainVariant and not empty p.mainVariant.discount and p.mainVariant.discount > 0}">
-                            <span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">Giảm giá</span>
+                    <h3 class="text-sm font-semibold">${p.productName}</h3>
+
+                    <c:set var="isThisBrandSelected" value="${false}" />
+                    <c:forEach var="bid" items="${paramValues.brand}">
+                        <c:if test="${bid == p.brandId}">
+                            <c:set var="isThisBrandSelected" value="${true}" />
                         </c:if>
-                        <c:if test="${not empty p.mainVariant and p.mainVariant.stockQuantity == 0}">
-                            <span class="absolute top-2 left-2 bg-gray-300 text-xs px-2 py-1 rounded">Đã bán hết</span>
-                        </c:if>
+                    </c:forEach>
 
-                        <div class="h-36 overflow-hidden rounded mb-3">
-                            <a href="product?id=${p.productId}">
-                                <c:choose>
-                                    <c:when test="${not empty p.mainVariant and not empty p.mainVariant.imageUrl}">
-                                        <c:choose>
-                                            <c:when test="${fn:startsWith(p.mainVariant.imageUrl, 'http')}">
-                                                <img src="${p.mainVariant.imageUrl}"
-                                                     class="w-full h-full object-cover"
-                                                     alt="${p.productName} - Hình ảnh chính">
-                                            </c:when>
-                                            <c:otherwise>
-                                                <img src="${pageContext.request.contextPath}${p.mainVariant.imageUrl}"
-                                                     class="w-full h-full object-cover"
-                                                     alt="${p.productName} - Hình ảnh chính">
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </c:when>
+                    <c:url var="brandFilterUrl" value="shop">
+                        <c:forEach var="existingCat" items="${paramValues.category}">
+                            <c:param name="category" value="${existingCat}" />
+                        </c:forEach>
 
-                                    <c:otherwise>
-                                        <img src="${pageContext.request.contextPath}/images/no-image.png"
-                                             class="w-full h-full object-cover"
-                                             alt="Không có hình ảnh cho ${p.productName}">
-                                    </c:otherwise>
-                                </c:choose>
-                            </a>
-                        </div>
-
-                        <h3 class="text-sm font-semibold">${p.productName}</h3>
-
-                        <c:set var="isThisBrandSelected" value="${false}" />
-                        <c:forEach var="bid" items="${paramValues.brand}">
-                            <c:if test="${bid == p.brandId}">
-                                <c:set var="isThisBrandSelected" value="${true}" />
+                        <c:forEach var="existingBrand" items="${paramValues.brand}">
+                            <c:if test="${existingBrand != p.brandId}">
+                                <c:param name="brand" value="${existingBrand}" />
                             </c:if>
                         </c:forEach>
 
-                        <c:url var="brandFilterUrl" value="shop">
-                            <c:forEach var="existingCat" items="${paramValues.category}">
-                                <c:param name="category" value="${existingCat}" />
-                            </c:forEach>
+                        <c:if test="${not isThisBrandSelected}">
+                            <c:param name="brand" value="${p.brandId}" />
+                        </c:if>
 
-                            <c:forEach var="existingBrand" items="${paramValues.brand}">
-                                <c:if test="${existingBrand != p.brandId}">
-                                    <c:param name="brand" value="${existingBrand}" />
-                                </c:if>
-                            </c:forEach>
+                        <c:forEach var="existingStock" items="${paramValues.stock}">
+                            <c:param name="stock" value="${existingStock}" />
+                        </c:forEach>
 
-                            <c:if test="${not isThisBrandSelected}">
-                                <c:param name="brand" value="${p.brandId}" />
-                            </c:if>
-
-                            <c:forEach var="existingStock" items="${paramValues.stock}">
-                                <c:param name="stock" value="${existingStock}" />
-                            </c:forEach>
-
-                            <c:if test="${not empty param.minPrice}">
-                                <c:param name="minPrice" value="${param.minPrice}" />
-                            </c:if>
-                            <c:if test="${not empty param.maxPrice}">
-                                <c:param name="maxPrice" value="${param.maxPrice}" />
-                            </c:if>
-
-                            <c:choose>
-                                <c:when test="${not empty param.pageSize}">
-                                    <c:param name="pageSize" value="${param.pageSize}" />
-                                </c:when>
-                                <c:when test="${empty param.pageSize and not empty pageSize}">
-                                    <c:param name="pageSize" value="${pageSize}" />
-                                </c:when>
-                            </c:choose>
-                        </c:url>
-
-                        <p class="text-xs text-gray-500">
-                            Thương hiệu:
-                            <span class="text-gray-700">${p.brandName}</span>
-                        </p>
+                        <c:if test="${not empty param.minPrice}">
+                            <c:param name="minPrice" value="${param.minPrice}" />
+                        </c:if>
+                        <c:if test="${not empty param.maxPrice}">
+                            <c:param name="maxPrice" value="${param.maxPrice}" />
+                        </c:if>
 
                         <c:choose>
-                            <c:when test="${not empty p.mainVariant and p.mainVariant.price ne 0}">
-                                <p class="text-red-600 font-bold mt-1">
-                                    <fmt:formatNumber value="${p.mainVariant.price}" type="number" groupingUsed="true"/>₫
-                                </p>
+                            <c:when test="${not empty param.pageSize}">
+                                <c:param name="pageSize" value="${param.pageSize}" />
                             </c:when>
-                            <c:otherwise>
-                                <p class="text-gray-500 italic mt-1">Liên hệ</p>
-                            </c:otherwise>
+                            <c:when test="${empty param.pageSize and not empty pageSize}">
+                                <c:param name="pageSize" value="${pageSize}" />
+                            </c:when>
                         </c:choose>
+                    </c:url>
 
-                        <a href="product?id=${p.productId}"
-                           class="mt-2 bg-red-500 text-white text-sm py-1 rounded text-center hover:bg-red-600">
-                            Xem chi tiết
-                        </a>
-                    </div>
-                </c:if>
+                    <p class="text-xs text-gray-500">
+                        Thương hiệu:
+                        <span class="text-gray-700">${p.brandName}</span>
+                    </p>
+
+                    <c:if test="${not empty p.mainVariant and p.mainVariant.price ne 0}">
+                        <p class="text-red-600 font-bold mt-1">
+                            <fmt:formatNumber value="${p.mainVariant.price}" type="number" groupingUsed="true"/>₫
+                        </p>
+                    </c:if>
+
+                    <a href="product?id=${p.productId}"
+                       class="mt-2 bg-red-500 text-white text-sm py-1 rounded text-center hover:bg-red-600">
+                        Xem chi tiết
+                    </a>
+                </div>
             </c:forEach>
         </div>
 

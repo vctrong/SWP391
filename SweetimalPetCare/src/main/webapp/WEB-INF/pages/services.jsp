@@ -69,12 +69,22 @@
                                 </a>
                             </c:when>
                             <c:otherwise>
-                                <a href="${pageContext.request.contextPath}/booking?serviceId=${s.id}"
-                                   class="w-full block text-center bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-5 py-3 rounded-xl font-semibold shadow-sm hover:shadow-lg focus:outline-none transition-all duration-300 hover:from-sky-600 hover:to-cyan-600">
-                                    <i class="fa-solid fa-calendar-check mr-2"></i>Đặt lịch ngay
-                                </a>
+                                <c:if test="${sessionScope.user.roleEnum == 'CUSTOMER'}">
+                                    <a href="${pageContext.request.contextPath}/booking?serviceId=${s.id}"
+                                       class="w-full block text-center bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-5 py-3 rounded-xl font-semibold shadow-sm hover:shadow-lg focus:outline-none transition-all duration-300 hover:from-sky-600 hover:to-cyan-600">
+                                        <i class="fa-solid fa-calendar-check mr-2"></i>Đặt lịch ngay
+                                    </a>
+                                </c:if>
                             </c:otherwise>
                         </c:choose>
+
+                        <!-- Link xem đánh giá -->
+                        <div class="mt-3 text-center">
+                            <a href="${pageContext.request.contextPath}/service-reviews?serviceId=${s.id}"
+                               class="inline-flex items-center text-sky-600 hover:text-sky-800 text-sm font-medium">
+                                <i class="fa-regular fa-star mr-1"></i> Xem đánh giá dịch vụ
+                            </a>
+                        </div>
 
                         <!-- Hiệu ứng glow -->
                         <div class="absolute inset-0 rounded-2xl pointer-events-none group-hover:ring-2 group-hover:ring-sky-300 group-hover:ring-opacity-50 transition-all duration-300"></div>

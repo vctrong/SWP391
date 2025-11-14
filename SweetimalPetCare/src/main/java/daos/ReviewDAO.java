@@ -9,13 +9,14 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import model.Review;
+import model.ReviewReply;
 
 /**
  *
  * @author Pham Nguyen Xuan Mai - CE190106
  */
 public class ReviewDAO extends db.DBContext {
-public List<Review> getReviewsByProduct(int productId) throws SQLException {
+    public List<Review> getReviewsByProduct(int productId) throws SQLException {
         String sql = "SELECT r.review_id, r.service_id, r.product_id, r.staff_id, r.customer_id, "
                 + "r.rating, r.comment, r.created_at, u.full_name "
                 + "FROM Reviews r LEFT JOIN Users u ON r.customer_id = u.user_id "
@@ -151,5 +152,75 @@ public List<Review> getReviewsByProduct(int productId) throws SQLException {
             }
         }
         return null;
+    }
+
+    // -----------------------
+    // Reply-related methods
+    // -----------------------
+
+    /**
+     * Fetch reply for a given review_id (returns null if none).
+     */
+    public ReviewReply getReplyByReviewId(long reviewId) throws SQLException {
+        String sql = "SELECT reply_id, review_id, replied_by_staff_id, reply_content, created_at FROM ReviewReply WHERE review_id = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setLong(1, reviewId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    ReviewReply rr = new ReviewReply();
+                    rr.setReplyId(rs.getLong("reply_id"));
+                    rr.setReviewId(rs.getLong("review_id"));
+                    rr.setRepliedByStaffId(rs.getLong("replied_by_staff_id"));
+                    rr.setReplyContent(rs.getString("reply_content"));
+                    Timestamp ts = rs.getTimestamp("created_at");
+                    rr.setCreatedAt(ts);
+                    return rr;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Create a reply for a review.
+     * Returns true if inserted.
+     */
+    public boolean createReply(long reviewId, long staffId, String content) throws SQLException {
+        String sql = "INSERT INTO ReviewReply (review_id, replied_by_staff_id, reply_content, created_at) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setLong(1, reviewId);
+            ps.setLong(2, staffId);
+            ps.setString(3, content);
+            ps.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
+            int n = ps.executeUpdate();
+            return n > 0;
+        }
+    }
+
+    /**
+     * Update existing reply (by review_id). Returns true if at least one row affected.
+     */
+    public boolean updateReply(long reviewId, long staffId, String content) throws SQLException {
+        String sql = "UPDATE ReviewReply SET reply_content = ?, replied_by_staff_id = ?, created_at = ? WHERE review_id = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setString(1, content);
+            ps.setLong(2, staffId);
+            ps.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+            ps.setLong(4, reviewId);
+            int n = ps.executeUpdate();
+            return n > 0;
+        }
+    }
+
+    /**
+     * Delete reply by review_id. Returns true if deleted.
+     */
+    public boolean deleteReply(long reviewId) throws SQLException {
+        String sql = "DELETE FROM ReviewReply WHERE review_id = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setLong(1, reviewId);
+            int n = ps.executeUpdate();
+            return n > 0;
+        }
     }
 }

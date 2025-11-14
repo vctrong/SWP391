@@ -7,9 +7,6 @@ package controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.List;
-import daos.ConsultationTypeDAO;
-import model.ConsultationType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -18,10 +15,10 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  *
- * @author Vo Chi Trong - CE191062
+ * @author duc
  */
-@WebServlet(name="homeServlet", urlPatterns={"/home"})
-public class homeServlet extends HttpServlet {
+@WebServlet(name="registerSuccessServlet", urlPatterns={"/registerSuccess"})
+public class registerSuccessServlet extends HttpServlet {
    
     /** 
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code> methods.
@@ -38,10 +35,10 @@ public class homeServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet homeServlet</title>");  
+            out.println("<title>Servlet registerSuccessServlet</title>");  
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet homeServlet at " + request.getContextPath () + "</h1>");
+            out.println("<h1>Servlet registerSuccessServlet at " + request.getContextPath () + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
@@ -58,14 +55,7 @@ public class homeServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
-        try {
-            ConsultationTypeDAO typeDao = new ConsultationTypeDAO();
-            List<ConsultationType> types = typeDao.listActive();
-            request.setAttribute("consultationTypes", types);
-        } catch (Exception ex) {
-            request.setAttribute("consultationTypes", java.util.Collections.emptyList());
-        }
-        request.getRequestDispatcher("WEB-INF/pages/home.jsp").forward(request, response);
+        request.getRequestDispatcher("WEB-INF/register/registerSuccess.jsp").forward(request, response);
     } 
 
     /** 

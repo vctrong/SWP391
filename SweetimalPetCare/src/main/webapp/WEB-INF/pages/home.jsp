@@ -5,6 +5,8 @@
 --%>
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -280,24 +282,34 @@
                     </span> để được hỗ trợ tận tâm nhất
                 </h2>
 
-                <form class="space-y-5">
+                <form class="space-y-5" method="post" action="${pageContext.request.contextPath}/consultation-request">
                     <div class="grid md:grid-cols-2 gap-4">
-                        <input type="text" placeholder="Họ và tên" class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition" />
-                        <input type="email" placeholder="Email của bạn" class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition" />
+                        <input name="customer_name" type="text" placeholder="Họ và tên" required maxlength="120" class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition" />
+                        <input name="email" type="email" placeholder="Email của bạn" required maxlength="150" class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition" />
                     </div>
-                    <select class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition">
-                        <option>Chọn dịch vụ/sản phẩm</option>
-                        <option>Chăm sóc - Làm đẹp</option>
-                        <option>Thú y</option>
-                        <option>Huấn luyện thú cưng</option>
-                        <option>Hỏi đáp cửa hàng</option>
-                    </select>
-                    <textarea placeholder="Nội dung cần tư vấn" class="w-full border border-sky-100 rounded-xl px-4 py-3 h-32 focus:ring-2 focus:ring-cyan-300 outline-none transition"></textarea>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <input name="phone" type="text" placeholder="Số điện thoại" maxlength="15" pattern="[0-9]{1,15}" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')" class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition" />
+                        <select name="consultation_type_id" required class="w-full border border-sky-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-300 outline-none transition">
+                            <option value="">Chọn loại tư vấn</option>
+                            <c:forEach var="t" items="${consultationTypes}">
+                                <option value="${t.typeId}">${fn:escapeXml(t.typeName)}</option>
+                            </c:forEach>
+                        </select>
+                    </div>
+                    <textarea name="request_message" placeholder="Nội dung cần tư vấn" required class="w-full border border-sky-100 rounded-xl px-4 py-3 h-32 focus:ring-2 focus:ring-cyan-300 outline-none transition"></textarea>
 
                     <button type="submit"
                             class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-cyan-600 hover:-translate-y-0.5 transition-all duration-300">
                         <i class="fa-solid fa-paper-plane mr-2"></i> Gửi yêu cầu
                     </button>
+
+                    <!-- Hiển thị thông báo -->
+                    <c:if test="${param.cr_success == '1'}">
+                        <div class="text-green-600 font-medium">Yêu cầu của bạn đã được gửi thành công!</div>
+                    </c:if>
+                    <c:if test="${param.cr_success == '0'}">
+                        <div class="text-red-600 font-medium">${fn:escapeXml(param.cr_msg)}</div>
+                    </c:if>
                 </form>
             </div>
         </section>
