@@ -1,4 +1,6 @@
-target/
+target
+*.log
 .git
-.gitignore
-*.md
+.idea
+.vscode
+node_modules
