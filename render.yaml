@@ -1,8 +1,16 @@
+service: web
+env: docker
+# name, region, plan can be adjusted in Render dashboard or here
+# If render.yaml is present in repo Render can create/update the service automatically.
+# Replace <your-service-name> with a name you want.
 services:
   - type: web
-    name: swp391
+    name: swp391-app
     env: docker
-    branch: render-deploy
-    autoDeploy: true
+    branch: main
     dockerfilePath: Dockerfile
     plan: free
+    # env vars (example): do NOT store secrets here, set them in Render dashboard
+    envVars:
+      - key: EXAMPLE_KEY
+        value: example_value
