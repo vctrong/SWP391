@@ -107,6 +107,8 @@
         .small-muted { font-size: .9rem; color: #6b7280; display:block; margin-top:4px; }
         pre.debug { background:#f8f9fa; border:1px solid #e9ecef; padding:12px; overflow:auto; max-height:300px; }
         .out-of-stock::after { content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: red; transform: rotate(-20deg); }
+        .reply-actions button { margin-right: 8px; }
+        .reply-box { background:#fbfbfb; border:1px solid #e6e6e6; padding:16px; border-radius:6px; }
     </style>
 </head>
 <body>
@@ -289,14 +291,12 @@
                     </div>
                 </div>
 
-                <form id="addToCartForm" method="post" action="<%= request.getContextPath() %>/cart">
-                    <input type="hidden" name="action" value="add">
-                    <input type="hidden" name="productId" value="<%= (product != null) ? product.getProductId() : 0 %>">
-                    <input type="hidden" name="variantId" id="hiddenVariantId" value="">
-                    <input type="hidden" name="quantity" id="hiddenQuantity" value="1">
-                    <div class="mt-8">
-                        <button id="buyBtn" type="submit" class="w-full bg-blue-600 text-white py-4 rounded-full font-bold text-lg shadow-md hover:shadow-lg hover:bg-blue-700 transition">Đặt Hàng</button>
-                    </div>
+                <!-- Add-to-cart form (non-AJAX fallback). -->
+                <form id="addToCartForm" method="post" action="<%= request.getContextPath() %>/cart" class="mt-8">
+                    <input type="hidden" name="action" value="add" />
+                    <input type="hidden" id="hiddenVariantId" name="variantId" value="<%= (minPriceVariant != null ? minPriceVariant.getVariantId() : (product != null && product.getMainVariant()!=null ? product.getMainVariant().getVariantId() : 0)) %>" />
+                    <input type="hidden" id="hiddenQuantity" name="quantity" value="1" />
+                    <button id="addToCartBtn" type="button" onclick="addToCartAjax();" class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition">Thêm vào giỏ hàng</button>
                 </form>
             </div>
         </div>
@@ -317,35 +317,35 @@
             <div id="tab-reviews" class="tab-content hidden">
                 <h3 class="text-lg font-bold mb-3">Khách hàng đánh giá</h3>
 
+                <!-- show server messages if any -->
+                <c:if test="${not empty sessionScope.reviewSuccess}">
+                    <div class="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded">
+                        ${sessionScope.reviewSuccess}
+                    </div>
+                    <c:remove var="reviewSuccess" scope="session" />
+                </c:if>
+
+                <c:if test="${not empty sessionScope.reviewError}">
+                    <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+                        ${sessionScope.reviewError}
+                    </div>
+                    <c:remove var="reviewError" scope="session" />
+                </c:if>
+
                 <div id="reviewsList">
                 <c:if test="${not empty reviews}">
                     <c:forEach var="r" items="${reviews}">
-                        <div class="border-b py-3" id="review-block-${r.reviewId}">
-                            <p class="font-semibold flex items-center justify-between">
-                                <span class="flex items-center">
-                                    <span class="mr-3 font-medium text-gray-800">${fn:escapeXml(r.userName)}</span>
-                                    <span class="text-yellow-500">
-                                        <c:forEach begin="1" end="${r.rating}">★</c:forEach>
-                                    </span>
-                                </span>
-
-                                <span class="flex items-center gap-2">
-                                    <c:if test="${not empty currentUserId and r.customerId == currentUserId}">
-                                        <form method="post" action="${pageContext.request.contextPath}/product/review" class="inline">
-                                            <input type="hidden" name="productId" value="${r.productId}" />
-                                            <input type="hidden" name="action" value="delete" />
-                                            <input type="hidden" name="reviewId" value="${r.reviewId}" />
-                                            <button type="submit" onclick="return confirm('Bạn có chắc muốn xóa đánh giá này?');"
-                                                    class="text-sm text-red-600 hover:underline ml-2">Xóa</button>
-                                        </form>
-
-                                        <button type="button" onclick="document.getElementById('edit-review-${r.reviewId}').classList.toggle('hidden')"
-                                                class="text-sm text-blue-600 hover:underline ml-2">Sửa</button>
-                                    </c:if>
-                                </span>
-                            </p>
+                        <div class="border-b py-6" id="review-block-${r.reviewId}">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="font-semibold text-lg">${fn:escapeXml(r.userName)}</div>
+                                    <div class="text-yellow-500 mt-1"><c:forEach begin="1" end="${r.rating}">★</c:forEach></div>
+                                </div>
+                                <div class="text-xs text-gray-400"><fmt:formatDate value="${r.createdAt}" pattern="dd/MM/yyyy HH:mm"/></div>
+                            </div>
 
                             <% 
+                                // Use pageContext to access the current 'r' object safely inside scriptlet
                                 Object rObj = pageContext.getAttribute("r");
                                 String rawComment = "";
                                 if (rObj != null) {
@@ -353,51 +353,63 @@
                                 }
                                 String safe = normalizeComment(rawComment);
                             %>
-                            <p class="text-gray-700 mt-3 whitespace-pre-wrap"><%= escapeHtml(safe) %></p>
-                            <p class="text-xs text-gray-400 mt-2"><fmt:formatDate value="${r.createdAt}" pattern="dd/MM/yyyy HH:mm"/></p>
+                            <p class="text-gray-700 mt-4 whitespace-pre-wrap"><%= escapeHtml(safe) %></p>
 
                             <!-- ===== Product review: reply section ===== -->
                             <c:set var="reply" value="${(not empty repliesMap) ? repliesMap[r.reviewId] : null}" />
-                            <c:if test="${empty reply}">
-                                <!-- SHOW reply form only to STAFF/ADMIN/VET (non-customer) -->
-                                <c:if test="${isStaff}">
-                                    <div class="mt-4 p-3 border border-gray-200 rounded bg-gray-50">
-                                        <form method="post" action="${pageContext.request.contextPath}/product/review" class="space-y-2">
-                                            <input type="hidden" name="productId" value="${product.productId}" />
-                                            <input type="hidden" name="reviewId" value="${r.reviewId}" />
-                                            <input type="hidden" name="action" value="replyCreate" />
-                                            <label class="text-sm text-gray-600">Phản hồi cho khách</label>
-                                            <textarea name="replyContent" rows="3" maxlength="1000" class="w-full border rounded p-2" placeholder="Nhập phản hồi..."></textarea>
-                                            <div class="mt-2">
-                                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Gửi phản hồi</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </c:if>
-                            </c:if>
-
-                            <c:if test="${not empty reply}">
-                                <div class="mt-4 p-3 border border-gray-200 rounded bg-gray-50">
-                                    <div class="text-sm text-gray-600 font-medium">Phản hồi từ nhân viên</div>
-                                    <textarea class="w-full mt-2 border rounded p-2 bg-white" rows="3" disabled>${fn:escapeXml(reply.replyContent)}</textarea>
-                                    <div class="flex items-center justify-between mt-2">
-                                        <div class="text-xs text-gray-500">
-                                            <fmt:formatDate value="${reply.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
+                            <c:choose>
+                                <c:when test="${empty reply}">
+                                    <!-- SHOW reply form only to STAFF/ADMIN/VET (non-customer) -->
+                                    <c:if test="${isStaff}">
+                                        <div class="mt-6 reply-box">
+                                            <form method="post" action="${pageContext.request.contextPath}/product/review" class="space-y-3" id="reply-create-form-${r.reviewId}">
+                                                <input type="hidden" name="productId" value="${product.productId}" />
+                                                <input type="hidden" name="reviewId" value="${r.reviewId}" />
+                                                <input type="hidden" name="action" value="replyCreate" />
+                                                <label class="text-sm text-gray-600 font-medium mb-1">Phản hồi từ nhân viên</label>
+                                                <textarea name="replyContent" rows="4" maxlength="1000" class="w-full border rounded p-2" placeholder="Nhập phản hồi..."></textarea>
+                                                <div class="flex items-center gap-3">
+                                                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded shadow-sm">Gửi phản hồi</button>
+                                                    <button type="button" onclick="document.getElementById('reply-create-form-${r.reviewId}').querySelector('textarea').value='';" class="px-4 py-2 bg-gray-200 rounded">Hủy</button>
+                                                </div>
+                                            </form>
                                         </div>
-                                        <div>
-                                            <!-- Allow staff/admin (non-customer) to delete reply -->
+                                    </c:if>
+                                </c:when>
+
+                                <c:otherwise>
+                                    <div class="mt-6 reply-box" id="reply-container-${r.reviewId}">
+                                        <div class="text-sm text-gray-600 font-medium mb-2">Phản hồi từ nhân viên</div>
+                                        <div id="reply-view-${r.reviewId}" class="whitespace-pre-wrap text-gray-800">${fn:escapeXml(reply.replyContent)}</div>
+                                        <div class="text-xs text-gray-400 mt-2"><fmt:formatDate value="${reply.createdAt}" pattern="dd/MM/yyyy HH:mm"/></div>
+
+                                        <div class="mt-3 reply-actions">
                                             <c:if test="${isStaff}">
+                                                <button type="button" class="px-4 py-2 bg-green-500 text-white rounded" onclick="startEditReply(${r.reviewId});">Cập nhật</button>
+
                                                 <form method="post" action="${pageContext.request.contextPath}/product/review" style="display:inline" onsubmit="return confirm('Xóa phản hồi này?');">
                                                     <input type="hidden" name="action" value="replyDelete" />
                                                     <input type="hidden" name="productId" value="${product.productId}" />
                                                     <input type="hidden" name="reviewId" value="${r.reviewId}" />
-                                                    <button type="submit" class="text-sm text-red-600 hover:underline">Xóa</button>
+                                                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Xóa</button>
                                                 </form>
                                             </c:if>
                                         </div>
+
+                                        <!-- Edit form (hidden by default) -->
+                                        <form method="post" action="${pageContext.request.contextPath}/product/review" class="mt-3 hidden" id="reply-edit-form-${r.reviewId}">
+                                            <input type="hidden" name="productId" value="${product.productId}" />
+                                            <input type="hidden" name="reviewId" value="${r.reviewId}" />
+                                            <input type="hidden" name="action" value="replyUpdate" />
+                                            <textarea name="replyContent" rows="4" maxlength="1000" class="w-full border rounded p-2" id="reply-edit-text-${r.reviewId}">${fn:escapeXml(reply.replyContent)}</textarea>
+                                            <div class="mt-3 flex items-center gap-3">
+                                                <button type="button" class="px-4 py-2 bg-green-600 text-white rounded" onclick="submitEditReply(${r.reviewId});">Cập nhật</button>
+                                                <button type="button" class="px-4 py-2 bg-gray-200 rounded" onclick="cancelEditReply(${r.reviewId});">Hủy</button>
+                                            </div>
+                                        </form>
                                     </div>
-                                </div>
-                            </c:if>
+                                </c:otherwise>
+                            </c:choose>
                             <!-- ===== end reply section ===== -->
 
                             <div id="edit-review-${r.reviewId}" class="hidden mt-3 p-3 bg-gray-50 border rounded">
@@ -423,6 +435,7 @@
                                     </div>
                                 </form>
                             </div>
+
                         </div>
                     </c:forEach>
                 </c:if>
@@ -479,7 +492,7 @@
             </div>
         </div>
 
-        <!-- RELATED PRODUCTS -->
+        <!-- RELATED PRODUCTS (unchanged) -->
         <div class="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h3 class="text-xl font-bold mb-4">Sản phẩm liên quan</h3>
 
@@ -534,6 +547,68 @@
     </div>
 
     <%@ include file="/WEB-INF/include/footer.jsp" %>
+
+    <script>
+    function startEditReply(reviewId) {
+        var view = document.getElementById('reply-view-' + reviewId);
+        var form = document.getElementById('reply-edit-form-' + reviewId);
+        if (!view || !form) return;
+        view.classList.add('hidden');
+        form.classList.remove('hidden');
+        var ta = document.getElementById('reply-edit-text-' + reviewId);
+        if (ta) ta.focus();
+    }
+    function cancelEditReply(reviewId) {
+        var view = document.getElementById('reply-view-' + reviewId);
+        var form = document.getElementById('reply-edit-form-' + reviewId);
+        if (!view || !form) return;
+        form.classList.add('hidden');
+        view.classList.remove('hidden');
+    }
+    async function submitEditReply(reviewId) {
+        var form = document.getElementById('reply-edit-form-' + reviewId);
+        if (!form) return;
+        var textarea = document.getElementById('reply-edit-text-' + reviewId);
+        var content = textarea ? textarea.value.trim() : '';
+        if (!content) {
+            alert('Nội dung phản hồi không được trống.');
+            if (textarea) textarea.focus();
+            return;
+        }
+        var fd = new FormData();
+        fd.append('productId', form.querySelector('input[name="productId"]').value);
+        fd.append('reviewId', form.querySelector('input[name="reviewId"]').value);
+        fd.append('action', 'replyUpdate');
+        fd.append('replyContent', content);
+        try {
+            var resp = await fetch(form.action, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' },
+                body: fd
+            });
+            var json = await resp.json();
+            if (resp.ok && json.success) {
+                var view = document.getElementById('reply-view-' + reviewId);
+                if (view) view.innerText = content;
+                cancelEditReply(reviewId);
+                var top = document.querySelector('#tab-reviews');
+                if (top) {
+                    var msg = document.createElement('div');
+                    msg.className = 'mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded';
+                    msg.innerText = json.message || 'Đã cập nhật phản hồi.';
+                    top.insertBefore(msg, top.firstChild);
+                    setTimeout(function(){ try{ msg.remove(); }catch(e){} }, 3500);
+                }
+            } else {
+                var err = (json && json.message) ? json.message : 'Không thể cập nhật phản hồi.';
+                alert(err);
+            }
+        } catch (e) {
+            form.submit();
+        }
+    }
+    </script>
 
     <script type="text/javascript">
         window.PRODUCT_CONFIG = {
