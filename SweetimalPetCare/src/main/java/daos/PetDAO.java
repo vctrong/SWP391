@@ -158,4 +158,20 @@ public class PetDAO {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Trả về true nếu thú cưng có bất kỳ bản ghi Booking nào tham chiếu đến nó.
+     */
+    public boolean hasBookingsForPet(long petId) throws SQLException {
+        String sql = "SELECT COUNT(*) AS c FROM Booking WHERE pet_id = ?";
+        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+            ps.setLong(1, petId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("c") > 0;
+                }
+            }
+        }
+        return false;
+    }
 }
