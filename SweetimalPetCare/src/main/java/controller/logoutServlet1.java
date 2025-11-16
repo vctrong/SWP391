@@ -4,10 +4,6 @@
  */
 package controller;
 
-import daos.BookingDAO;
-import daos.PetDAO;
-import daos.ScheduleDAO;
-import enums.RoleEnum;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -16,22 +12,13 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.sql.SQLException;
-import java.util.List;
-import model.Pet;
-import model.ScheduleSlot;
-import model.Users;
 
 /**
  *
- * @author Lim Thế Toàn - CE190616
+ * @author Vo Chi Trong - CE191062
  */
-@WebServlet(name = "calendarServlet", urlPatterns = {"/calendar"})
-public class calendarServlet extends HttpServlet {
-
-    private final ScheduleDAO scheduleDAO = new ScheduleDAO();
-    private final PetDAO petDAO = new PetDAO();
-    private final BookingDAO bookingDAO = new BookingDAO();
+@WebServlet(name = "logoutServlet", urlPatterns = {"/logout"})
+public class logoutServlet1 extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -50,16 +37,15 @@ public class calendarServlet extends HttpServlet {
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet calendarServlet</title>");
+            out.println("<title>Servlet logoutServlet</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<h1>Servlet calendarServlet at " + request.getContextPath() + "</h1>");
+            out.println("<h1>Servlet logoutServlet at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         }
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
      *
@@ -71,31 +57,11 @@ public class calendarServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         HttpSession session = request.getSession(false);
-        Users user = (session != null) ? (Users) session.getAttribute("user") : null;
-        if (user == null) {
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
+        if (session != null) {
+            session.invalidate();
         }
-
-        try {
-            if (user.getRoleEnum() == RoleEnum.CUSTOMER) {
-                // Customer view - show available slots
-                List<ScheduleSlot> availableSlots = scheduleDAO.getAvailableSlots();
-                List<Pet> pets = petDAO.getPetsByOwner(user.getId());
-                request.setAttribute("availableSlots", availableSlots);
-                request.setAttribute("pets", pets);
-                request.getRequestDispatcher("/WEB-INF/pages/calendar_user.jsp").forward(request, response);
-            } else {
-                // Staff/doctor view - show all their scheduled slots
-                List<ScheduleSlot> staffSlots = scheduleDAO.getSlotsByStaff(user.getId());
-                request.setAttribute("staffSlots", staffSlots);
-                request.getRequestDispatcher("/WEB-INF/pages/calendar_staff.jsp").forward(request, response);
-            }
-        } catch (SQLException e) {
-            throw new ServletException("Error loading calendar", e);
-        }
+        request.getRequestDispatcher("WEB-INF/login/login.jsp").forward(request, response);
     }
 
     /**

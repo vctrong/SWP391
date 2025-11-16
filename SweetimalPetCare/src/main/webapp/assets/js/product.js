@@ -1,15 +1,3 @@
-/**
- * assets/js/product.js
- * Externalized JS for product.jsp
- *
- * Requirements:
- * - product.jsp injects window.PRODUCT_CONFIG as shown in product.jsp above.
- * - Place this file at webapp/assets/js/product.js and ensure product.jsp loads it.
- *
- * Features:
- * - Attribute selection, thumbnails, qty controls, add-to-cart via AJAX, review submission via AJAX,
- *   tab switching and star rating interactions.
- */
 
 (function () {
     const cfg = window.PRODUCT_CONFIG || {};
@@ -47,6 +35,9 @@
         el._timer = setTimeout(() => { el.style.display = 'none'; }, timeout);
     }
 
+    // expose toast globally so other inline scripts can reuse it
+    try { window.showMessage = showMessage; } catch (e) { /* ignore if readonly */ }
+
     // DOM Utilities
     function qs(sel, root=document) { return root.querySelector(sel); }
     function qsa(sel, root=document) { return Array.from(root.querySelectorAll(sel)); }
@@ -57,9 +48,11 @@
     let selectedVariantStock = undefined;
     let currentUnitPrice = Number(cfg.defaultPrice || 0);
     let maxQty = 99;
+    let titleEl = null;
+    let baseTitle = '';
 
     // Main DOM elements
-    let mainImgEl, priceDisplayEl, totalPriceEl, qtyEl, btnInc, btnDec, buyBtn, stockInfoEl, hiddenVariantInput, addToCartForm;
+    let mainImgEl, priceDisplayEl, totalPriceEl, qtyEl, btnInc, btnDec, addToCartBtn, stockInfoEl, hiddenVariantInput, addToCartForm;
 
     // Parse attr JSON safely
     function parseAttrString(s) {
@@ -117,11 +110,11 @@
         maxQty = (typeof v.stock === 'number' && v.stock >= 0) ? v.stock : 99;
         if (maxQty <= 0) {
             if (stockInfoEl) stockInfoEl.textContent = 'Tạm thời hết hàng';
-            if (buyBtn) { buyBtn.disabled = true; buyBtn.classList.add('opacity-50','cursor-not-allowed'); }
+            if (addToCartBtn) { addToCartBtn.disabled = true; addToCartBtn.classList.add('opacity-50','cursor-not-allowed'); }
             qtyEl.value = 0;
         } else {
             if (stockInfoEl) stockInfoEl.textContent = 'Còn ' + maxQty + ' sản phẩm';
-            if (buyBtn) { buyBtn.disabled = false; buyBtn.classList.remove('opacity-50','cursor-not-allowed'); }
+            if (addToCartBtn) { addToCartBtn.disabled = false; addToCartBtn.classList.remove('opacity-50','cursor-not-allowed'); }
             let q = parseInt(qtyEl.value,10);
             if (isNaN(q) || q <= 0) qtyEl.value = 1;
             if (!isNaN(q) && q > maxQty) qtyEl.value = maxQty;
@@ -135,6 +128,37 @@
             clearAttrHighlights();
             highlightButtonsForVariant(v);
         }
+        // update product title to reflect selected attributes
+        try { updateTitleWithAttrs(); } catch(e) {}
+    }
+
+    function updateTitleWithAttrs() {
+        // Disabled: do not append selected attributes to the main product title.
+        // The small per-attribute labels above the buttons remain unchanged.
+        return;
+    }
+
+    // Update the small "selected-<attr>" labels shown above each attribute group
+    function updateSelectedLabels() {
+        try {
+            // Find all nodes that start with 'selected-' once and reuse
+            const selectedNodes = Array.from(document.querySelectorAll('[id^="selected-"]'));
+            for (const k in selectedAttrs) {
+                if (!Object.prototype.hasOwnProperty.call(selectedAttrs, k)) continue;
+                const want = String(k).toLowerCase();
+                // Find node whose suffix (after 'selected-') case-insensitively matches the key
+                let found = null;
+                for (const n of selectedNodes) {
+                    const suffix = n.id.substring(9);
+                    if (suffix && suffix.toLowerCase() === want) { found = n; break; }
+                }
+                // fallback: try direct ids
+                if (!found) found = document.getElementById('selected-' + want) || document.getElementById('selected-' + k);
+                if (found) {
+                    try { found.textContent = selectedAttrs[k]; } catch (e) { /* ignore write errors */ }
+                }
+            }
+        } catch (e) { console.error('[product.js] updateSelectedLabels error', e); }
     }
 
     function updateTotalFromInput(animate=true) {
@@ -174,13 +198,19 @@
         const value = btn.dataset.attrValue;
         const price = btn.dataset.price ? Number(btn.dataset.price) : undefined;
         if (!name) return;
-        selectedAttrs[name.toLowerCase()] = value;
+        // normalize key to lower-case for internal map
+        const normKey = name.toLowerCase();
+        selectedAttrs[normKey] = value;
+
+        // debug: log the key/value and attempt to update label
+        // update visible selected label (e.g., "Size: M") above buttons
+        try { updateSelectedLabels(); } catch(e) { /* ignore */ }
 
         qsa('.attr-btn').forEach(b => b.classList.remove('border-red-500','text-red-600','shadow-md','z-10'));
         btn.classList.add('border-red-500','text-red-600','shadow-md','z-10');
 
         const matched = findMatchedVariant();
-        if (matched) {
+            if (matched) {
             updateUIForVariant(matched, true);
         } else {
             if (typeof price === 'number') {
@@ -192,7 +222,7 @@
             if (hiddenVariantInput) hiddenVariantInput.value = '';
             maxQty = 99;
             if (stockInfoEl) stockInfoEl.textContent = '';
-            if (buyBtn) buyBtn.classList.remove('opacity-50','cursor-not-allowed');
+            if (addToCartBtn) addToCartBtn.classList.remove('opacity-50','cursor-not-allowed');
             updateTotalFromInput();
         }
     }
@@ -218,7 +248,9 @@
 
     // AJAX add-to-cart
     async function submitAddToCartAjax(form) {
-        const submitBtn = form.querySelector('button[type="submit"], #buyBtn');
+        // Prevent adding when out of stock
+        if (maxQty === 0) { showMessage('error','Sản phẩm tạm hết hàng'); return; }
+        const submitBtn = form.querySelector('button[type="submit"], #addToCartBtn');
         if (submitBtn) submitBtn.disabled = true;
 
         const formData = new FormData(form);
@@ -325,10 +357,12 @@
         qtyEl = qs('#qty');
         btnInc = qs('#btnInc');
         btnDec = qs('#btnDec');
-        buyBtn = qs('#buyBtn');
+        addToCartBtn = qs('#addToCartBtn');
         stockInfoEl = qs('#stockInfo');
         hiddenVariantInput = qs('#hiddenVariantId');
         addToCartForm = qs('#addToCartForm');
+        titleEl = qs('#productTitle');
+        baseTitle = titleEl ? titleEl.textContent.trim() : '';
 
         // attribute buttons
         qsa('.attr-btn').forEach(b => b.addEventListener('click', onAttrButtonClick));
@@ -344,6 +378,7 @@
                 for (const k in obj) selectedAttrs[k.toLowerCase()] = String(obj[k]);
             } catch(e){}
             updateUIForVariant(defaultVariant, true);
+            try { updateTitleWithAttrs(); } catch(e) {}
         } else {
             if (hiddenVariantInput && hiddenVariantInput.value) selectedVariantId = hiddenVariantInput.value;
             currentUnitPrice = Number(cfg.defaultPrice || 0);
@@ -383,6 +418,8 @@
         if (addToCartForm) {
             addToCartForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                // Prevent adding when out of stock
+                if (maxQty === 0) { showMessage('error','Sản phẩm tạm hết hàng'); return; }
                 if (hiddenVariantInput && !hiddenVariantInput.value && selectedVariantId) hiddenVariantInput.value = String(selectedVariantId);
                 const q = qtyEl && qtyEl.value ? qtyEl.value.replace(/\D/g,'') : '1';
                 const hiddenQty = qs('#hiddenQuantity');
@@ -500,4 +537,109 @@
     };
 
     document.addEventListener('DOMContentLoaded', init);
+})();
+
+// Minimal, robust add-to-cart handler (replace or merge with your existing product.js)
+// Usage: call addToCartAjax() when user clicks "Thêm vào giỏ hàng".
+(function () {
+  if (window.addToCartAjax) return;
+
+  window.addToCartAjax = async function addToCartAjax(opts) {
+    try {
+      var contextPath = window.PRODUCT_CONFIG && window.PRODUCT_CONFIG.contextPath ? window.PRODUCT_CONFIG.contextPath : '';
+      var variantId = opts && opts.variantId ? opts.variantId : (document.getElementById('hiddenVariantId') ? document.getElementById('hiddenVariantId').value : '');
+    // prefer the visible qty input (updated by user) over the hidden field
+    var qtyEl = document.getElementById('qty') || document.getElementById('hiddenQuantity');
+      var quantity = opts && typeof opts.quantity !== 'undefined' ? opts.quantity : (qtyEl ? qtyEl.value : '1');
+
+            // Check stock using window.PRODUCT_CONFIG if available
+            try {
+                var cfg = window.PRODUCT_CONFIG || {};
+                var vlist = cfg.variantsData || [];
+                var vid = String(variantId);
+                if (vid) {
+                    for (var i = 0; i < vlist.length; i++) {
+                        var vv = vlist[i];
+                        if (String(vv.id) === vid) {
+                            if (typeof vv.stock === 'number' && vv.stock <= 0) {
+                                if (window && typeof window.showMessage === 'function') window.showMessage('error', 'Sản phẩm tạm hết hàng'); else alert('Sản phẩm tạm hết hàng');
+                                return;
+                            }
+                            break;
+                        }
+                    }
+                }
+            } catch (e) { /* ignore */ }
+
+      if (!variantId || String(variantId).trim() === '') {
+        alert('Vui lòng chọn biến thể sản phẩm trước khi thêm vào giỏ.');
+        return;
+      }
+      var qn = parseInt(quantity, 10) || 1;
+      if (qn <= 0) qn = 1;
+
+      var params = new URLSearchParams();
+      params.append('action', 'add');
+      params.append('variantId', String(variantId));
+      params.append('quantity', String(qn));
+
+      var url = contextPath + '/cart';
+
+      var resp = await fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          'Accept': 'application/json'
+        },
+        body: params.toString()
+      });
+
+      var isJson = resp.headers.get('content-type') && resp.headers.get('content-type').indexOf('application/json') !== -1;
+      if (resp.ok && isJson) {
+        var json = await resp.json();
+        if (json && json.success) {
+          if (json.cartCount !== undefined) {
+            var el = document.querySelector('.cart-count');
+            if (el) el.innerText = json.cartCount;
+          }
+          if (opts && typeof opts.onSuccess === 'function') opts.onSuccess(json);
+          else alert(json.message || 'Đã thêm vào giỏ hàng.');
+          return;
+        } else {
+          var message = (json && json.message) ? decodeURIComponent(json.message) : ('Lỗi khi thêm vào giỏ hàng.');
+          alert(message);
+          return;
+        }
+      } else {
+        if (resp.redirected) {
+          window.location.href = resp.url;
+          return;
+        }
+        alert('Lỗi khi thêm vào giỏ hàng (mã: ' + resp.status + ').');
+        return;
+      }
+    } catch (err) {
+      console.error('addToCartAjax error', err);
+      var frm = document.getElementById('addToCartForm');
+      if (frm) {
+        frm.submit();
+      } else {
+        alert('Không thể thêm vào giỏ hàng. Vui lòng thử lại.');
+      }
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var addBtn = document.getElementById('addToCartBtn');
+    if (addBtn) {
+      addBtn.addEventListener('click', function (ev) {
+        var useAjaxAdd = addBtn.dataset.ajax === 'true';
+        if (useAjaxAdd) {
+          ev.preventDefault();
+          addToCartAjax();
+        }
+      });
+    }
+  });
 })();

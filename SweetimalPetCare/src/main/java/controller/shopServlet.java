@@ -4,6 +4,7 @@ import daos.BrandDAO;
 import daos.ProductCategoryDAO;
 import daos.ProductDAO;
 import daos.ProductVariantDAO;
+import daos.ShopDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -11,7 +12,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import model.Brand;
 import model.Product;
 import model.ProductCategory;
@@ -27,7 +30,7 @@ public class shopServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        ProductDAO productDAO = new ProductDAO();
+        ShopDAO shopDAO = new ShopDAO();
         ProductVariantDAO prvant = new ProductVariantDAO();
         BrandDAO brandDAO = new BrandDAO();
         ProductCategoryDAO categoryDAO = new ProductCategoryDAO();
@@ -91,7 +94,8 @@ public class shopServlet extends HttpServlet {
             }
         } catch (NumberFormatException ignored) {}
 
-        int totalProducts = productDAO.countProductsWithFilter(categoryList, brandList, minPrice, maxPrice, stockFilter, sort);
+        // Use ShopDAO (shop/listing responsibilities)
+        int totalProducts = shopDAO.countProductsWithFilter(categoryList, brandList, minPrice, maxPrice, stockFilter);
         if (totalProducts < 0) totalProducts = 0;
 
         int totalPages = (totalProducts + pageSize - 1) / pageSize;
@@ -100,10 +104,10 @@ public class shopServlet extends HttpServlet {
 
         int offset = (currentPage - 1) * pageSize;
 
-        List<Product> products = productDAO.getProductsWithFilterPaged(categoryList, brandList, minPrice, maxPrice, stockFilter, sort, pageSize, offset);
+        List<Product> products = shopDAO.getProductsWithFilterPaged(categoryList, brandList, minPrice, maxPrice, stockFilter, sort, pageSize, offset);
 
-        int inStockCount = productDAO.countVariantsInStock(categoryList, brandList, minPrice, maxPrice);
-        int outStockCount = productDAO.countVariantsOutOfStock(categoryList, brandList, minPrice, maxPrice);
+        int inStockCount = shopDAO.countVariantsInStock(categoryList, brandList, minPrice, maxPrice);
+        int outStockCount = shopDAO.countVariantsOutOfStock(categoryList, brandList, minPrice, maxPrice);
 
         List<Brand> brands = brandDAO.getBrandsWithCountFiltered(categoryList, minPrice, maxPrice, stockFilter);
         List<ProductCategory> categories = categoryDAO.getCategoriesWithCountFiltered(brandList, minPrice, maxPrice, stockFilter);
@@ -120,6 +124,13 @@ public class shopServlet extends HttpServlet {
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("currentPage", currentPage);
         request.setAttribute("pageSize", pageSize);
+
+        // Provide paramValues map expected by JSP (category/brand/stock arrays)
+        Map<String, String[]> paramValues = new HashMap<>();
+        paramValues.put("category", request.getParameterValues("category") == null ? new String[0] : request.getParameterValues("category"));
+        paramValues.put("brand", request.getParameterValues("brand") == null ? new String[0] : request.getParameterValues("brand"));
+        paramValues.put("stock", request.getParameterValues("stock") == null ? new String[0] : request.getParameterValues("stock"));
+        request.setAttribute("paramValues", paramValues);
 
         // Always forward to the single JSP. The JSP will decide whether to render full page or fragment
         request.getRequestDispatcher("/WEB-INF/pages/shop.jsp").forward(request, response);

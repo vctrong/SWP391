@@ -28,7 +28,7 @@
         </div>
 
         <!-- Body -->
-        <form action="your-add-package-servlet" method="post" class="flex-1 overflow-y-auto">
+        <form action="${pageContext.request.contextPath}/admin/addServicePackage" method="post" class="flex-1 overflow-y-auto">
             <div class="p-6 space-y-4">
 
                 <div class="grid grid-cols-2 gap-4">
@@ -67,11 +67,11 @@
                     <!-- Status -->
                     <div>
                         <label for="package_status" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select id="package_status" name="status"
+                        <select id="package_status" name="status" style="pointer-events: none"
                                 class="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm
-                                focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white">
-                            <option value="ACTIVE" selected>Active</option>
-                            <option value="INACTIVE">Inactive</option>
+                                focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white" >
+                            <option value="ACTIVE" >Active</option>
+                            <option value="INACTIVE" selected>Inactive</option>
                         </select>
                     </div>
                 </div>

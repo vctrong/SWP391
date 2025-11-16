@@ -1,4 +1,4 @@
-﻿/********************************************************************
+﻿ /********************************************************************
  Database: SweetmalPetCare - FINAL VERSION (Services + Basic E-commerce)
  Version: 6
 *********************************************************************/
@@ -219,6 +219,31 @@ CREATE TABLE ProductVariant (
 );
 CREATE INDEX IX_ProductVariant_Product ON ProductVariant(product_id);
 
+/* ============== BỔ SUNG: CART ITEMS (GỘP) ============== */
+    CREATE TABLE CartItems (
+        cart_item_id    BIGINT IDENTITY PRIMARY KEY,
+        user_id         BIGINT NOT NULL FOREIGN KEY REFERENCES Users(user_id) ON DELETE CASCADE, -- Món hàng thuộc về user nào
+        variant_id      BIGINT NOT NULL FOREIGN KEY REFERENCES ProductVariant(variant_id),
+        quantity        INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
+        added_at        DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT UQ_User_Variant UNIQUE (user_id, variant_id) -- Một user chỉ có 1 dòng cho mỗi loại sản phẩm trong giỏ
+    );
+    PRINT 'Table CartItems (merged version) created.';
+    CREATE INDEX IX_CartItems_User ON CartItems(user_id);
+
+
+	/* Thêm bảng ProductImg */
+CREATE TABLE ProductImg (
+    product_img_id  BIGINT IDENTITY PRIMARY KEY,
+    product_id      BIGINT NOT NULL FOREIGN KEY REFERENCES Product(product_id),
+    image_url       NVARCHAR(300) NOT NULL,
+    caption         NVARCHAR(200) NULL,
+    sort_order      INT NOT NULL DEFAULT 1,
+    is_main         BIT NOT NULL DEFAULT 0,
+    uploaded_at     DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+);
+CREATE INDEX IX_ProductImg_Product ON ProductImg(product_id);
+
 /* ============== 6. ORDER DOMAIN (BASIC) ============== */
 CREATE TABLE OrderStatus (
     order_status_code VARCHAR(30) PRIMARY KEY,
@@ -299,27 +324,72 @@ CREATE INDEX IX_Reviews_Service ON Reviews(service_id);
 CREATE INDEX IX_Reviews_Product ON Reviews(product_id);
 CREATE INDEX IX_Reviews_Staff ON Reviews(staff_id);
 
+
+CREATE TABLE ReviewReply (
+    reply_id        BIGINT IDENTITY PRIMARY KEY,
+    review_id       BIGINT NOT NULL FOREIGN KEY REFERENCES Reviews(review_id) UNIQUE, -- UNIQUE để đảm bảo mỗi review chỉ có 1 phản hồi chính thức
+    replied_by_staff_id BIGINT NOT NULL FOREIGN KEY REFERENCES Users(user_id), -- Staff/Admin ID
+    reply_content   NVARCHAR(1000) NOT NULL,
+    created_at      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+);
+CREATE INDEX IX_ReviewReply_Review ON ReviewReply(review_id);
+CREATE INDEX IX_ReviewReply_Staff ON ReviewReply(replied_by_staff_id);
+
+
+
+
+-- 1. Tạo bảng trạng thái
 CREATE TABLE ConsultationStatus (
     status_code     VARCHAR(30) PRIMARY KEY,
     description     NVARCHAR(150)
 );
 
-CREATE TABLE ConsultationRequests (
-    request_id      BIGINT IDENTITY PRIMARY KEY,
-    customer_name   NVARCHAR(120) NOT NULL,
-    email           NVARCHAR(150) NOT NULL,
-    phone           NVARCHAR(20) NULL,
-    subject         NVARCHAR(255) NOT NULL,
-    request_message NVARCHAR(MAX) NOT NULL,
-    user_id         BIGINT NULL FOREIGN KEY REFERENCES Users(user_id), 
-    status_code     VARCHAR(30) NOT NULL DEFAULT 'PENDING' FOREIGN KEY REFERENCES ConsultationStatus(status_code),
-    created_at      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-    assigned_staff_id BIGINT NULL FOREIGN KEY REFERENCES Users(user_id),
-    response_message  NVARCHAR(MAX) NULL,
-    responded_at      DATETIME2 NULL
+-- 2. Tạo bảng loại tư vấn (MỚI - Thay cho Subject)
+CREATE TABLE ConsultationTypes (
+    type_id         INT IDENTITY(1,1) PRIMARY KEY,
+    type_name       NVARCHAR(100) NOT NULL UNIQUE, 
+    description     NVARCHAR(255) NULL,
+    is_active       BIT DEFAULT 1
 );
+
+-- 3. Tạo bảng yêu cầu tư vấn (Đã cập nhật FK sang ConsultationTypes)
+CREATE TABLE ConsultationRequests (
+    request_id          BIGINT IDENTITY PRIMARY KEY,
+    customer_name       NVARCHAR(120) NOT NULL,
+    email               NVARCHAR(150) NOT NULL,
+    phone               NVARCHAR(20) NULL,
+    
+    -- FK trỏ sang bảng loại tư vấn
+    consultation_type_id INT NOT NULL FOREIGN KEY REFERENCES ConsultationTypes(type_id),
+    
+    request_message     NVARCHAR(MAX) NOT NULL,
+    
+    -- Giả định bảng Users đã tồn tại trong DB của bạn
+    user_id             BIGINT NULL FOREIGN KEY REFERENCES Users(user_id), 
+    
+    status_code         VARCHAR(30) NOT NULL DEFAULT 'PENDING' FOREIGN KEY REFERENCES ConsultationStatus(status_code),
+    created_at          DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    assigned_staff_id   BIGINT NULL FOREIGN KEY REFERENCES Users(user_id),
+    response_message    NVARCHAR(MAX) NULL,
+    responded_at        DATETIME2 NULL
+);
+
+-- Tạo Index để tối ưu tìm kiếm
 CREATE INDEX IX_ConsultationRequests_User ON ConsultationRequests(user_id);
 CREATE INDEX IX_ConsultationRequests_Status ON ConsultationRequests(status_code);
+CREATE INDEX IX_ConsultationRequests_Type ON ConsultationRequests(consultation_type_id);
+
+INSERT INTO ConsultationTypes (type_name, description) VALUES 
+(N'Tư vấn dịch vụ', N'Hỏi về các gói dịch vụ chăm sóc'),
+(N'Hỗ trợ kỹ thuật', N'Gặp lỗi khi sử dụng website'),
+(N'Đặt lịch hẹn', N'Muốn đặt lịch trước'),
+(N'Khác', N'Các vấn đề khác');
+
+-- Thêm trạng thái (nếu chưa có)
+INSERT INTO ConsultationStatus (status_code, description) VALUES 
+('PENDING', N'Chờ xử lý'),
+('PROCESSING', N'Đang xử lý'),
+('COMPLETED', N'Đã hoàn thành');
 
 GO
 

@@ -1,6 +1,3 @@
-// /assets/js/shop.js - Robust AJAX variant
-// Builds URLs from current location + visible UI (checked checkboxes), toggles params reliably,
-// fetches fragments and replaces sidebar + products. Assumes window.CONTEXT_PATH set in JSP.
 
 (function () {
     const sidebarSelector = '#shopSidebar';

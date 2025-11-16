@@ -10,7 +10,7 @@
 <html lang="vi">
 <head>
     <meta charset="utf-8">
-    <title>Thanh toán bằng ví - Sweetimal Pet Care</title>
+    <title>Thanh toán bằng ngân hàng - Sweetimal Pet Care</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <%@ include file="/WEB-INF/include/library.jsp" %>
 </head>
@@ -19,7 +19,7 @@
 
     <div class="max-w-md mx-auto p-6">
         <div class="bg-white p-6 rounded shadow text-center">
-            <h1 class="text-2xl font-bold mb-4">Thanh toán bằng Ví điện tử</h1>
+            <h1 class="text-2xl font-bold mb-4">Thanh toán bằng ngân hàng</h1>
             <p class="mb-4">Quét mã QR bên dưới để thanh toán cho đơn hàng.</p>
 
             <c:if test="${not empty qrUrl}">
@@ -39,7 +39,7 @@
                 <a href="${pageContext.request.contextPath}/shop" class="inline-block bg-blue-600 text-white px-4 py-2 rounded">Tiếp tục mua sắm</a>
             </div>
 
-            <p class="mt-4 text-sm text-gray-500">Lưu ý: đây là ví dụ QR tĩnh. Tích hợp cổng thanh toán thực tế cần endpoint tạo paymentUrl và webhook xác nhận thanh toán để cập nhật trạng thái đơn.</p>
+            <p class="mt-4 text-sm text-gray-500">Lưu ý: đây là ví dụ QR tĩnh cho thanh toán bằng ngân hàng. Tích hợp cổng thanh toán thực tế cần endpoint tạo paymentUrl và webhook xác nhận thanh toán để cập nhật trạng thái đơn.</p>
         </div>
     </div>
 

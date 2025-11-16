@@ -1,52 +1,48 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
-import java.sql.Timestamp;
+import java.util.Date;
 
-/**
- *
- * @author Pham Nguyen Xuan Mai - CE190106
- */
+
 public class ProductImg {
-    private long productImgId;
-    private long productId;
+    private Long imageId;
+    private Long productId;
     private String imageUrl;
     private String caption;
-    private int sortOrder;
+    private Integer displayOrder; 
     private boolean isMain;
-    private Timestamp uploadedAt;
+    private Date uploadedAt;
 
     public ProductImg() {}
 
-    public ProductImg(long productImgId, long productId, String imageUrl, String caption, int sortOrder, boolean isMain, Timestamp uploadedAt) {
-        this.productImgId = productImgId;
+    public ProductImg(Long imageId, Long productId, String imageUrl, String caption, Integer displayOrder, Date uploadedAt) {
+        this.imageId = imageId;
         this.productId = productId;
         this.imageUrl = imageUrl;
         this.caption = caption;
-        this.sortOrder = sortOrder;
-        this.isMain = isMain;
+        this.displayOrder = displayOrder;
+        this.isMain = (displayOrder != null && displayOrder == 0);
         this.uploadedAt = uploadedAt;
     }
 
-    public long getProductImgId() {
-        return productImgId;
+    // id
+    public Long getImageId() {
+        return imageId;
     }
 
-    public void setProductImgId(long productImgId) {
-        this.productImgId = productImgId;
+    public void setImageId(Long imageId) {
+        this.imageId = imageId;
     }
 
-    public long getProductId() {
+    // product id
+    public Long getProductId() {
         return productId;
     }
 
-    public void setProductId(long productId) {
+    public void setProductId(Long productId) {
         this.productId = productId;
     }
 
+    // url
     public String getImageUrl() {
         return imageUrl;
     }
@@ -55,6 +51,7 @@ public class ProductImg {
         this.imageUrl = imageUrl;
     }
 
+    // caption / alt_text
     public String getCaption() {
         return caption;
     }
@@ -63,27 +60,35 @@ public class ProductImg {
         this.caption = caption;
     }
 
-    public int getSortOrder() {
-        return sortOrder;
+    // display order
+    public Integer getDisplayOrder() {
+        return displayOrder;
     }
 
-    public void setSortOrder(int sortOrder) {
-        this.sortOrder = sortOrder;
+    public void setDisplayOrder(Integer displayOrder) {
+        this.displayOrder = displayOrder;
+        this.isMain = (displayOrder != null && displayOrder == 0);
     }
 
+    // convenience: main image if displayOrder == 0
     public boolean isMain() {
         return isMain;
     }
 
     public void setMain(boolean main) {
-        isMain = main;
+        this.isMain = main;
+        // If caller forces isMain, keep displayOrder in sync when possible
+        if (main) {
+            if (this.displayOrder == null || this.displayOrder != 0) this.displayOrder = 0;
+        }
     }
 
-    public Timestamp getUploadedAt() {
+    // uploaded at as java.util.Date (converted from SQL Timestamp in DAO)
+    public Date getUploadedAt() {
         return uploadedAt;
     }
 
-    public void setUploadedAt(Timestamp uploadedAt) {
+    public void setUploadedAt(Date uploadedAt) {
         this.uploadedAt = uploadedAt;
     }
 }

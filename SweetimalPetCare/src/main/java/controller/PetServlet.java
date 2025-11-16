@@ -93,7 +93,12 @@ public class PetServlet extends HttpServlet {
             } else if ("update".equalsIgnoreCase(action)) {
                 handleUpdate(request, user);
             } else if ("delete".equalsIgnoreCase(action)) {
-                handleDelete(request, user);
+                boolean deleted = handleDelete(request, user);
+                if (!deleted) {
+                    // show list with error message set by handleDelete
+                    listPets(request, response, user);
+                    return;
+                }
             }
             response.sendRedirect(request.getContextPath() + "/pets");
         } catch (Exception e) {
@@ -123,8 +128,20 @@ public class PetServlet extends HttpServlet {
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response, Users user)
             throws Exception {
-        long petId = Long.parseLong(request.getParameter("petId"));
+        String petIdStr = request.getParameter("petId");
+        long petId;
+        try {
+            petId = Long.parseLong(petIdStr);
+        } catch (NumberFormatException ex) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid pet id");
+            return;
+        }
+
         Pet pet = petDAO.getPetByIdAndOwner(petId, user.getId());
+        if (pet == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Pet not found");
+            return;
+        }
 
         // Always show all species
         List<PetSpecies> speciesList = speciesDAO.getAllSpecies();
@@ -162,9 +179,33 @@ public class PetServlet extends HttpServlet {
         petDAO.updatePet(p);
     }
 
-    private void handleDelete(HttpServletRequest request, Users user) throws Exception {
-        long petId = Long.parseLong(request.getParameter("petId"));
+    /**
+     * Attempt to delete a pet. Returns true if deleted, false if blocked (e.g., bookings exist).
+     */
+    private boolean handleDelete(HttpServletRequest request, Users user) throws Exception {
+        String petIdStr = request.getParameter("petId");
+        long petId;
+        try {
+            petId = Long.parseLong(petIdStr);
+        } catch (NumberFormatException ex) {
+            request.setAttribute("errorMessage", "Invalid pet id.");
+            return false;
+        }
+
+        // Prevent deletion if pet has bookings
+        try {
+            if (petDAO.hasBookingsForPet(petId)) {
+                request.setAttribute("errorMessage", "Không thể xóa thú cưng vì có lịch đặt liên quan.");
+                return false;
+            }
+        } catch (SQLException ex) {
+            // On DB error, be conservative and block deletion
+            request.setAttribute("errorMessage", "Không thể xóa thú cưng do lỗi hệ thống. Vui lòng thử lại sau.");
+            return false;
+        }
+
         petDAO.deletePet(petId, user.getId());
+        return true;
     }
 
     private Pet buildPetFromRequest(HttpServletRequest request) {

@@ -7,6 +7,9 @@ package controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
+import daos.ConsultationTypeDAO;
+import model.ConsultationType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -55,6 +58,13 @@ public class homeServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
+        try {
+            ConsultationTypeDAO typeDao = new ConsultationTypeDAO();
+            List<ConsultationType> types = typeDao.listActive();
+            request.setAttribute("consultationTypes", types);
+        } catch (Exception ex) {
+            request.setAttribute("consultationTypes", java.util.Collections.emptyList());
+        }
         request.getRequestDispatcher("WEB-INF/pages/home.jsp").forward(request, response);
     } 
 

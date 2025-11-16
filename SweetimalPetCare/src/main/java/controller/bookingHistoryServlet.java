@@ -4,7 +4,7 @@ import daos.BookingDAO;
 import daos.ServiceDAO;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ArrayList;
+
 import model.Service;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.Booking;
 import model.Users;
+import enums.RoleEnum;
 
 @WebServlet(name = "BookingHistoryServlet", urlPatterns = {"/booking-history"})
 public class bookingHistoryServlet extends HttpServlet {
@@ -30,6 +31,12 @@ public class bookingHistoryServlet extends HttpServlet {
         Users user = (session != null) ? (Users) session.getAttribute("user") : null;
         if (user == null) {
             response.sendRedirect(request.getContextPath() + "/login?redirect=/booking-history");
+            return;
+        }
+
+        // Add role check
+        if (user.getRoleEnum() != RoleEnum.CUSTOMER) {
+            response.sendRedirect(request.getContextPath() + "/denied");
             return;
         }
 

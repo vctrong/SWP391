@@ -81,6 +81,17 @@ public class checkoutServlet extends HttpServlet {
             return;
         }
 
+        // Enforce only customers can access checkout
+        if (userObj instanceof Users) {
+            Users u = (Users) userObj;
+            try {
+                if (u.getRole() != 1) {
+                    response.sendRedirect(request.getContextPath() + "/?error=" + URLEncoder.encode("Chỉ khách hàng mới được truy cập trang thanh toán.", "UTF-8"));
+                    return;
+                }
+            } catch (Throwable ignore) {}
+        }
+
         try {
             UserAddressDAO addrDao = new UserAddressDAO();
             OrderCartDAO cartDao = new OrderCartDAO();
@@ -215,6 +226,17 @@ public class checkoutServlet extends HttpServlet {
             return;
         }
 
+        // Enforce only customers can perform checkout (POST)
+        if (userObj instanceof Users) {
+            Users u = (Users) userObj;
+            try {
+                if (u.getRole() != 1) {
+                    response.sendRedirect(request.getContextPath() + "/?error=" + URLEncoder.encode("Chỉ khách hàng mới được thực hiện thanh toán.", "UTF-8"));
+                    return;
+                }
+            } catch (Throwable ignore) {}
+        }
+
         String shippingAddressIdParam = request.getParameter("shippingAddressId");
         String paymentMethod = request.getParameter("paymentMethod");
         long shippingAddressId = 0L;
@@ -262,7 +284,6 @@ public class checkoutServlet extends HttpServlet {
             return;
         }
 
-        OrderCartDAO cartDao = new OrderCartDAO();
         OrderDAO orderDao = new OrderDAO();
         CartItemsDAO cartItemsDao = new CartItemsDAO();
 
@@ -280,8 +301,8 @@ public class checkoutServlet extends HttpServlet {
 
             // No session cart to clear in DB-only mode; OrderDAO deletes CartItems entries.
 
-            // branch by payment method (EWALLET -> QR, else confirmation)
-            if (paymentMethod != null && "EWALLET".equalsIgnoreCase(paymentMethod.trim())) {
+            // branch by payment method (BANK -> QR, else confirmation)
+            if (paymentMethod != null && "BANK".equalsIgnoreCase(paymentMethod.trim())) {
                 String paymentUrl = request.getRequestURL().toString().replace(request.getRequestURI(), request.getContextPath())
                         + "/pay?orderId=" + orderId;
                 String qrUrl = "https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl="
