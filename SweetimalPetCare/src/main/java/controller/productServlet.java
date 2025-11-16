@@ -26,8 +26,8 @@ import model.ReviewReply;
 import model.Users;
 
 /**
- *
- * @author Pham Nguyen Xuan Mai - CE190106
+ * Product detail controller (GET only).
+ * POST related to reviews/replies is handled by productReviewServlet.
  */
 @WebServlet(name = "productServlet", urlPatterns = {"/product"})
 public class productServlet extends HttpServlet {
@@ -46,7 +46,7 @@ public class productServlet extends HttpServlet {
         try {
             int productId = Integer.parseInt(idParam);
 
-            // 1. Load product (ProductDAO is authoritative for product detail)
+            // 1. Load product
             ProductDAO productDAO = new ProductDAO();
             Product product = productDAO.getProductById(productId);
             if (product == null) {
@@ -54,11 +54,11 @@ public class productServlet extends HttpServlet {
                 return;
             }
 
-            // 2. Variants (all active variants for detail page)
+            // 2. Variants
             List<ProductVariant> variants = productDAO.getVariantsByProductId(productId);
             request.setAttribute("variants", variants);
 
-            // 3. Product images (robust: don't let missing table break page)
+            // 3. Product images
             ProductImgDAO productImgDAO = new ProductImgDAO();
             List<ProductImg> productImages;
             try {
@@ -69,7 +69,7 @@ public class productServlet extends HttpServlet {
             }
             request.setAttribute("productImages", productImages);
 
-            // 4. Brand name: use BrandDAO.getBrandById (no fallback)
+            // 4. Brand
             try {
                 BrandDAO brandDAO = new BrandDAO();
                 if (product.getBrandId() != null) {
@@ -89,23 +89,24 @@ public class productServlet extends HttpServlet {
             List<Review> reviews = reviewDAO.getReviewsByProduct(productId);
             double avgRating = reviewDAO.getAverageRatingByProduct(productId);
 
-            // Build replies map for product reviews (so JSP can show reply content)
-            Map<Long, ReviewReply> repliesMap = new HashMap<>();
+            // Build replies map keyed by Integer reviewId (so JSP can lookup by r.reviewId)
+            Map<Integer, ReviewReply> repliesMap = new HashMap<>();
             if (reviews != null) {
                 for (Review r : reviews) {
-                    Integer ridObj = r.getReviewId();
+                    Integer ridObj = r.getReviewId(); // assume model.Review.getReviewId() returns Integer
                     if (ridObj == null) continue;
-                    long rid = ridObj.longValue();
                     try {
-                        ReviewReply rep = reviewDAO.getReplyByReviewId(rid);
-                        if (rep != null) repliesMap.put(rid, rep);
+                        ReviewReply rep = reviewDAO.getReplyByReviewId(ridObj.longValue());
+                        if (rep != null) {
+                            repliesMap.put(ridObj, rep);
+                        }
                     } catch (Exception ex) {
-                        LOGGER.log(Level.FINER, "Error fetching reply for review id " + rid, ex);
+                        LOGGER.log(Level.FINER, "Error fetching reply for review id " + ridObj, ex);
                     }
                 }
             }
 
-            // 6. Related products (ProductDAO.getRelatedProductsByCategory)
+            // 6. Related products
             List<Product> relatedProducts;
             try {
                 int categoryId = product.getProductCategoryId();
@@ -115,7 +116,7 @@ public class productServlet extends HttpServlet {
                 relatedProducts = java.util.Collections.emptyList();
             }
 
-            // 7. User from session only (do not read customerId from request)
+            // 7. User from session
             HttpSession session = request.getSession(false);
             Integer userId = null;
             Users sessionUser = null;
@@ -123,15 +124,25 @@ public class productServlet extends HttpServlet {
                 Object userObj = session.getAttribute("user");
                 if (userObj instanceof Users) {
                     sessionUser = (Users) userObj;
-                    userId = sessionUser.getId();
-                    // REQUEST attribute "user" so EL ${user} works like service pages
+                    // normalize id to Integer if possible
+                    try {
+                        Object idVal = sessionUser.getId();
+                        if (idVal instanceof Number) {
+                            userId = ((Number) idVal).intValue();
+                        } else if (idVal != null) {
+                            userId = Integer.parseInt(idVal.toString());
+                        }
+                    } catch (Exception ex) {
+                        userId = null;
+                    }
+                    // expose request-scoped user for JSP that expects ${user}
                     request.setAttribute("user", sessionUser);
-                    request.setAttribute("userId", sessionUser.getId());
-                    request.setAttribute("customerId", sessionUser.getId());
+                    request.setAttribute("userId", userId);
+                    request.setAttribute("customerId", userId);
                 }
             }
 
-            // 8. Check purchase/review status if user logged in
+            // 8. Check purchase/review status
             boolean userHasPurchased = false;
             boolean userHasReviewed = false;
             if (userId != null) {
@@ -151,7 +162,7 @@ public class productServlet extends HttpServlet {
                 }
             }
 
-            // 9. Set attributes and forward to JSP
+            // 9. Set attributes and forward
             request.setAttribute("product", product);
             request.setAttribute("reviews", reviews);
             request.setAttribute("avgRating", avgRating);
@@ -168,62 +179,6 @@ public class productServlet extends HttpServlet {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Server error loading product page", e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Server error");
-        }
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        // POST: add review (use session user only)
-        HttpSession session = request.getSession(false);
-        if (session == null) {
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
-        }
-
-        Object userObj = session.getAttribute("user");
-        if (!(userObj instanceof Users)) {
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
-        }
-
-        Users user = (Users) userObj;
-        Integer customerId = user.getId();
-        if (customerId == null) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "User ID not available in session");
-            return;
-        }
-
-        try {
-            String productIdParam = request.getParameter("productId");
-            String ratingParam = request.getParameter("rating");
-            String comment = request.getParameter("comment");
-
-            if (productIdParam == null || ratingParam == null) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing parameters");
-                return;
-            }
-
-            int productId = Integer.parseInt(productIdParam);
-            int rating = Integer.parseInt(ratingParam);
-
-            if (rating < 1 || rating > 5) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Rating must be between 1 and 5");
-                return;
-            }
-
-            ReviewDAO reviewDAO = new ReviewDAO();
-            reviewDAO.addReview(productId, customerId, rating, comment);
-
-            // PRG: redirect to GET product page
-            response.sendRedirect(request.getContextPath() + "/product?id=" + productId);
-
-        } catch (NumberFormatException ex) {
-            LOGGER.log(Level.SEVERE, "Invalid numeric parameter in review POST", ex);
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid numeric parameter");
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error while adding review", e);
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Lỗi khi thêm phản hồi");
         }
     }
 

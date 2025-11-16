@@ -1,6 +1,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ page import="daos.CartItemsDAO, model.CartItem, model.Users, java.util.List" %>
 <link href="${pageContext.request.contextPath}/assets/css/header.css" rel="stylesheet" >
 <!-- Page loader (site-wide). Can be disabled by setting request attribute disableLoader=true -->
 <c:if test="${not disableLoader}">
@@ -75,7 +76,6 @@
 
         <c:if test="${not empty user}">
             <div class="space-x-4 flex items-center">
-
                 <div class="px-1 py-1 rounded-full transform hover:scale-105 hover:text-blue-600 transition">
                     <button id="userMenuButton"
                             class="flex items-center space-x-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-blue-600 hover:to-blue-700
@@ -86,9 +86,34 @@
                     </button>
                 </div>
 
+                <%
+                    // compute cart count for logged-in user (sum of quantities)
+                    int cartCount = 0;
+                    try {
+                        CartItemsDAO _cartDao = new CartItemsDAO();
+                        Object _userObj = session.getAttribute("user");
+                        long _userId = -1L;
+                        if (_userObj instanceof Users) {
+                            _userId = ((Users)_userObj).getId();
+                        }
+                        List<CartItem> _items = null;
+                        if (_userId > 0) {
+                            _items = _cartDao.getCartItemsByUser(_userId);
+                        }
+                        if (_items != null) {
+                            for (CartItem _ci : _items) {
+                                if (_ci != null) cartCount += _ci.getQuantity();
+                            }
+                        }
+                    } catch (Throwable _t) {
+                        cartCount = 0;
+                    }
+                %>
+
                 <a href="${pageContext.request.contextPath}/cart"
-                   class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white border shadow-sm hover:shadow-md transition mr-2">
+                   class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white border shadow-sm hover:shadow-md transition mr-2 relative">
                     <i class="fa-solid fa-cart-shopping text-gray-700"></i>
+                    <span class="cart-count absolute -top-2 -right-2 bg-red-600 text-white text-xs font-semibold rounded-full px-2 py-0.5"><%= cartCount %></span>
                 </a>
             </div>
         </c:if>

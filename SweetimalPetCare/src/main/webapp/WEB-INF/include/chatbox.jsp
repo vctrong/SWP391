@@ -10,10 +10,6 @@
 <% if (!__hideChat) { %>
 <!-- Tailwind CDN (ensure included once globally; harmless if repeated) -->
 <script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<%= request.getContextPath() %>/assets/css/chatbox.css" />
 
 <!-- Floating Chat Icon (use logo) -->
 <button id="vet-chat-toggle"
@@ -61,26 +57,7 @@
   function getOptionsContainer(){ return document.getElementById('vet-options'); }
   let chosen = false;
   let pendingDeepBase = null;
-
-  const deepFallback = {
-    emergency_bleeding: 'Chảy máu nhiều:\n1) Dùng gạc/khăn sạch ấn trực tiếp 5–10 phút.\n2) Băng cố định, nâng cao vị trí nếu có thể.\n3) Không rút dị vật cắm sâu.\n4) Đưa đi cấp cứu ngay.',
-    emergency_breath: 'Khó thở/Ngạt:\n1) Giữ cổ thẳng, nới vòng cổ.\n2) Tránh stress, hạn chế vận động.\n3) Không móc dị vật sâu.\n4) Đi cấp cứu ngay.',
-    emergency_seizure: 'Co giật/Bất tỉnh:\n1) Dọn vật sắc nhọn, đảm bảo an toàn.\n2) Không cho đồ vào miệng.\n3) Ghi lại thời gian cơn.\n4) Liên hệ bác sĩ sớm.',
-    nutrition_puppy: 'Chó/Mèo con:\n• 3–4 bữa/ngày theo cân nặng & tuổi.\n• Công thức puppy/kitten giàu DHA.\n• Bổ sung theo chỉ định.\n• Theo dõi tăng trưởng.',
-    nutrition_overweight: 'Thừa cân/Béo phì:\n• Thức ăn kiểm soát cân.\n• Vận động 20–30 phút/ngày.\n• Hạn chế snack.\n• Mục tiêu giảm 1–2%/tuần.',
-    nutrition_allergy: 'Dị ứng/Đường ruột:\n• Thuỷ phân/novel protein.\n• Phác đồ loại trừ 6–8 tuần.\n• Theo dõi da & tiêu hoá.\n• Tái khám điều chỉnh.',
-    behavior_bark_destroy: 'Giảm sủa/cắn phá:\n• Tăng vận động và kích thích trí tuệ (đồ chơi nhồi thức ăn, puzzle).\n• Bỏ qua hành vi xấu, thưởng ngay khi im lặng/bình tĩnh.\n• Dạy lệnh "Im"/"Để đó" kết hợp clicker/đồ ăn thưởng.\n• Tránh phạt nặng tay, tìm nguyên nhân (chán, lo âu, thiếu vận động).',
-    behavior_introduce_pets: 'Làm quen thú cưng mới–cũ:\n• Cách ly ban đầu, trao đổi mùi qua khăn/đồ vật.\n• Gặp mặt có kiểm soát, ngắn và tích cực, thưởng khi bình tĩnh.\n• Tăng dần thời gian, giám sát chặt chẽ.\n• Không ép buộc, luôn có lối thoát và nơi trú an toàn.',
-    behavior_basic_commands: 'Lệnh cơ bản nên dạy:\n• Tên gọi (nhìn bạn), "Ngồi", "Nằm", "Lại đây", "Đợi".\n• Học qua phần thưởng nhỏ, buổi ngắn 3–5 phút, nhiều lần/ngày.\n• Tăng khó dần, luyện nhiều bối cảnh.\n• Nhất quán, tích cực, không trừng phạt.',
-    reproduction_neuter_temperament: 'Triệt sản & tính cách:\n• Không làm đổi tính cách tích cực nếu huấn luyện đúng.\n• Có thể giảm hành vi liên quan hormone (đánh dấu, bỏ nhà).\n• Giúp ổn định nội tiết, giảm stress do động dục.',
-    reproduction_breed_before_neuter: 'Có nên sinh sản 1 lứa trước khi triệt sản?\n• Không bắt buộc và không có lợi ích sức khoẻ rõ ràng.\n• Triệt sản đúng thời điểm giúp giảm nguy cơ bệnh sinh sản.\n• Quyết định nên dựa trên sức khoẻ và kế hoạch gia đình.',
-    reproduction_when_neuter: 'Khi nào nên triệt sản?\n• Chó: thường 6–12 tháng (tuỳ giống/kích thước, hỏi bác sĩ).\n+    • Mèo: khoảng 5–6 tháng, trước dậy thì.\n• Cân nhắc cá thể: sức khoẻ, hành vi, môi trường.',
-    care_bathing_frequency: 'Tắm bao lâu 1 lần?\n• Chó: 2–4 tuần/lần tuỳ giống, da, hoạt động.\n• Mèo: thường tự làm sạch; chỉ tắm khi bẩn/da dầu.\n• Dùng sữa tắm thú y phù hợp da lông, sấy khô kỹ.',
-    care_human_shampoo: 'Dùng dầu gội người?\n• Không nên: độ pH da khác, dễ kích ứng/khô da.\n• Nên dùng sản phẩm dành cho thú cưng, theo tư vấn bác sĩ.',
-    care_clean_ears_teeth: 'Vệ sinh tai & răng:\n• Tai: dung dịch chuyên dụng, nhỏ vào tai, massage, lau nhẹ phần ngoài. Không dùng tăm bông sâu.\n• Răng: chải 3–4 lần/tuần bằng bàn chải & kem đánh răng cho thú cưng.\n• Kết hợp đồ nhai hỗ trợ chăm sóc răng miệng.'
-  };
-
-  const deepOptions = {
+     const deepOptions = {
     emergency: [
       { action: 'emergency_bleeding', label: 'Chảy máu nhiều' },
       { action: 'emergency_breath', label: 'Khó thở/Ngạt' },
@@ -148,8 +125,6 @@
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     wrap.appendChild(link);
-    body.appendChild(wrap);
-    body.scrollTop = body.scrollHeight;
     const link1 = document.createElement('a');
     link1.href = 'https://zalo.me/pc';
     link1.className = 'block text-center text-blue-600 hover:text-blue-700 underline text-sm mt-1';
@@ -182,7 +157,6 @@
       greet.textContent = 'Xin chào 🐾! Tôi là bác sĩ thú y Sweetimal. Bạn muốn được tư vấn về vấn đề nào?';
       body.appendChild(greet);
       renderMainOptions();
-      if (win && win.classList) { win.classList.remove('hidden'); }
     });
   }
 
@@ -227,10 +201,6 @@
     }).then(r => r.json())
       .then(data => {
         let msg = (data && data.message) ? data.message : 'Xin lỗi, đã có lỗi xảy ra.';
-        const defaultGreeting = 'Xin chào 🐾! Tôi là bác sĩ thú y Sweetimal. Bạn muốn được tư vấn về vấn đề nào?';
-        if ((action||'').indexOf('_') !== -1 && (msg||'').trim() === defaultGreeting) {
-          if (deepFallback[action]) msg = deepFallback[action];
-        }
         appendBotMessage(msg);
 
         if (pendingDeepBase && (action||'').indexOf('_') === -1) {

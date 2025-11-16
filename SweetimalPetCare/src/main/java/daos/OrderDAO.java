@@ -24,7 +24,7 @@ public class OrderDAO extends DBContext {
      *
      * @param customerId the user id (customer)
      * @param shippingAddressId shipping address id (may be 0 if none)
-     * @param paymentMethod payment method code (e.g., "CASH","EWALLET")
+    * @param paymentMethod payment method code (e.g., "CASH","BANK")
      * @return created order id
      * @throws SQLException on DB error or validation failure
      */

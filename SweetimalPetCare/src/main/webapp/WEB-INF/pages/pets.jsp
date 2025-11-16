@@ -18,11 +18,32 @@
 
         <main class="container mx-auto px-6 py-24">
 
+                        <!-- Popup hiển thị lỗi (ví dụ: không thể xóa vì đã có booking) -->
+                        <c:if test="${not empty errorMessage}">
+                            <div id="deleteErrorPopup" class="fixed inset-0 flex items-center justify-center z-50">
+                                <div class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-2xl shadow-lg flex items-center gap-4">
+                                    <i class="fa-solid fa-exclamation-circle text-2xl"></i>
+                                    <div>
+                                        <strong class="font-bold">Lỗi</strong>
+                                        <p class="text-sm">${errorMessage}</p>
+                                    </div>
+                                    <button onclick="document.getElementById('deleteErrorPopup').style.display='none'" class="text-red-900 font-bold hover:text-red-700">&times;</button>
+                                </div>
+                            </div>
+                            <script>setTimeout(function(){ var el = document.getElementById('deleteErrorPopup'); if(el) el.style.display='none'; }, 5000);</script>
+                        </c:if>
+
             <!-- Danh sách thú cưng -->
             <section class="mb-12">
                 <div class="flex justify-center">
                     <div class="inline-block bg-blue-50 shadow-md px-4 py-2 rounded-lg">
                         <h2 class="text-2xl font-bold text-blue-700 text-center m-0">Danh sách thú cưng</h2>
+                    </div>
+                </div>
+                <!-- Thông báo: không thể xóa thú cưng nếu đã có lịch -->
+                <div class="mt-4">
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded">
+                        <p class="m-0">Lưu ý: <strong>Thú cưng đã có lịch đặt sẽ không thể xóa</strong>. Nếu bạn muốn xóa thú cưng đã có lịch, vui lòng <a class="text-yellow-800 underline font-semibold" href="${pageContext.request.contextPath}/contacts">liên hệ với chúng tôi</a> để được hỗ trợ.</p>
                     </div>
                 </div>
 

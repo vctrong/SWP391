@@ -9,6 +9,11 @@
     <title>Thanh toán - Sweetimal Pet Care</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <%@include file="/WEB-INF/include/library.jsp" %>
+    <c:set var="effectiveUser" value="${sessionScope.user}" />
+    <c:set var="isLoggedIn" value="${not empty effectiveUser}" />
+    <c:if test="${isLoggedIn}">
+        <c:set var="isCustomer" value="${effectiveUser.role == 1}" />
+    </c:if>
     <style>
         .item-img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; }
         .muted { color: #6b7280; }
@@ -139,15 +144,27 @@
                 <h3 class="font-semibold mt-4 mb-2">Phương thức thanh toán</h3>
                 <div class="space-y-2 mb-6">
                     <label><input type="radio" name="paymentMethod" value="CASH" checked> Thanh toán khi nhận hàng (Tiền mặt)</label>
-                    <label><input type="radio" name="paymentMethod" value="EWALLET"> Ví điện tử</label>
+                    <label><input type="radio" name="paymentMethod" value="BANK"> Thanh toán bằng ngân hàng</label>
                 </div>
 
                 <div class="mt-6 flex justify-between items-center">
                     <div class="flex gap-3 items-center">
                         <a href="${pageContext.request.contextPath}/shop" class="inline-block bg-gray-100 text-gray-800 px-3 py-2 rounded border hover:bg-gray-200">Tiếp tục mua sắm</a>
-                        <a href="${pageContext.request.contextPath}/cart" class="text-gray-600 hover:underline">Quay lại giỏ hàng</a>
                     </div>
-                    <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded">Đặt hàng</button>
+                    <div>
+                        <c:choose>
+                            <c:when test="${isCustomer}">
+                                <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded">Đặt hàng</button>
+                            </c:when>
+                            <c:when test="${isLoggedIn and not isCustomer}">
+                                <button type="button" disabled class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Đặt hàng</button>
+                                <div class="text-sm text-gray-500 mt-1">Tính năng thanh toán chỉ dành cho khách hàng.</div>
+                            </c:when>
+                            <c:otherwise>
+                                <a href="${pageContext.request.contextPath}/login" class="bg-yellow-400 text-white px-4 py-2 rounded">🔐 Đăng nhập để thanh toán</a>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
                 </div>
             </form>
         </div>
