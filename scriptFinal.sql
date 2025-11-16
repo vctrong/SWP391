@@ -1,4 +1,4 @@
-﻿/********************************************************************
+﻿ /********************************************************************
  Database: SweetmalPetCare - FINAL VERSION (Services + Basic E-commerce)
  Version: 6
 *********************************************************************/
@@ -232,7 +232,17 @@ CREATE INDEX IX_ProductVariant_Product ON ProductVariant(product_id);
     CREATE INDEX IX_CartItems_User ON CartItems(user_id);
 
 
-
+	/* Thêm bảng ProductImg */
+CREATE TABLE ProductImg (
+    product_img_id  BIGINT IDENTITY PRIMARY KEY,
+    product_id      BIGINT NOT NULL FOREIGN KEY REFERENCES Product(product_id),
+    image_url       NVARCHAR(300) NOT NULL,
+    caption         NVARCHAR(200) NULL,
+    sort_order      INT NOT NULL DEFAULT 1,
+    is_main         BIT NOT NULL DEFAULT 0,
+    uploaded_at     DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+);
+CREATE INDEX IX_ProductImg_Product ON ProductImg(product_id);
 
 /* ============== 6. ORDER DOMAIN (BASIC) ============== */
 CREATE TABLE OrderStatus (

@@ -6,7 +6,73 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/CascadeStyleSheet.css
     Created on : Oct 8, 2025, 3:54:16 PM
     Author     : Vo Chi Trong - CE191062
 */
+.profile-header {
+    /* spacing adjustments are handled by utility classes; extra overrides here */
+}
 
+/* Search input visuals */
+#headerSearchForm input[type="search"] {
+    min-width: 10rem;
+}
+
+/* Pet selector */
+#petSelector {
+    min-width: 10rem;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="%239CA3AF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 14px;
+    padding-right: 2.25rem;
+}
+
+/* CTA gradient */
+.profile-header a.bg-gradient-to-r {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Compact badges */
+.cart-badge {
+    font-size: 0.675rem;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(11,23,40,0.08);
+}
+
+/* Avatar subtle hover */
+.profile-header img.rounded-full:hover {
+    box-shadow: 0 0 0 4px rgba(59,130,246,0.06);
+    transform: translateY(-1px);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+/* Focus styles for accessibility */
+#headerSearchForm:focus-within {
+    box-shadow: 0 6px 18px rgba(14,165,233,0.08);
+    border-color: rgba(99,102,241,0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .profile-header .hidden.sm\\:flex {
+        display: none;
+    }
+    .profile-header .hidden.md\\:flex {
+        display: none;
+    }
+    .profile-header .hidden.lg\\:flex {
+        display: none;
+    }
+    #petSelector {
+        min-width: 8rem;
+    }
+    #headerSearchForm input {
+        font-size: 0.9rem;
+    }
+}
 /* Hiệu ứng chuyển tab */
 .tab-content {
     opacity: 0;
