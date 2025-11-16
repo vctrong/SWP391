@@ -172,21 +172,24 @@ public class bookingServlet extends HttpServlet {
             }
             java.math.BigDecimal totalPrice = svc.getPrice();
 
-            // 3) create booking via BookingDAO
+            // 3) create booking and assign to slot atomically via BookingDAO
             daos.BookingDAO bookingDAO = new daos.BookingDAO();
-            int bookingId = bookingDAO.createBooking((int) customerId, petId, serviceId, null,
+            int bookingId = bookingDAO.createBookingAndAssignSlot((int) customerId, petId, serviceId, null,
                     slotStart.toLocalDate(),
                     slotStart.toLocalTime(),
-                    notes, totalPrice);
+                    notes, totalPrice, slotId);
 
-            if (bookingId <= 0) {
-                request.setAttribute("errorMessage", "Đặt lịch thất bại, vui lòng thử lại");
+            if (bookingId > 0) {
+                // success
+            } else {
+                String err = "Đặt lịch thất bại, vui lòng thử lại";
+                if (bookingId == -1) err = "Khung giờ không tồn tại, vui lòng chọn khung giờ khác";
+                else if (bookingId == -2) err = "Khung giờ đã được đặt, vui lòng chọn khung giờ khác";
+                else if (bookingId == -3) err = "Không thể đặt lịch cho thời gian trong quá khứ";
+                request.setAttribute("errorMessage", err);
                 doGet(request, response);
                 return;
             }
-
-            // 4) assign booking to slot
-            scheduleDAO.assignBookingToSlot(slotId, bookingId);
 
             // Set success flag for popup
             request.setAttribute("bookingSuccess", true);

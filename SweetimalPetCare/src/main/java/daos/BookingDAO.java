@@ -5,9 +5,13 @@
 package daos;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
@@ -19,7 +23,7 @@ public class BookingDAO extends db.DBContext {
     public int createBooking(int customerId, int petId, int serviceId, Integer packageId,
             LocalDate requestedDate, LocalTime requestedStart, String notes, BigDecimal totalPrice) throws SQLException {
 
-    // Ensure booking_time is set (DB requires non-null). Use server time for booking_time and created_at.
+    // Đảm bảo trường booking_time được thiết lập (DB yêu cầu không NULL). Dùng thời gian máy chủ cho booking_time và created_at.
     String sql = "INSERT INTO Booking (customer_id, pet_id, service_id, package_id, requested_date, requested_start, notes, total_price, booking_time, current_status, created_at) "
     + "OUTPUT INSERTED.booking_id VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), 'PENDING', GETDATE())";
 
@@ -32,6 +36,115 @@ public class BookingDAO extends db.DBContext {
             return rs.getInt("booking_id");
         }
         return 0;
+    }
+
+    /**
+     * Tạo một booking và gán nguyên tử (atomically) vào khung thời gian (slot) tương ứng.
+     * Sử dụng kết nối DB riêng và giao dịch với khoá cập nhật trên hàng ScheduleSlot
+     * để ngăn các thao tác đồng thời (tránh đặt đôi — double-booking).
+     *
+     * Giá trị trả về:
+     *  - booking_id (>0) khi thành công
+     *  - -1 nếu slot không tồn tại
+     *  - -2 nếu slot đã bị gán hoặc không ở trạng thái OPEN
+     *  - -3 nếu thời gian bắt đầu slot nằm trong quá khứ
+     *  - 0 cho các lỗi khác
+     */
+    public int createBookingAndAssignSlot(int customerId, int petId, int serviceId, Integer packageId,
+            LocalDate requestedDate, LocalTime requestedStart, String notes, BigDecimal totalPrice, int slotId) throws SQLException {
+
+        Connection conn = null;
+        try {
+            conn = openNewConnection();
+            conn.setAutoCommit(false);
+
+            // Khóa hàng của slot để cập nhật, ngăn việc gán cùng một slot đồng thời
+            String lockSql = "SELECT slot_id, booking_id, status, start_time FROM ScheduleSlot WITH (UPDLOCK, ROWLOCK) WHERE slot_id = ?";
+            try (PreparedStatement psLock = conn.prepareStatement(lockSql)) {
+                psLock.setInt(1, slotId);
+                try (ResultSet rs = psLock.executeQuery()) {
+                    if (!rs.next()) {
+                        conn.rollback();
+                        return -1; // slot không tồn tại
+                    }
+                    Object existingBooking = rs.getObject("booking_id");
+                    String status = rs.getString("status");
+                    Timestamp ts = rs.getTimestamp("start_time");
+                    if (existingBooking != null || status == null || !"OPEN".equalsIgnoreCase(status)) {
+                        conn.rollback();
+                        return -2; // đã có booking hoặc không ở trạng thái OPEN
+                    }
+                    if (ts != null) {
+                        LocalDateTime slotStart = ts.toLocalDateTime();
+                        if (slotStart.isBefore(LocalDateTime.now())) {
+                            conn.rollback();
+                            return -3; // slot nằm trong quá khứ
+                        }
+                    }
+                }
+            }
+
+            // Chèn booking và lấy id sinh ra bằng OUTPUT
+            String insertSql = "INSERT INTO Booking (customer_id, pet_id, service_id, package_id, requested_date, requested_start, notes, total_price, booking_time, current_status, created_at) "
+                    + "OUTPUT INSERTED.booking_id VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), 'PENDING', GETDATE())";
+            int bookingId = 0;
+            try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
+                psIns.setInt(1, customerId);
+                psIns.setInt(2, petId);
+                psIns.setInt(3, serviceId);
+                if (packageId != null) {
+                    psIns.setInt(4, packageId);
+                } else {
+                    psIns.setNull(4, java.sql.Types.INTEGER);
+                }
+                if (requestedDate != null) {
+                    psIns.setDate(5, java.sql.Date.valueOf(requestedDate));
+                } else {
+                    psIns.setNull(5, java.sql.Types.DATE);
+                }
+                if (requestedStart != null) {
+                    psIns.setTime(6, java.sql.Time.valueOf(requestedStart));
+                } else {
+                    psIns.setNull(6, java.sql.Types.TIME);
+                }
+                psIns.setString(7, notes);
+                psIns.setBigDecimal(8, totalPrice);
+
+                try (ResultSet rs = psIns.executeQuery()) {
+                    if (rs.next()) {
+                        bookingId = rs.getInt("booking_id");
+                    } else {
+                        conn.rollback();
+                        return 0;
+                    }
+                }
+            }
+
+            // Gán booking vào slot
+            String upd = "UPDATE ScheduleSlot SET booking_id = ?, status = 'BOOKED' WHERE slot_id = ?";
+            try (PreparedStatement psUpd = conn.prepareStatement(upd)) {
+                psUpd.setInt(1, bookingId);
+                psUpd.setInt(2, slotId);
+                int updated = psUpd.executeUpdate();
+                if (updated != 1) {
+                    conn.rollback();
+                    return 0;
+                }
+            }
+
+            conn.commit();
+            return bookingId;
+
+        } catch (SQLException ex) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException e) {}
+            }
+            throw ex;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+            }
+        }
     }
 
     public java.util.List<model.Booking> getBookingsByCustomer(int customerId, int limit) throws SQLException {

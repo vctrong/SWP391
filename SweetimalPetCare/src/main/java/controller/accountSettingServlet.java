@@ -69,12 +69,12 @@ public class accountSettingServlet extends HttpServlet {
         if (user == null) {
             response.sendRedirect(request.getContextPath() + "/login?redirect=/settings");
         } else {
-            // Check if user has booking data so the JSP can hide the delete option
+            // Kiểm tra xem user có dữ liệu booking hay không để JSP ẩn nút xóa tài khoản nếu cần
             try {
                 boolean hasBooking = new daos.UserDAO().hasBookings(user.getId());
                 request.setAttribute("hasBooking", hasBooking);
             } catch (Exception ex) {
-                // if check fails, default to conservative behavior (assume has bookings)
+                // Nếu kiểm tra lỗi, mặc định bảo thủ là có booking (không cho xóa)
                 request.setAttribute("hasBooking", true);
             }
             request.getRequestDispatcher("/WEB-INF/pages/settings.jsp").forward(request, response);
@@ -103,21 +103,21 @@ public class accountSettingServlet extends HttpServlet {
         String action = request.getParameter("action");
         try {
             if ("deactivate".equalsIgnoreCase(action)) {
-                userDAO.updateUserStatus(user.getId(), false);  // Set is_active = 0
-                session.invalidate(); // Log them out
+                userDAO.updateUserStatus(user.getId(), false);  // Đặt is_active = 0
+                session.invalidate(); // Đăng xuất
                 response.sendRedirect("login?msg=Account deactivated successfully");
             } else if ("delete".equalsIgnoreCase(action)) {
-                // Prevent hard delete if user has bookings
+                // Ngăn xóa cứng nếu user có lịch đặt
                 boolean hasBooking = false;
                 try {
                     hasBooking = userDAO.hasBookings(user.getId());
                 } catch (Exception ex) {
-                    // on error, treat as having bookings to be safe
+                    // Nếu lỗi, coi như có booking để an toàn
                     hasBooking = true;
                 }
                 if (hasBooking) {
                     request.setAttribute("error", "Bạn không thể xóa tài khoản vì bạn đã có lịch đặt trước. Bạn chỉ có thể vô hiệu hóa tài khoản.");
-                    // Re-run the GET logic: mark hasBooking so JSP renders correctly
+                    // Chạy lại logic GET: đánh dấu hasBooking để JSP hiển thị đúng
                     request.setAttribute("hasBooking", true);
                     request.getRequestDispatcher("/WEB-INF/pages/settings.jsp").forward(request, response);
                     return;
