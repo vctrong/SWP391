@@ -516,6 +516,19 @@
                             </c:choose>
                             <!-- ===== end reply section ===== -->
 
+                            <!-- Customer owner actions: edit / delete review -->
+                            <c:if test="${isCustomer and effectiveUser.id == r.customerId}">
+                                <div class="mt-3 flex gap-3">
+                                    <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded" onclick="document.getElementById('edit-review-${r.reviewId}').classList.toggle('hidden')">Sửa</button>
+                                    <form method="post" action="${pageContext.request.contextPath}/product/review" style="display:inline" onsubmit="return confirm('Xóa đánh giá này?');">
+                                        <input type="hidden" name="action" value="delete" />
+                                        <input type="hidden" name="productId" value="${product.productId}" />
+                                        <input type="hidden" name="reviewId" value="${r.reviewId}" />
+                                        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Xóa</button>
+                                    </form>
+                                </div>
+                            </c:if>
+
                             <div id="edit-review-${r.reviewId}" class="hidden mt-3 p-3 bg-gray-50 border rounded">
                                 <form method="post" action="${pageContext.request.contextPath}/product/review" class="space-y-3">
                                     <input type="hidden" name="productId" value="${r.productId}" />
