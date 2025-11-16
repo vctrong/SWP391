@@ -33,6 +33,50 @@
         s = s.replaceAll("[\\s\\u00A0]+$", "");
         return s;
     }
+
+    // Pretty-print simple JSON-like attribute strings: {"weight":"1kg","color":"Red"}
+    private String prettyAttributeFromJson(String raw) {
+        if (raw == null) return null;
+        String s = raw.trim();
+        if (s.startsWith("{") && s.endsWith("}")) {
+            s = s.substring(1, s.length()-1);
+        }
+        s = s.replaceAll("\"", "");
+        String[] parts = s.split("\\s*,\\s*");
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String p : parts) {
+            String[] kv = p.split("\\s*[:=]\\s*", 2);
+            if (kv.length == 2) {
+                String key = kv[0].trim();
+                String val = kv[1].trim();
+                if (!key.isEmpty() && !val.isEmpty()) {
+                    String label = key.substring(0,1).toUpperCase() + (key.length()>1 ? key.substring(1) : "");
+                    out.add(label + ": " + val);
+                }
+            } else {
+                if (!p.trim().isEmpty()) out.add(p.trim());
+            }
+        }
+        return String.join(", ", out);
+    }
+
+    // Extract a single attribute value by key (case-insensitive) from JSON-like string
+    private String extractAttrValue(String raw, String key) {
+        if (raw == null || key == null) return null;
+        String s = raw.trim();
+        if (s.startsWith("{") && s.endsWith("}")) s = s.substring(1, s.length()-1);
+        s = s.replaceAll("\"", "");
+        String[] parts = s.split("\\s*,\\s*");
+        for (String p : parts) {
+            String[] kv = p.split("\\s*[:=]\\s*", 2);
+            if (kv.length == 2) {
+                String k = kv[0].trim();
+                String v = kv[1].trim();
+                if (k.equalsIgnoreCase(key)) return v;
+            }
+        }
+        return null;
+    }
 %>
 
 <%
@@ -152,7 +196,7 @@
             </div>
 
             <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-                <h1 class="text-3xl font-bold text-gray-900 leading-tight">
+                <h1 id="productTitle" class="text-3xl font-bold text-gray-900 leading-tight">
                     <%= (product != null) ? product.getProductName() : "Không có sản phẩm" %>
                 </h1>
 
@@ -193,6 +237,17 @@
                     Thương hiệu: <%= (product != null && product.getBrandName() != null) ? product.getBrandName() : "N/A" %>
                 </p>
 
+                <%-- Show simple attribute summary (same style as cart) --%>
+                <%
+                    String primaryAttrJson = null;
+                    if (minPriceVariant != null && minPriceVariant.getAttributeJson() != null && !minPriceVariant.getAttributeJson().trim().isEmpty()) {
+                        primaryAttrJson = minPriceVariant.getAttributeJson();
+                    } else if (product != null && product.getMainVariant() != null && product.getMainVariant().getAttributeJson() != null) {
+                        primaryAttrJson = product.getMainVariant().getAttributeJson();
+                    }
+                %>
+                <%-- small attribute summary removed per request --%>
+
                 <%-- Attributes, price, add to cart, etc. --%>
                 <% if (variants != null && !variants.isEmpty()) { %>
                     <%-- Build attribute groups and price/stock maps server-side as before --%>
@@ -207,14 +262,18 @@
                             if (attrStr != null && !attrStr.isEmpty()) {
                                 try {
                                     String cleaned = attrStr.replaceAll("[{}\"]", "");
-                                    String[] parts = cleaned.split(":");
-                                    if (parts.length == 2) {
-                                        String key = parts[0].trim();
-                                        String val = parts[1].trim();
-                                        String displayKey = key.substring(0, 1).toUpperCase() + key.substring(1).toLowerCase();
-                                        if (!attrMap.containsKey(displayKey)) attrMap.put(displayKey, new ArrayList<String>());
-                                        if (!attrMap.get(displayKey).contains(val)) {
-                                            attrMap.get(displayKey).add(val);
+                                    String[] pairs = cleaned.split("\\s*,\\s*");
+                                    for (String p : pairs) {
+                                        String[] kv = p.split("\\s*[:=]\\s*", 2);
+                                        if (kv.length == 2) {
+                                            String key = kv[0].trim();
+                                            String val = kv[1].trim();
+                                            if (key.isEmpty() || val.isEmpty()) continue;
+                                            String displayKey = key.substring(0, 1).toUpperCase() + (key.length()>1 ? key.substring(1).toLowerCase() : "");
+                                            if (!attrMap.containsKey(displayKey)) attrMap.put(displayKey, new ArrayList<String>());
+                                            if (!attrMap.get(displayKey).contains(val)) {
+                                                attrMap.get(displayKey).add(val);
+                                            }
                                             stockMap.put(displayKey + ":" + val, qty);
                                             priceMap.put(displayKey + ":" + val, price);
                                         }
@@ -229,13 +288,15 @@
                     <% for (Map.Entry<String, List<String>> entry : attrMap.entrySet()) {
                         String attrName = entry.getKey();
                         List<String> values = entry.getValue();
+                        // normalized key used for ids and data attributes: lowercase, non-alphanum -> '-'
                         String attrKeyLower = attrName.toLowerCase();
-                        String initSelectedVal = (minPriceVariant != null) ? (minPriceVariant.getAttributeJson() != null ? minPriceVariant.getAttributeJson().replaceAll("[{}\"]", "").split(":")[1].trim() : null) : null;
+                        String safeKey = attrKeyLower.replaceAll("[^A-Za-z0-9]+", "-");
+                        String initSelectedVal = (minPriceVariant != null && minPriceVariant.getAttributeJson() != null) ? extractAttrValue(minPriceVariant.getAttributeJson(), attrKeyLower) : null;
                     %>
                     <div class="mb-4">
-                        <p class="font-semibold text-gray-700 text-lg mb-2">
+                            <p class="font-semibold text-gray-700 text-lg mb-2">
                             <%= attrName %>:
-                            <span id="selected-<%= attrKeyLower %>" class="text-red-500 font-medium"><%= (initSelectedVal != null) ? initSelectedVal : values.get(0) %></span>
+                            <span id="selected-<%= safeKey %>" class="text-red-500 font-medium"><%= (initSelectedVal != null) ? initSelectedVal : values.get(0) %></span>
                         </p>
 
                         <div class="flex flex-wrap gap-3">
@@ -243,7 +304,7 @@
                                 String key = attrName + ":" + val;
                                 boolean outOfStock = stockMap.getOrDefault(key, 1) <= 0;
                                 double priceForVal = priceMap.getOrDefault(key, minPrice);
-                                String safeAttrName = attrKeyLower.replace("'", "\\'");
+                                String safeAttrName = safeKey.replace("'", "\\'");
                                 String safeVal = val.replace("'", "\\'");
                             %>
                                 <button type="button"

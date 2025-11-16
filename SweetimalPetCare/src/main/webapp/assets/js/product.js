@@ -1,15 +1,3 @@
-/**
- * assets/js/product.js
- * Externalized JS for product.jsp
- *
- * Requirements:
- * - product.jsp injects window.PRODUCT_CONFIG as shown in product.jsp above.
- * - Place this file at webapp/assets/js/product.js and ensure product.jsp loads it.
- *
- * Features:
- * - Attribute selection, thumbnails, qty controls, add-to-cart via AJAX, review submission via AJAX,
- *   tab switching and star rating interactions.
- */
 
 (function () {
     const cfg = window.PRODUCT_CONFIG || {};
@@ -57,6 +45,8 @@
     let selectedVariantStock = undefined;
     let currentUnitPrice = Number(cfg.defaultPrice || 0);
     let maxQty = 99;
+    let titleEl = null;
+    let baseTitle = '';
 
     // Main DOM elements
     let mainImgEl, priceDisplayEl, totalPriceEl, qtyEl, btnInc, btnDec, buyBtn, stockInfoEl, hiddenVariantInput, addToCartForm;
@@ -135,6 +125,37 @@
             clearAttrHighlights();
             highlightButtonsForVariant(v);
         }
+        // update product title to reflect selected attributes
+        try { updateTitleWithAttrs(); } catch(e) {}
+    }
+
+    function updateTitleWithAttrs() {
+        // Disabled: do not append selected attributes to the main product title.
+        // The small per-attribute labels above the buttons remain unchanged.
+        return;
+    }
+
+    // Update the small "selected-<attr>" labels shown above each attribute group
+    function updateSelectedLabels() {
+        try {
+            // Find all nodes that start with 'selected-' once and reuse
+            const selectedNodes = Array.from(document.querySelectorAll('[id^="selected-"]'));
+            for (const k in selectedAttrs) {
+                if (!Object.prototype.hasOwnProperty.call(selectedAttrs, k)) continue;
+                const want = String(k).toLowerCase();
+                // Find node whose suffix (after 'selected-') case-insensitively matches the key
+                let found = null;
+                for (const n of selectedNodes) {
+                    const suffix = n.id.substring(9);
+                    if (suffix && suffix.toLowerCase() === want) { found = n; break; }
+                }
+                // fallback: try direct ids
+                if (!found) found = document.getElementById('selected-' + want) || document.getElementById('selected-' + k);
+                if (found) {
+                    try { found.textContent = selectedAttrs[k]; } catch (e) { /* ignore write errors */ }
+                }
+            }
+        } catch (e) { console.error('[product.js] updateSelectedLabels error', e); }
     }
 
     function updateTotalFromInput(animate=true) {
@@ -174,7 +195,13 @@
         const value = btn.dataset.attrValue;
         const price = btn.dataset.price ? Number(btn.dataset.price) : undefined;
         if (!name) return;
-        selectedAttrs[name.toLowerCase()] = value;
+        // normalize key to lower-case for internal map
+        const normKey = name.toLowerCase();
+        selectedAttrs[normKey] = value;
+
+        // debug: log the key/value and attempt to update label
+        // update visible selected label (e.g., "Size: M") above buttons
+        try { updateSelectedLabels(); } catch(e) { /* ignore */ }
 
         qsa('.attr-btn').forEach(b => b.classList.remove('border-red-500','text-red-600','shadow-md','z-10'));
         btn.classList.add('border-red-500','text-red-600','shadow-md','z-10');
@@ -329,6 +356,8 @@
         stockInfoEl = qs('#stockInfo');
         hiddenVariantInput = qs('#hiddenVariantId');
         addToCartForm = qs('#addToCartForm');
+        titleEl = qs('#productTitle');
+        baseTitle = titleEl ? titleEl.textContent.trim() : '';
 
         // attribute buttons
         qsa('.attr-btn').forEach(b => b.addEventListener('click', onAttrButtonClick));
@@ -344,6 +373,7 @@
                 for (const k in obj) selectedAttrs[k.toLowerCase()] = String(obj[k]);
             } catch(e){}
             updateUIForVariant(defaultVariant, true);
+            try { updateTitleWithAttrs(); } catch(e) {}
         } else {
             if (hiddenVariantInput && hiddenVariantInput.value) selectedVariantId = hiddenVariantInput.value;
             currentUnitPrice = Number(cfg.defaultPrice || 0);
@@ -510,7 +540,8 @@
     try {
       var contextPath = window.PRODUCT_CONFIG && window.PRODUCT_CONFIG.contextPath ? window.PRODUCT_CONFIG.contextPath : '';
       var variantId = opts && opts.variantId ? opts.variantId : (document.getElementById('hiddenVariantId') ? document.getElementById('hiddenVariantId').value : '');
-      var qtyEl = document.getElementById('hiddenQuantity') || document.getElementById('qty');
+    // prefer the visible qty input (updated by user) over the hidden field
+    var qtyEl = document.getElementById('qty') || document.getElementById('hiddenQuantity');
       var quantity = opts && typeof opts.quantity !== 'undefined' ? opts.quantity : (qtyEl ? qtyEl.value : '1');
 
       if (!variantId || String(variantId).trim() === '') {

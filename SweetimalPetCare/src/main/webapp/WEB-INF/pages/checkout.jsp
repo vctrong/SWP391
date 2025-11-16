@@ -139,13 +139,12 @@
                 <h3 class="font-semibold mt-4 mb-2">Phương thức thanh toán</h3>
                 <div class="space-y-2 mb-6">
                     <label><input type="radio" name="paymentMethod" value="CASH" checked> Thanh toán khi nhận hàng (Tiền mặt)</label>
-                    <label><input type="radio" name="paymentMethod" value="EWALLET"> Ví điện tử</label>
+                    <label><input type="radio" name="paymentMethod" value="BANK"> Thanh toán bằng ngân hàng</label>
                 </div>
 
                 <div class="mt-6 flex justify-between items-center">
                     <div class="flex gap-3 items-center">
                         <a href="${pageContext.request.contextPath}/shop" class="inline-block bg-gray-100 text-gray-800 px-3 py-2 rounded border hover:bg-gray-200">Tiếp tục mua sắm</a>
-                        <a href="${pageContext.request.contextPath}/cart" class="text-gray-600 hover:underline">Quay lại giỏ hàng</a>
                     </div>
                     <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded">Đặt hàng</button>
                 </div>

@@ -280,8 +280,8 @@ public class checkoutServlet extends HttpServlet {
 
             // No session cart to clear in DB-only mode; OrderDAO deletes CartItems entries.
 
-            // branch by payment method (EWALLET -> QR, else confirmation)
-            if (paymentMethod != null && "EWALLET".equalsIgnoreCase(paymentMethod.trim())) {
+            // branch by payment method (BANK -> QR, else confirmation)
+            if (paymentMethod != null && "BANK".equalsIgnoreCase(paymentMethod.trim())) {
                 String paymentUrl = request.getRequestURL().toString().replace(request.getRequestURI(), request.getContextPath())
                         + "/pay?orderId=" + orderId;
                 String qrUrl = "https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl="
