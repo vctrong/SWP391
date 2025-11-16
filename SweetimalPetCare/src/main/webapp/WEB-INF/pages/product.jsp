@@ -157,6 +157,34 @@
 </head>
 <body>
     <%@ include file="/WEB-INF/include/header.jsp" %>
+    <c:if test="${not empty param.addError}">
+        <script>
+            document.addEventListener('DOMContentLoaded', function(){
+                var msg = '<c:out value="${param.addError}" escapeXml="true"/>';
+                if (msg && msg.trim().length > 0) {
+                    var id = 'serverFlashAddError';
+                    var el = document.getElementById(id);
+                    if (!el) {
+                        el = document.createElement('div');
+                        el.id = id;
+                        el.style.position = 'fixed';
+                        el.style.top = '84px';
+                        el.style.right = '20px';
+                        el.style.zIndex = 99999;
+                        el.style.padding = '10px 14px';
+                        el.style.borderRadius = '6px';
+                        el.style.color = '#fff';
+                        el.style.maxWidth = '380px';
+                        el.style.boxShadow = '0 6px 20px rgba(0,0,0,.12)';
+                        el.style.background = '#ef4444';
+                        document.body.appendChild(el);
+                    }
+                    el.textContent = msg.replace(/\+/g, ' ');
+                    setTimeout(function(){ try{ el.style.opacity = '0'; setTimeout(function(){ el.remove(); }, 400); } catch(e){} }, 4200);
+                }
+            });
+        </script>
+    </c:if>
     <div class="max-w-6xl mx-auto p-6">
         <div class="text-sm text-gray-500 mb-6 font-medium">
             <a href="${pageContext.request.contextPath}/shop" class="hover:text-red-500 transition">🏠 Trang Chủ</a> ›
