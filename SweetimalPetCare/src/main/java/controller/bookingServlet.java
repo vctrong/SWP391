@@ -78,8 +78,14 @@ public class bookingServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login?redirect=/booking");
             return;
         }
-
         try {
+            // If no service is selected, redirect user to services list so they choose first.
+            String serviceIdParam = request.getParameter("serviceId");
+            if (serviceIdParam == null || serviceIdParam.isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/services");
+                return;
+            }
+
             PetDAO petDAO = new PetDAO();
             ServiceDAO serviceDAO = new ServiceDAO();
             ScheduleDAO scheduleDAO = new ScheduleDAO();
@@ -88,22 +94,26 @@ public class bookingServlet extends HttpServlet {
             List<Service> services = serviceDAO.getAllServices();
             List<model.ScheduleSlot> availableSlots = scheduleDAO.getAvailableSlots();
 
-            // allow pre-selection of a service via query parameter ?serviceId=123
-            String serviceIdParam = request.getParameter("serviceId");
-            if (serviceIdParam != null && !serviceIdParam.isEmpty()) {
-                try {
-                    Integer selectedServiceId = Integer.valueOf(serviceIdParam);
-                    request.setAttribute("selectedServiceId", selectedServiceId);
-                } catch (NumberFormatException ex) {
-                    // ignore invalid param
+            // pre-selection: if serviceId is invalid redirect back to services
+            try {
+                Integer selectedServiceId = Integer.valueOf(serviceIdParam);
+                // validate that service exists (ServiceDAO.getServiceById returns null if missing)
+                model.Service svc = serviceDAO.getServiceById(selectedServiceId);
+                if (svc == null) {
+                    response.sendRedirect(request.getContextPath() + "/services");
+                    return;
                 }
+                request.setAttribute("selectedServiceId", selectedServiceId);
+            } catch (NumberFormatException ex) {
+                response.sendRedirect(request.getContextPath() + "/services");
+                return;
             }
 
             request.setAttribute("pets", pets);
             request.setAttribute("services", services);
             request.setAttribute("availableSlots", availableSlots);
 
-            request.getRequestDispatcher("/WEB-INF/pages/calendar_user.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/pages/booking.jsp").forward(request, response);
         } catch (Exception e) {
             throw new ServletException("Error loading booking form", e);
         }
@@ -183,9 +193,13 @@ public class bookingServlet extends HttpServlet {
                 // success
             } else {
                 String err = "Đặt lịch thất bại, vui lòng thử lại";
-                if (bookingId == -1) err = "Khung giờ không tồn tại, vui lòng chọn khung giờ khác";
-                else if (bookingId == -2) err = "Khung giờ đã được đặt, vui lòng chọn khung giờ khác";
-                else if (bookingId == -3) err = "Không thể đặt lịch cho thời gian trong quá khứ";
+                if (bookingId == -1) {
+                    err = "Khung giờ không tồn tại, vui lòng chọn khung giờ khác";
+                } else if (bookingId == -2) {
+                    err = "Khung giờ đã được đặt, vui lòng chọn khung giờ khác";
+                } else if (bookingId == -3) {
+                    err = "Không thể đặt lịch cho thời gian trong quá khứ";
+                }
                 request.setAttribute("errorMessage", err);
                 doGet(request, response);
                 return;
