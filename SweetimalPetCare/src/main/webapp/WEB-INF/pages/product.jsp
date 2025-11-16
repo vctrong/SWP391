@@ -599,7 +599,7 @@
                             <div>
                                 <label class="block font-semibold mb-1">Nội dung đánh giá</label>
                                 <textarea name="comment" required class="w-full border p-2 rounded" id="reviewComment"></textarea>
-                                <p id="commentError" class="text-red-500 text-sm hidden">Nội dung phải có ít nhất 20 ký tự.</p>
+                                <p id="commentError" class="text-red-500 text-sm hidden">Nội dung không được trống.</p>
                             </div>
 
                             <button id="submitReviewBtn" type="submit" class="bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition">Gửi đánh giá</button>

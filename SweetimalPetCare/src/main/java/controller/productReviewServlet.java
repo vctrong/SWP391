@@ -289,18 +289,7 @@ public class productReviewServlet extends HttpServlet {
                 }
                 return;
             }
-            if (comment.trim().length() < 20) {
-                String message = "Nội dung đánh giá phải có ít nhất 20 ký tự.";
-                if (isAjax) {
-                    resp.setContentType("application/json;charset=UTF-8");
-                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    resp.getWriter().write("{\"success\":false,\"message\":\"" + jsonEscape(message) + "\"}");
-                } else {
-                    if (session != null) session.setAttribute("reviewError", message);
-                    resp.sendRedirect(req.getContextPath() + "/product?id=" + productId);
-                }
-                return;
-            }
+            // No minimum-length validation for comments anymore; only non-empty is required by the HTML 'required' attribute.
 
             if ("edit".equalsIgnoreCase(action)) {
                 boolean updated = reviewDao.updateReviewByUserProduct(productId, userId, rating, reviewTitle, comment);

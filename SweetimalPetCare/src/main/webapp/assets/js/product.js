@@ -500,7 +500,8 @@
                 const commentEl = qs('#reviewComment');
                 const commentErrorEl = qs('#commentError');
                 if (ratingVal < 1) { ratingErrorEl && ratingErrorEl.classList.remove('hidden'); ok = false; } else { ratingErrorEl && ratingErrorEl.classList.add('hidden'); }
-                if (!commentEl.value || commentEl.value.trim().length < 20) { commentErrorEl && commentErrorEl.classList.remove('hidden'); ok = false; } else { commentErrorEl && commentErrorEl.classList.add('hidden'); }
+                // Do not enforce a minimum character count; only require non-empty content
+                if (!commentEl.value || commentEl.value.trim().length === 0) { commentErrorEl && commentErrorEl.classList.remove('hidden'); ok = false; } else { commentErrorEl && commentErrorEl.classList.add('hidden'); }
                 if (!ok) { e.preventDefault(); const firstErr = document.querySelector('.text-red-500:not(.hidden)'); if (firstErr) firstErr.scrollIntoView({behavior:'smooth', block:'center'}); return false; }
                 e.preventDefault();
                 submitReviewAjax(reviewFormInner);

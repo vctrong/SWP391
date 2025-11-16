@@ -1,3 +1,4 @@
+
 (function () {
     const sidebarSelector = '#shopSidebar';
     const productsSelector = '#productsSection';
