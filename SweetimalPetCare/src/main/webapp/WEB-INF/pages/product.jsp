@@ -352,13 +352,28 @@
                     </div>
                 </div>
 
-                <!-- Add-to-cart form (non-AJAX fallback). -->
-                <form id="addToCartForm" method="post" action="<%= request.getContextPath() %>/cart" class="mt-8">
-                    <input type="hidden" name="action" value="add" />
-                    <input type="hidden" id="hiddenVariantId" name="variantId" value="<%= (minPriceVariant != null ? minPriceVariant.getVariantId() : (product != null && product.getMainVariant()!=null ? product.getMainVariant().getVariantId() : 0)) %>" />
-                    <input type="hidden" id="hiddenQuantity" name="quantity" value="1" />
-                    <button id="addToCartBtn" type="button" onclick="addToCartAjax();" class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition">Thêm vào giỏ hàng</button>
-                </form>
+                <!-- Add-to-cart form (non-AJAX fallback) shown only to customers -->
+                <c:choose>
+                    <c:when test="${isCustomer}">
+                        <form id="addToCartForm" method="post" action="<%= request.getContextPath() %>/cart" class="mt-8">
+                            <input type="hidden" name="action" value="add" />
+                            <input type="hidden" id="hiddenVariantId" name="variantId" value="<%= (minPriceVariant != null ? minPriceVariant.getVariantId() : (product != null && product.getMainVariant()!=null ? product.getMainVariant().getVariantId() : 0)) %>" />
+                            <input type="hidden" id="hiddenQuantity" name="quantity" value="1" />
+                            <button id="addToCartBtn" type="button" onclick="addToCartAjax();" class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition">Thêm vào giỏ hàng</button>
+                        </form>
+                    </c:when>
+                    <c:when test="${isLoggedIn and not isCustomer}">
+                        <div class="mt-8">
+                            <button class="w-full bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold" disabled>Thêm vào giỏ hàng</button>
+                            <p class="text-sm text-gray-500 mt-2">Tính năng mua hàng chỉ dành cho khách hàng. Vui lòng sử dụng tài khoản khách hàng để mua hàng.</p>
+                        </div>
+                    </c:when>
+                    <c:otherwise>
+                        <div class="mt-8">
+                            <a href="${pageContext.request.contextPath}/login?redirect=${encodedRedirect}" class="w-full inline-block text-center bg-yellow-400 text-white py-3 rounded-lg font-semibold hover:bg-yellow-500">🔐 Đăng nhập để mua hàng</a>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
             </div>
         </div>
 
