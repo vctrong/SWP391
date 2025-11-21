@@ -10,7 +10,8 @@ RUN mvn -f SweetimalPetCare/pom.xml -DskipTests clean package
 FROM tomcat:10.1-jdk17-temurin
 WORKDIR /usr/local/tomcat
 
-ENV PORT=8080
+# Don't hardcode PORT here — let Render provide it via env
+# EXPOSE is optional and not required for Render, but okay to leave:
 EXPOSE 8080
 
 # Remove default webapps and copy built WAR as ROOT
