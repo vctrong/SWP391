@@ -85,10 +85,9 @@
                                         </form>
 
                                         <!-- Nút xóa -->
-                                        <form action="pets" method="post" class="inline" onsubmit="return confirmDelete(this);">
+                                        <form action="pets" method="post" class="inline">
                                             <input type="hidden" name="petId" value="${p.id}"/>
-                                            <button type="submit" name="action" value="delete"
-                                                    class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
+                                            <button type="button" onclick="if (confirmDelete(this.form)) this.form.submit();" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
                                                 Xóa
                                             </button>
                                         </form>

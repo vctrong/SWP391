@@ -72,10 +72,10 @@
                                                             </form>
                                                         </c:when>
                                                         <c:otherwise>
-                                                            <form method="post" action="${pageContext.request.contextPath}/admin/contact/delete" onsubmit="return confirm('Xóa yêu cầu này?');">
+                                                            <form method="post" action="${pageContext.request.contextPath}/admin/contact/delete">
                                                                 <input type="hidden" name="id" value="${cr.requestId}" />
                                                                 <input type="hidden" name="page" value="${currentPage}" />
-                                                                <button type="submit" class="px-3 py-1.5 text-xs rounded-md bg-red-600 text-white hover:bg-red-700">Xóa</button>
+                                                                <button type="button" onclick="if (confirm('Xóa yêu cầu này?')) this.form.submit();" class="px-3 py-1.5 text-xs rounded-md bg-red-600 text-white hover:bg-red-700">Xóa</button>
                                                             </form>
                                                         </c:otherwise>
                                                     </c:choose>
