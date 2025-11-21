@@ -97,10 +97,10 @@
                                                 <c:if test="${empty replyEditReviewIdLong or replyEditReviewIdLong != r.reviewId}">
                                                     <div class="mt-2 space-x-2">
                                                         <a href="${pageContext.request.contextPath}/service-reviews?serviceId=${service.id}&replyEditReviewId=${r.reviewId}" class="px-3 py-1 bg-green-600 text-white rounded inline-block">Cập nhật</a>
-                                                        <form method="post" action="${pageContext.request.contextPath}/service-reviews" style="display:inline" onsubmit="return confirm('Xóa phản hồi này?');">
+                                                        <form method="post" action="${pageContext.request.contextPath}/service-reviews" style="display:inline">
                                                             <input type="hidden" name="serviceId" value="${service.id}" />
                                                             <input type="hidden" name="reviewId" value="${r.reviewId}" />
-                                                            <button type="submit" name="action" value="replyDelete" class="px-3 py-1 bg-red-600 text-white rounded">Xóa</button>
+                                                            <button type="button" onclick="if (confirm('Xóa phản hồi này?')) this.form.submit();" name="action" value="replyDelete" class="px-3 py-1 bg-red-600 text-white rounded">Xóa</button>
                                                         </form>
                                                     </div>
                                                 </c:if>
@@ -134,11 +134,11 @@
                                             <c:if test="${user.id == r.customerId}">
                                                 <a class="text-blue-600 hover:underline" href="${pageContext.request.contextPath}/service-reviews?serviceId=${service.id}&editId=${r.reviewId}">Chỉnh sửa</a>
                                             </c:if>
-                                            <form method="post" action="${pageContext.request.contextPath}/service-reviews" style="display:inline" onsubmit="return confirm('Xóa đánh giá này?');">
+                                            <form method="post" action="${pageContext.request.contextPath}/service-reviews" style="display:inline">
                                                 <input type="hidden" name="action" value="delete" />
                                                 <input type="hidden" name="serviceId" value="${service.id}" />
                                                 <input type="hidden" name="reviewId" value="${r.reviewId}" />
-                                                <button type="submit" class="text-red-600 hover:underline">Xóa</button>
+                                                <button type="button" onclick="if (confirm('Xóa đánh giá này?')) this.form.submit();" class="text-red-600 hover:underline">Xóa</button>
                                             </form>
                                         </div>
                                     </c:if>

@@ -253,10 +253,10 @@
                                 </td>
 
                                 <td class="py-4">
-                                    <form method="post" action="<%= request.getContextPath() %>/cart" onsubmit="return confirm('Xác nhận xóa sản phẩm khỏi giỏ?');">
+                                    <form method="post" action="<%= request.getContextPath() %>/cart">
                                         <input type="hidden" name="action" value="remove"/>
                                         <input type="hidden" name="variantId" value="<%= variantIdStr %>"/>
-                                        <button type="submit" class="bg-red-50 text-red-600 px-3 py-1 rounded">Xóa</button>
+                                        <button type="button" onclick="if (confirm('Xác nhận xóa sản phẩm khỏi giỏ?')) this.form.submit();" class="bg-red-50 text-red-600 px-3 py-1 rounded">Xóa</button>
                                     </form>
                                 </td>
                             </tr>

@@ -52,9 +52,9 @@
                                 <td class="px-4 py-2">
                                     <c:choose>
                                         <c:when test="${b.currentStatus == 'PENDING' || b.currentStatus == 'Pending' || b.currentStatus == 'CONFIRMED' || b.currentStatus == 'Confirmed'}">
-                                            <form method="post" action="${pageContext.request.contextPath}/cancel-booking" onsubmit="return confirm('Bạn có chắc muốn hủy đặt lịch này?');">
+                                            <form method="post" action="${pageContext.request.contextPath}/cancel-booking">
                                                 <input type="hidden" name="bookingId" value="${b.id}" />
-                                                <button type="submit" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Hủy yêu cầu</button>
+                                                <button type="button" onclick="if (confirm('Bạn có chắc muốn hủy đặt lịch này?')) this.form.submit();" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Hủy yêu cầu</button>
                                             </form>
                                         </c:when>
                                         <c:otherwise>

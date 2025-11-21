@@ -33,8 +33,7 @@
                 <% } %>
 
                 <% if (hasBooking == null || !hasBooking) { %>
-                    <button name="action" value="delete"
-                            onclick="return confirm('Bạn có chắc chắn muốn xóa tài khoản này vĩnh viễn?')"
+                    <button type="button" onclick="if (confirm('Bạn có chắc chắn muốn xóa tài khoản này vĩnh viễn?')) { this.name='action'; this.value='delete'; this.form.submit(); }"
                             class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
                         Xóa tài khoản
                     </button>
