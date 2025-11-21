@@ -5,6 +5,8 @@
 --%>
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt"%>
 <!DOCTYPE html>
 <html>
     <head>
@@ -48,7 +50,27 @@
                                             <th class="table-header-cell text-center">Shipping</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="ordersTableBody" class="text-sm divide-y divide-gray-200"></tbody>
+                                    <tbody id="ordersTableBody" class="text-sm divide-y divide-gray-200">
+                                        <c:choose>
+                                            <c:when test="${not empty orders}">
+                                                <c:forEach var="o" items="${orders}">
+                                                    <tr>
+                                                        <td class="px-4 py-3"><a class="text-blue-600 hover:underline" href="${pageContext.request.contextPath}/admin/order/view?id=${o.orderId}">${o.orderCode}</a></td>
+                                                        <td class="px-4 py-3">${o.customerName}</td>
+                                                        <td class="px-4 py-3 text-center"><fmt:formatDate value="${o.createdAt}" pattern="yyyy-MM-dd HH:mm"/></td>
+                                                        <td class="px-4 py-3 text-right"><fmt:formatNumber value="${o.totalAmount}" type="currency" currencySymbol="₫"/></td>
+                                                        <td class="px-4 py-3 text-center">${o.paymentStatus}</td>
+                                                        <td class="px-4 py-3 text-center">${o.orderStatus}</td>
+                                                    </tr>
+                                                </c:forEach>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <tr>
+                                                    <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No orders found.</td>
+                                                </tr>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>

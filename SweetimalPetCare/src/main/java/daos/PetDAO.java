@@ -24,24 +24,31 @@ public class PetDAO {
         List<Pet> pets = new ArrayList<>();
         String sql = "SELECT pet_id, owner_id, name, species_id, breed_id, gender, birthdate, weight_kg, color, notes "
                 + "FROM Pets WHERE owner_id = ?";
-        ResultSet rs = db.executeSelectQuery(sql, new Object[]{ownerId});
-        while (rs.next()) {
-            Date sqlDate = rs.getDate("birthdate");
-            LocalDate birthDate = (sqlDate != null) ? sqlDate.toLocalDate() : null;
 
-            Pet p = new Pet(
-                    rs.getInt("pet_id"),
-                    rs.getInt("owner_id"),
-                    rs.getString("name"),
-                    rs.getInt("species_id"),
-                    rs.getInt("breed_id"),
-                    rs.getString("gender"),
-                    rs.getDate("birthdate") != null ? rs.getDate("birthdate").toLocalDate() : null,
-                    rs.getBigDecimal("weight_kg") != null ? rs.getBigDecimal("weight_kg").doubleValue() : null,
-                    rs.getString("color"),
-                    rs.getString("notes")
-            );
-            pets.add(p);
+        // Use a dedicated connection per call and close resources promptly to avoid leaking cursors
+        try (java.sql.Connection conn = db.openNewConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, ownerId);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Date sqlDate = rs.getDate("birthdate");
+                    LocalDate birthDate = (sqlDate != null) ? sqlDate.toLocalDate() : null;
+
+                    Pet p = new Pet(
+                            rs.getInt("pet_id"),
+                            rs.getInt("owner_id"),
+                            rs.getString("name"),
+                            rs.getInt("species_id"),
+                            (Integer) rs.getObject("breed_id"),
+                            rs.getString("gender"),
+                            birthDate,
+                            rs.getBigDecimal("weight_kg") != null ? rs.getBigDecimal("weight_kg").doubleValue() : null,
+                            rs.getString("color"),
+                            rs.getString("notes")
+                    );
+                    pets.add(p);
+                }
+            }
         }
 
         return pets;

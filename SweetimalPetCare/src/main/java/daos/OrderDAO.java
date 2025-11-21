@@ -308,4 +308,50 @@ public class OrderDAO extends DBContext {
         }
         return false;
     }
+
+    /**
+     * List recent orders for admin view (most recent first).
+     */
+    public List<model.Order> listRecentOrders(int limit) throws SQLException {
+        List<model.Order> list = new ArrayList<>();
+        String sql = "SELECT TOP " + limit + " order_id, order_code, customer_id, order_status, payment_status, total_amount, created_at FROM Orders ORDER BY created_at DESC";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    model.Order o = new model.Order();
+                    o.setOrderId(rs.getLong("order_id"));
+                    o.setOrderCode(rs.getString("order_code"));
+                    long cid = rs.getLong("customer_id");
+                    o.setCustomerId(cid);
+                    o.setOrderStatus(rs.getString("order_status"));
+                    o.setPaymentStatus(rs.getString("payment_status"));
+                    try {
+                        java.math.BigDecimal bd = rs.getBigDecimal("total_amount");
+                        if (bd != null) o.setTotalAmount(bd.doubleValue());
+                        else o.setTotalAmount(rs.getDouble("total_amount"));
+                    } catch (SQLException ignore) {
+                        o.setTotalAmount(rs.getDouble("total_amount"));
+                    }
+                    try {
+                        java.sql.Timestamp ts = rs.getTimestamp("created_at");
+                        if (ts != null) o.setCreatedAt(new java.util.Date(ts.getTime()));
+                    } catch (SQLException ignore) {}
+
+                    // Try to resolve customer name
+                    try {
+                        String name = loadCustomerName(cid);
+                        o.setCustomerName(name != null ? name : String.valueOf(cid));
+                    } catch (SQLException ex) {
+                        o.setCustomerName(String.valueOf(cid));
+                    }
+
+                    list.add(o);
+                }
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(OrderDAO.class.getName()).log(Level.SEVERE, "listRecentOrders failed", ex);
+            throw ex;
+        }
+        return list;
+    }
 }

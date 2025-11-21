@@ -10,8 +10,10 @@
         <%@include file="/WEB-INF/include/header.jsp" %>
 
         <main class="min-h-screen flex flex-col items-center justify-center">
-            <form action="pets" method="get"
-                  class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full">
+
+            <!-- Form -->
+            <form id="speciesForm" action="pets" method="get"
+                class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full">
                 <h2 class="text-2xl font-bold mb-6 text-blue-700 text-center">Thêm thú cưng</h2>
 
                 <!-- Loài -->
@@ -40,7 +42,7 @@
             </form>
 
                         <!-- Second form for actual add -->
-                        <form action="pets" method="post"
+                        <form id="addPetForm" action="pets" method="post"
                                     class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full mt-4">
                                 <input type="hidden" name="action" value="add"/>
                                 <input type="hidden" name="speciesId" value="${param.speciesId}"/>
@@ -93,4 +95,22 @@
 
         <%@include file="/WEB-INF/include/footer.jsp" %>
     </body>
+    <script>
+        (function(){
+            var addForm = document.getElementById('addPetForm');
+            var speciesForm = document.getElementById('speciesForm');
+            if (!addForm) return;
+            addForm.addEventListener('submit', function(e){
+                try {
+                    // copy selected breed/species from the visible form into hidden inputs
+                    var visibleBreed = document.querySelector('#speciesForm select[name="breedId"]');
+                    var visibleSpecies = document.querySelector('#speciesForm select[name="speciesId"]');
+                    var hiddenBreed = addForm.querySelector('input[name="breedId"]');
+                    var hiddenSpecies = addForm.querySelector('input[name="speciesId"]');
+                    if (visibleBreed && hiddenBreed) hiddenBreed.value = visibleBreed.value || '';
+                    if (visibleSpecies && hiddenSpecies) hiddenSpecies.value = visibleSpecies.value || '';
+                } catch (err) { console.error('Failed to sync breed/species into add form', err); }
+            });
+        })();
+    </script>
 </html>

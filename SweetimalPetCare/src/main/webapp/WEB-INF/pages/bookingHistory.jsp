@@ -52,7 +52,7 @@
                                 <td class="px-4 py-2">
                                     <c:choose>
                                         <c:when test="${b.currentStatus == 'PENDING' || b.currentStatus == 'Pending' || b.currentStatus == 'CONFIRMED' || b.currentStatus == 'Confirmed'}">
-                                            <form method="post" action="${pageContext.request.contextPath}/cancel-booking" onsubmit="return confirm('Bạn có chắc muốn hủy đặt lịch này?');">
+                                            <form method="post" action="${pageContext.request.contextPath}/cancel-booking" data-no-loader onsubmit="return confirmCancelBooking(this);">
                                                 <input type="hidden" name="bookingId" value="${b.id}" />
                                                 <button type="submit" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Hủy yêu cầu</button>
                                             </form>
@@ -68,6 +68,27 @@
                 </table>
             </div>
         </main>
+        <script>
+            function confirmCancelBooking(form) {
+                try {
+                    var ok = confirm('Bạn có chắc muốn hủy đặt lịch này?');
+                    if (ok) {
+                        if (typeof window.showPageLoader === 'function') {
+                            try { window.showPageLoader(); } catch (e) { console.error(e); }
+                        }
+                    }
+                    return ok;
+                } catch (e) {
+                    var ok2 = confirm('Bạn có chắc muốn hủy đặt lịch này?');
+                    if (ok2) {
+                        if (typeof window.showPageLoader === 'function') {
+                            try { window.showPageLoader(); } catch (e) { console.error(e); }
+                        }
+                    }
+                    return ok2;
+                }
+            }
+        </script>
 
         <%@include file="/WEB-INF/include/footer.jsp" %>
     </body>

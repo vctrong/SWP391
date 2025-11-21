@@ -85,7 +85,7 @@
                                         </form>
 
                                         <!-- Nút xóa -->
-                                        <form action="pets" method="post" class="inline" onsubmit="return confirmDelete(this);">
+                                        <form action="pets" method="post" class="inline" data-no-loader onsubmit="return confirmDelete(this);">
                                             <input type="hidden" name="petId" value="${p.id}"/>
                                             <button type="submit" name="action" value="delete"
                                                     class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
@@ -111,9 +111,22 @@
                     var nameCell = tr ? tr.querySelector('td') : null;
                     var petName = nameCell ? nameCell.textContent.trim() : '';
                     if (!petName) petName = 'thú cưng này';
-                    return confirm('Bạn có chắc muốn xóa ' + petName + ' không?');
+                    var ok = confirm('Bạn có chắc muốn xóa ' + petName + ' không?');
+                    if (ok) {
+                        // show loader explicitly for confirmed submits
+                        if (typeof window.showPageLoader === 'function') {
+                            try { window.showPageLoader(); } catch (e) { console.error(e); }
+                        }
+                    }
+                    return ok;
                 } catch (e) {
-                    return confirm('Bạn có chắc muốn xóa thú cưng này không?');
+                    var ok2 = confirm('Bạn có chắc muốn xóa thú cưng này không?');
+                    if (ok2) {
+                        if (typeof window.showPageLoader === 'function') {
+                            try { window.showPageLoader(); } catch (e) { console.error(e); }
+                        }
+                    }
+                    return ok2;
                 }
             }
         </script>

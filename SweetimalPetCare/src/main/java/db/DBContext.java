@@ -11,6 +11,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
 
 /**
  *
@@ -47,46 +49,88 @@ public class DBContext {
     }
 
     public ResultSet executeSelectQuery(String qr, Object[] params) throws SQLException {
-        PreparedStatement statement = this.getConnection().prepareStatement(qr);
+        // Legacy: keep for backward compatibility but open a new connection so caller
+        // can close the ResultSet without affecting the shared connection.
+        Connection conn = openNewConnection();
+        PreparedStatement statement = conn.prepareStatement(qr);
         if (params != null) {
             for (int i = 0; i < params.length; i++) {
                 statement.setObject(i + 1, params[i]);
             }
         }
-        return statement.executeQuery();
+        // Note: caller MUST close the ResultSet. We return a dynamic proxy that
+        // delegates all calls to the real ResultSet but intercepts close() to also
+        // close the PreparedStatement and Connection, preventing leaks.
+        final ResultSet realRs = statement.executeQuery();
+        InvocationHandler handler = (proxy, method, args) -> {
+            if ("close".equals(method.getName())) {
+                try { realRs.close(); } finally {
+                    try { statement.close(); } catch (Exception e) {}
+                    try { conn.close(); } catch (Exception e) {}
+                }
+                return null;
+            }
+            return method.invoke(realRs, args);
+        };
+        return (ResultSet) Proxy.newProxyInstance(
+                ResultSet.class.getClassLoader(),
+                new Class[]{ResultSet.class},
+                handler);
     }
 
     public int executeQuery(String qr, Object[] params) throws SQLException {
-        PreparedStatement statement = this.getConnection().prepareStatement(qr);
-        if (params != null) {
-            for (int i = 0; i < params.length; i++) {
-                if (params[i] == null) {
-                    statement.setNull(i + 1, java.sql.Types.INTEGER);
-                } else {
-                    statement.setObject(i + 1, params[i]);
+        // Use a dedicated connection and ensure the PreparedStatement is closed automatically.
+        try (Connection conn = openNewConnection();
+             PreparedStatement statement = conn.prepareStatement(qr)) {
+            if (params != null) {
+                for (int i = 0; i < params.length; i++) {
+                    if (params[i] == null) {
+                        statement.setNull(i + 1, java.sql.Types.INTEGER);
+                    } else {
+                        statement.setObject(i + 1, params[i]);
+                    }
                 }
-
             }
+            return statement.executeUpdate();
         }
-        return statement.executeUpdate();
     }
 
     public long executeInsertAndReturnId(String qr, Object[] params) throws SQLException {
-        PreparedStatement statement = this.getConnection().prepareStatement(qr, PreparedStatement.RETURN_GENERATED_KEYS);
-        if (params != null) {
-            for (int i = 0; i < params.length; i++) {
-                statement.setObject(i + 1, params[i]);
+        try (Connection conn = openNewConnection();
+             PreparedStatement statement = conn.prepareStatement(qr, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            if (params != null) {
+                for (int i = 0; i < params.length; i++) {
+                    statement.setObject(i + 1, params[i]);
+                }
+            }
+            statement.executeUpdate();
+            try (ResultSet rs = statement.getGeneratedKeys()) {
+                long id = -1L;
+                if (rs.next()) {
+                    id = rs.getLong(1);
+                }
+                return id;
             }
         }
-        statement.executeUpdate();
-
-        ResultSet rs = statement.getGeneratedKeys();
-        long id = -1L;
-        if (rs.next()) {
-            id = rs.getLong(1);
-        }
-        rs.close();
-        statement.close();
-        return id;
     }
+
+    // New helper: run a select query and handle the ResultSet inside the handler,
+    // guaranteeing that connection, statement and resultset are closed.
+    public interface ResultSetHandler<T> {
+        T handle(ResultSet rs) throws SQLException;
+    }
+
+    public <T> T query(String sql, Object[] params, ResultSetHandler<T> handler) throws SQLException {
+        try (Connection conn = openNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (params != null) {
+                for (int i = 0; i < params.length; i++) ps.setObject(i + 1, params[i]);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                return handler.handle(rs);
+            }
+        }
+    }
+
+    // end of DBContext
 }

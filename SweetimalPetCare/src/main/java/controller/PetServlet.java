@@ -47,7 +47,7 @@ public class PetServlet extends HttpServlet {
 
         String action = request.getParameter("action");
 
-// ✅ If no action but speciesId is present (means user changed species)
+// If no action but speciesId is present (means user changed species)
         if (action == null && request.getParameter("speciesId") != null) {
             action = "add";
         }

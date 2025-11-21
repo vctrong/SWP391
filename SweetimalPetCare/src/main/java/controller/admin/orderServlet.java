@@ -56,6 +56,17 @@ public class orderServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // Load recent orders for admin list
+        try {
+            daos.OrderDAO dao = new daos.OrderDAO();
+            java.util.List<model.Order> orders = dao.listRecentOrders(100); // load up to 100 recent orders
+            request.setAttribute("orders", orders);
+        } catch (Exception ex) {
+            // If DAO fails, expose empty list and log server-side
+            java.util.logging.Logger.getLogger(orderServlet.class.getName()).log(java.util.logging.Level.WARNING, "Unable to load orders for admin list", ex);
+            request.setAttribute("orders", java.util.Collections.emptyList());
+        }
+
         request.getRequestDispatcher("/WEB-INF/admin/orders.jsp").forward(request, response);
     }
 

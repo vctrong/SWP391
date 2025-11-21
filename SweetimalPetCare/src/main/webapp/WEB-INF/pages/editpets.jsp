@@ -16,6 +16,8 @@
         <%@include file="/WEB-INF/include/header.jsp" %>
 
         <main class="min-h-screen flex flex-col items-center justify-center">
+
+                <!-- Form -->
                         <form id="editPetForm" action="pets" method="post"
                                     class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full">
                                 <h2 class="text-2xl font-bold mb-6 text-blue-700 text-center">Chỉnh sửa thú cưng</h2>
