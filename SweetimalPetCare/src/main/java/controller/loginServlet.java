@@ -76,8 +76,9 @@ public class loginServlet extends HttpServlet {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
         String view = request.getParameter("view");
-
+        
         LoginDAO lDAO = new LoginDAO();
+        System.out.println("Day la pass khi ma hoa" + lDAO.hashMd5(password));
         Users user = lDAO.login(username, password);
 
         HttpSession session = request.getSession(true); // always ensure a session exists
