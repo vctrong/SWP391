@@ -113,8 +113,9 @@
         function preserveAndSubmit(form) {
             const fields = ['name','gender','birthdate','color','weightKg','notes','petId'];
             fields.forEach(function(n){
+                // Find the visible form element with the current field name
                 let el = form.querySelector('[name="'+n+'"]');
-                // create or update hidden input
+                // Find the existing hidden input for this field, if any
                 let hidden = form.querySelector('input[type=hidden][name="'+n+'"]');
                 if (!hidden) {
                     hidden = document.createElement('input');
@@ -122,6 +123,7 @@
                     hidden.name = n;
                     form.appendChild(hidden);
                 }
+                // Set the hidden input's value to the visible element's value, or empty string if not found or undefined
                 hidden.value = (el && (el.value !== undefined)) ? el.value : '';
             });
             // ensure action is 'edit' for the GET reload
