@@ -23,7 +23,12 @@
                 <p class="text-gray-600 text-base">Chăm sóc tận tâm - Yêu thương trọn vẹn</p>
             </div>
 
+     
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+                <!-- Displays all services from ${services} list -->
+
                 <c:forEach var="s" items="${services}">
                     <div class="relative flex flex-col justify-between bg-white rounded-2xl shadow hover:shadow-xl transition-all duration-300 p-6 group hover:-translate-y-1 border-2 border-sky-100 hover:border-sky-300">
 
@@ -65,7 +70,7 @@
                             <c:when test="${empty sessionScope.user}">
                                 <a href="${pageContext.request.contextPath}/login?redirect=booking&serviceId=${s.id}"
                                    class="w-full block text-center bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-5 py-3 rounded-xl font-semibold shadow-sm hover:shadow-lg focus:outline-none transition-all duration-300 hover:from-sky-600 hover:to-cyan-600">
-                                    <i class="fa-solid fa-calendar-check mr-2"></i>Đặt lịch ngay
+                                    <i class="fa-solid fa-calendar-check mr-2"></i>Đăng nhập để đặt lịch
                                 </a>
                             </c:when>
                             <c:otherwise>
