@@ -22,44 +22,56 @@ public class dashboardDAO extends db.DBContext {
 
     public double revenueInMonth() {
         try {
+            // --- GIẢI THÍCH SỰ THAY ĐỔI SQL ---
+            // 1. DATE_TRUNC('month', CURRENT_DATE): Lấy ngày đầu tiên của tháng hiện tại (Thay cho DATEFROMPARTS...)
+            // 2. + INTERVAL '1 month': Cộng thêm 1 tháng (Thay cho DATEADD...)
+            // 3. CURRENT_DATE: Lấy ngày hiện tại (Thay cho GETDATE())
+
             String qr = "select \n"
                     + "(select COALESCE(sum(total_amount),0) from Orders\n"
                     + "where payment_status = 'PAID' \n"
-                    + "and created_at >= DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)\n"
-                    + "and created_at < DATEADD(month, 1, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1))) \n"
+                    + "and created_at >= DATE_TRUNC('month', CURRENT_DATE)\n"
+                    + "and created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month') \n"
                     + "+ \n"
                     + "(select COALESCE(sum(total_price),0) from Booking\n"
                     + "where payment_status = 'PAID'\n"
-                    + "and created_at >= DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)\n"
-                    + "and created_at < DATEADD(month, 1, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)))\n"
+                    + "and created_at >= DATE_TRUNC('month', CURRENT_DATE)\n"
+                    + "and created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month')\n"
                     + "as revenue";
+
             double revenue = 0;
+            // executeSelectQuery tham số thứ 2 nên là mảng rỗng thay vì null nếu hàm đó không handle null tốt
+            // Nhưng nếu hàm executeSelectQuery của bạn handle được null thì giữ nguyên.
             ResultSet rs = this.executeSelectQuery(qr, null);
+
             if (rs.next()) {
                 revenue = rs.getDouble(1);
                 return revenue;
             }
 
         } catch (SQLException ex) {
-            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, null, ex);
+            // --- SỬA LỖI LOGGER ---
+            // Thay tham số 'null' bằng chuỗi thông báo để tránh NullPointerException
+            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, "Lỗi tính doanh thu tháng: " + ex.getMessage(), ex);
         }
         return 0.0;
     }
 
     public int bookingToday() {
         try {
+            // Postgres: Dùng CURRENT_DATE và INTERVAL
             String qr = "SELECT COUNT(booking_id) AS total_bookings_today\n"
                     + "FROM Booking\n"
                     + "WHERE\n"
-                    + "    created_at >= CAST(GETDATE() AS DATE)\n"
-                    + "    AND created_at < DATEADD(day, 1, CAST(GETDATE() AS DATE))\n"
+                    + "    created_at >= CURRENT_DATE\n"
+                    + "    AND created_at < CURRENT_DATE + INTERVAL '1 day'\n"
                     + "    AND current_status IN ('PENDING', 'COMFIRMED', 'COMPLETED', 'IN_PROGRESS');";
             ResultSet rs = this.executeSelectQuery(qr, null);
             if (rs.next()) {
                 return rs.getInt(1);
             }
         } catch (SQLException ex) {
-            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, "Lỗi bookingToday: " + ex.getMessage(), ex);
         }
         return 0;
     }
@@ -69,40 +81,42 @@ public class dashboardDAO extends db.DBContext {
             String qr = "SELECT COUNT(order_id) AS orders_today\n"
                     + "FROM Orders\n"
                     + "WHERE\n"
-                    + "	created_at >= CAST(GETDATE() AS DATE)\n"
-                    + "    AND created_at < DATEADD(day, 1, CAST(GETDATE() AS DATE))\n"
-                    + "	and order_status in ('COMPLETED', 'PAID', 'PENDING', 'PROGRESSING', 'SHIPPED')";
+                    + "    created_at >= CURRENT_DATE\n"
+                    + "    AND created_at < CURRENT_DATE + INTERVAL '1 day'\n"
+                    + "    and order_status in ('COMPLETED', 'PAID', 'PENDING', 'PROGRESSING', 'SHIPPED')";
             ResultSet rs = this.executeSelectQuery(qr, null);
             if (rs.next()) {
                 return rs.getInt(1);
             }
         } catch (SQLException ex) {
-            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, "Lỗi orderToday: " + ex.getMessage(), ex);
         }
         return 0;
     }
 
     public int customerInMonth() {
         try {
-            String qr = "	SELECT COUNT(user_id) AS new_customers_this_month\n"
+            // Postgres: DATE_TRUNC('month', CURRENT_DATE) lấy ngày đầu tháng hiện tại
+            String qr = "SELECT COUNT(user_id) AS new_customers_this_month\n"
                     + "FROM Users\n"
                     + "WHERE\n"
-                    + "    created_at >= DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)\n"
-                    + "    AND created_at < DATEADD(month, 1, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1))\n"
-                    + "	and role_id = 1";
+                    + "    created_at >= DATE_TRUNC('month', CURRENT_DATE)\n"
+                    + "    AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'\n"
+                    + "    and role_id = 1";
             ResultSet rs = this.executeSelectQuery(qr, null);
             if (rs.next()) {
                 return rs.getInt(1);
             }
         } catch (SQLException ex) {
-            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, "Lỗi customerInMonth: " + ex.getMessage(), ex);
         }
         return 0;
     }
 
     public int orderPending() {
         try {
-            String qr = "	SELECT COUNT(order_id) AS pending_orders\n"
+            // Câu này cú pháp chuẩn chung nên giữ nguyên, chỉ sửa Logger
+            String qr = "SELECT COUNT(order_id) AS pending_orders\n"
                     + "FROM Orders\n"
                     + "WHERE\n"
                     + "    order_status = 'PENDING';";
@@ -111,13 +125,14 @@ public class dashboardDAO extends db.DBContext {
                 return rs.getInt(1);
             }
         } catch (SQLException ex) {
-            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, "Lỗi orderPending: " + ex.getMessage(), ex);
         }
         return 0;
     }
 
     public LinkedHashMap<String, Integer> topService() {
         try {
+            // Postgres: Dùng LIMIT thay cho TOP
             String qr = "WITH AllBookedItems AS (\n"
                     + "    SELECT \n"
                     + "        s.service_name AS item_name \n"
@@ -128,8 +143,8 @@ public class dashboardDAO extends db.DBContext {
                     + "    WHERE\n"
                     + "        b.payment_status = 'PAID'\n"
                     + "        AND b.service_id IS NOT NULL \n"
-                    + "        AND b.created_at >= DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)\n"
-                    + "        AND b.created_at < DATEADD(month, 1, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1))\n"
+                    + "        AND b.created_at >= DATE_TRUNC('month', CURRENT_DATE)\n"
+                    + "        AND b.created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'\n"
                     + "\n"
                     + "    UNION ALL \n"
                     + "\n"
@@ -142,12 +157,11 @@ public class dashboardDAO extends db.DBContext {
                     + "    WHERE\n"
                     + "        b.payment_status = 'PAID'\n"
                     + "        AND b.package_id IS NOT NULL \n"
-                    + "        AND b.created_at >= DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)\n"
-                    + "        AND b.created_at < DATEADD(month, 1, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1))\n"
+                    + "        AND b.created_at >= DATE_TRUNC('month', CURRENT_DATE)\n"
+                    + "        AND b.created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'\n"
                     + ")\n"
                     + "\n"
                     + "SELECT \n"
-                    + "    TOP 5\n"
                     + "    item_name AS label,\n"
                     + "    COUNT(*) AS data\n"
                     + "FROM \n"
@@ -155,7 +169,9 @@ public class dashboardDAO extends db.DBContext {
                     + "GROUP BY \n"
                     + "    item_name\n"
                     + "ORDER BY \n"
-                    + "    data DESC;";
+                    + "    data DESC \n"
+                    + "LIMIT 5;"; // Sửa TOP 5 thành LIMIT 5
+
             LinkedHashMap<String, Integer> temp = new LinkedHashMap<>();
             ResultSet rs = this.executeSelectQuery(qr, null);
             while (rs.next()) {
@@ -163,59 +179,52 @@ public class dashboardDAO extends db.DBContext {
             }
             return temp;
         } catch (SQLException ex) {
-            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, "Lỗi topService: " + ex.getMessage(), ex);
         }
         return null;
     }
 
     public LinkedHashMap<String, Integer> revenue30Day() {
         try {
-            String qr = "DECLARE @Today DATE = CAST(GETDATE() AS DATE);\n"
-                    + "DECLARE @StartDate DATE = DATEADD(day, -29, @Today);\n"
-                    + ";WITH DateTally (report_date) AS\n"
-                    + "(\n"
-                    + "    SELECT @StartDate AS report_date\n"
-                    + "    UNION ALL\n"
-                    + "    SELECT DATEADD(day, 1, report_date)\n"
-                    + "    FROM DateTally\n"
-                    + "    WHERE report_date < @Today\n"
+            // Postgres: Dùng generate_series để tạo ra 30 ngày gần nhất cực gọn
+            // TO_CHAR thay cho CONVERT
+            String qr = "WITH DateTally AS (\n"
+                    + "    SELECT generate_series(CURRENT_DATE - INTERVAL '29 days', CURRENT_DATE, '1 day')::date AS report_date\n"
                     + "),\n"
-                    + "AllRevenueTransactions (revenue_date, amount) AS\n"
-                    + "(\n"
+                    + "AllRevenueTransactions AS (\n"
                     + "    SELECT \n"
-                    + "        CAST(created_at AS DATE), \n"
+                    + "        created_at::date AS revenue_date, \n"
                     + "        total_amount \n"
                     + "    FROM Orders\n"
                     + "    WHERE \n"
                     + "        payment_status = 'PAID'\n"
-                    + "        AND created_at >= @StartDate\n"
+                    + "        AND created_at >= CURRENT_DATE - INTERVAL '29 days'\n"
                     + "    UNION ALL\n"
                     + "    SELECT \n"
-                    + "        CAST(created_at AS DATE), \n"
+                    + "        created_at::date AS revenue_date, \n"
                     + "        total_price \n"
                     + "    FROM Booking\n"
                     + "    WHERE \n"
                     + "        payment_status = 'PAID'\n"
-                    + "        AND created_at >= @StartDate\n"
+                    + "        AND created_at >= CURRENT_DATE - INTERVAL '29 days'\n"
                     + "),\n"
-                    + "DailyTotals (report_date, total) AS\n"
-                    + "(\n"
+                    + "DailyTotals AS (\n"
                     + "    SELECT \n"
                     + "        revenue_date, \n"
-                    + "        SUM(amount) AS total\n"
+                    + "        SUM(total_amount) AS total\n"
                     + "    FROM AllRevenueTransactions\n"
                     + "    GROUP BY revenue_date\n"
                     + ")\n"
                     + "SELECT \n"
-                    + "    CONVERT(varchar, tally.report_date, 23) AS label,\n"
+                    + "    TO_CHAR(tally.report_date, 'YYYY-MM-DD') AS label,\n" // Format ngày
                     + "    COALESCE(daily.total, 0) AS data \n"
                     + "FROM \n"
                     + "    DateTally AS tally\n"
                     + "LEFT JOIN \n"
-                    + "    DailyTotals AS daily ON tally.report_date = daily.report_date\n"
+                    + "    DailyTotals AS daily ON tally.report_date = daily.revenue_date\n"
                     + "ORDER BY\n"
-                    + "    tally.report_date ASC\n"
-                    + "OPTION (MAXRECURSION 30);";
+                    + "    tally.report_date ASC;";
+
             LinkedHashMap<String, Integer> temp = new LinkedHashMap<>();
             ResultSet rs = this.executeSelectQuery(qr, null);
             while (rs.next()) {
@@ -223,16 +232,16 @@ public class dashboardDAO extends db.DBContext {
             }
             return temp;
         } catch (SQLException ex) {
-            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, "Lỗi revenue30Day: " + ex.getMessage(), ex);
         }
         return null;
     }
 
     public LinkedHashMap<String, Integer> topProduct() {
         try {
-            String qr = "DECLARE @MonthStart DATETIME = DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1);\n"
-                    + "SELECT \n"
-                    + "    TOP 5\n"
+            // Postgres: Bỏ DECLARE, nhúng logic ngày tháng vào query
+            // Thay TOP 5 thành LIMIT 5
+            String qr = "SELECT \n"
                     + "    p.product_name AS label,\n"
                     + "    SUM(oi.quantity) AS data\n"
                     + "FROM \n"
@@ -240,17 +249,19 @@ public class dashboardDAO extends db.DBContext {
                     + "JOIN \n"
                     + "    OrderItems AS oi ON o.order_id = oi.order_id\n"
                     + "join \n"
-                    + "	ProductVariant as pv on pv.variant_id = oi.variant_id\n"
+                    + "    ProductVariant as pv on pv.variant_id = oi.variant_id\n"
                     + "JOIN \n"
                     + "    Product AS p ON pv.product_id = p.product_id\n"
                     + "WHERE \n"
                     + "    o.payment_status = 'PAID'\n"
-                    + "    AND o.created_at >= @MonthStart\n"
-                    + "    AND o.created_at < DATEADD(month, 1, @MonthStart)\n"
+                    + "    AND o.created_at >= DATE_TRUNC('month', CURRENT_DATE)\n"
+                    + "    AND o.created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'\n"
                     + "GROUP BY\n"
                     + "    p.product_name\n"
                     + "ORDER BY\n"
-                    + "    data DESC;";
+                    + "    data DESC\n"
+                    + "LIMIT 5;";
+
             LinkedHashMap<String, Integer> temp = new LinkedHashMap<>();
             ResultSet rs = this.executeSelectQuery(qr, null);
             while (rs.next()) {
@@ -258,13 +269,14 @@ public class dashboardDAO extends db.DBContext {
             }
             return temp;
         } catch (SQLException ex) {
-            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, "Lỗi topProduct: " + ex.getMessage(), ex);
         }
         return null;
     }
 
     public ArrayList<BookingSummary> recentBooking() {
         try {
+            // Postgres: CAST(GETDATE() AS DATE) -> CURRENT_DATE
             String qr = "SELECT\n"
                     + "    b.booking_id,\n"
                     + "    b.requested_date,\n"
@@ -281,12 +293,12 @@ public class dashboardDAO extends db.DBContext {
                     + "LEFT JOIN Services s ON b.service_id = s.service_id\n"
                     + "LEFT JOIN ServicePackage pkg ON b.package_id = pkg.package_id\n"
                     + "WHERE\n"
-                    + "    b.requested_date >= CAST(GETDATE() AS DATE)\n"
+                    + "    b.requested_date >= CURRENT_DATE\n"
                     + "    AND b.current_status IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS')\n"
                     + "ORDER BY\n"
                     + "    b.requested_date ASC, b.requested_start ASC;";
-            ArrayList<BookingSummary> temp = new ArrayList<>();
 
+            ArrayList<BookingSummary> temp = new ArrayList<>();
             ResultSet rs = this.executeSelectQuery(qr, null);
             while (rs.next()) {
                 BookingSummary book = new BookingSummary(rs.getInt(1), rs.getString(4),
@@ -295,13 +307,14 @@ public class dashboardDAO extends db.DBContext {
             }
             return temp;
         } catch (SQLException ex) {
-            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, "Lỗi recentBooking: " + ex.getMessage(), ex);
         }
         return null;
     }
 
     public ArrayList<OrderSummary> recentOrder() {
         try {
+            // Postgres: DATEADD(day, -7, GETDATE()) -> CURRENT_DATE - INTERVAL '7 days'
             String qr = "SELECT\n"
                     + "    o.order_id AS id,\n"
                     + "    o.order_code AS orderCode,\n"
@@ -317,7 +330,7 @@ public class dashboardDAO extends db.DBContext {
                     + "JOIN OrderStatus os ON o.order_status = os.order_status_code\n"
                     + "LEFT JOIN OrderItems oi ON o.order_id = oi.order_id\n"
                     + "WHERE\n"
-                    + "    o.created_at >= DATEADD(day, -7, GETDATE())\n"
+                    + "    o.created_at >= CURRENT_DATE - INTERVAL '7 days'\n"
                     + "    AND o.order_status IN ('PENDING', 'PAID')\n"
                     + "GROUP BY\n"
                     + "    o.order_id,\n"
@@ -329,6 +342,7 @@ public class dashboardDAO extends db.DBContext {
                     + "    o.created_at\n"
                     + "ORDER BY\n"
                     + "    o.created_at DESC;";
+
             ArrayList<OrderSummary> temp = new ArrayList<>();
             ResultSet rs = this.executeSelectQuery(qr, null);
             while (rs.next()) {
@@ -338,7 +352,7 @@ public class dashboardDAO extends db.DBContext {
             }
             return temp;
         } catch (SQLException ex) {
-            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(dashboardDAO.class.getName()).log(Level.SEVERE, "Lỗi recentOrder: " + ex.getMessage(), ex);
         }
         return null;
     }
