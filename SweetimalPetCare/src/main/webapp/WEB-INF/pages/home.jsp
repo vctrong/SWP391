@@ -297,11 +297,30 @@
                         </select>
                     </div>
                     <textarea name="request_message" placeholder="Nội dung cần tư vấn" required class="w-full border border-sky-100 rounded-xl px-4 py-3 h-32 focus:ring-2 focus:ring-cyan-300 outline-none transition"></textarea>
-
-                    <button type="submit"
-                            class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-cyan-600 hover:-translate-y-0.5 transition-all duration-300">
-                        <i class="fa-solid fa-paper-plane mr-2"></i> Gửi yêu cầu
-                    </button>
+                    <c:choose>
+                        <c:when test="${not empty sessionScope.user}">
+                            <button type="submit"
+                                    class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-cyan-600 hover:-translate-y-0.5 transition-all duration-300">
+                                <i class="fa-solid fa-paper-plane mr-2"></i> Gửi yêu cầu
+                            </button>
+                        </c:when>
+                        <c:otherwise>
+                            <button type="button" onclick="showConsultationLoginPrompt()"
+                                    class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-sky-600 hover:to-cyan-600 hover:-translate-y-0.5 transition-all duration-300">
+                                <i class="fa-solid fa-paper-plane mr-2"></i> Gửi yêu cầu
+                            </button>
+                            <div id="consultationLoginPrompt" class="mt-4 text-red-600 font-medium hidden"></div>
+                            <script>
+                                function showConsultationLoginPrompt(){
+                                    var box = document.getElementById('consultationLoginPrompt');
+                                    if(box){
+                                        box.textContent = 'Vui lòng đăng nhập để gửi yêu cầu tư vấn.';
+                                        box.classList.remove('hidden');
+                                    }
+                                }
+                            </script>
+                        </c:otherwise>
+                    </c:choose>
 
                     <!-- Hiển thị thông báo -->
                     <c:if test="${param.cr_success == '1'}">
