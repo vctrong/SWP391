@@ -524,11 +524,11 @@
                                             <c:if test="${isStaff}">
                                                 <button type="button" class="px-4 py-2 bg-green-500 text-white rounded" onclick="startEditReply(${r.reviewId});">Cập nhật</button>
 
-                                                <form method="post" action="${pageContext.request.contextPath}/product/review" style="display:inline" onsubmit="return confirm('Xóa phản hồi này?');">
+                                                <form method="post" action="${pageContext.request.contextPath}/product/review" style="display:inline">
                                                     <input type="hidden" name="action" value="replyDelete" />
                                                     <input type="hidden" name="productId" value="${product.productId}" />
                                                     <input type="hidden" name="reviewId" value="${r.reviewId}" />
-                                                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Xóa</button>
+                                                    <button type="button" onclick="if (confirm('Xóa phản hồi này?')) this.form.submit();" class="px-4 py-2 bg-red-600 text-white rounded">Xóa</button>
                                                 </form>
                                             </c:if>
                                         </div>
@@ -553,11 +553,11 @@
                             <c:if test="${isCustomer and effectiveUser.id == r.customerId}">
                                 <div class="mt-3 flex gap-3">
                                     <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded" onclick="document.getElementById('edit-review-${r.reviewId}').classList.toggle('hidden')">Sửa</button>
-                                    <form method="post" action="${pageContext.request.contextPath}/product/review" style="display:inline" onsubmit="return confirm('Xóa đánh giá này?');">
+                                    <form method="post" action="${pageContext.request.contextPath}/product/review" style="display:inline">
                                         <input type="hidden" name="action" value="delete" />
                                         <input type="hidden" name="productId" value="${product.productId}" />
                                         <input type="hidden" name="reviewId" value="${r.reviewId}" />
-                                        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Xóa</button>
+                                        <button type="button" onclick="if (confirm('Xóa đánh giá này?')) this.form.submit();" class="px-4 py-2 bg-red-600 text-white rounded">Xóa</button>
                                     </form>
                                 </div>
                             </c:if>

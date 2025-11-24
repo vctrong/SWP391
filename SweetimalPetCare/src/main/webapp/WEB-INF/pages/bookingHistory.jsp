@@ -14,11 +14,11 @@
     <body class="bg-gray-100 text-gray-800">
         <%@include file="/WEB-INF/include/header.jsp" %>
 
+        <!-- Main -->      
         <main class="max-w-4xl mx-auto mt-10 bg-white p-6 rounded-lg shadow">
             <h2 class="text-2xl font-bold text-blue-700 mb-4">Lịch sử đặt lịch</h2>
             <p class="text-sm text-gray-600 mb-4">Hiển thị tối đa 50 bản ghi gần nhất.</p>
-
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto">         
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-blue-600 text-white">
                         <tr>
@@ -33,16 +33,18 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
+
+                        <!-- Show all booking for that user -->
                         <c:forEach var="b" items="${bookings}">
                             <tr>
                                 <td class="px-4 py-2">${b.id}</td>
                                 <td class="px-4 py-2">${b.requestedDate}</td>
                                 <td class="px-4 py-2">${b.requestedStart}</td>
-                                <td class="px-4 py-2"><c:out value="${serviceMap[b.serviceId]}" default="-"/></td>
+                                <td class="px-4 py-2"><c:out value="${serviceMap[b.serviceId]}" default="-"/></td> <!-- Get Service name from ServiceId -->
                                 <td class="px-4 py-2">${b.totalPrice}</td>
                                 <td class="px-4 py-2 text-center">
                                     <%
-                                        // Retrieve the current loop booking object (exposed as page attribute "b")
+                                        // Scriptlet: Gets status color/style from BookingStatusColor enum based on booking status
                                         Booking __b = (Booking) pageContext.getAttribute("b");
                                         BookingStatusColor st = BookingStatusColor.fromString(__b != null ? __b.getCurrentStatus() : null);
                                     %>
@@ -52,9 +54,12 @@
                                 <td class="px-4 py-2">
                                     <c:choose>
                                         <c:when test="${b.currentStatus == 'PENDING' || b.currentStatus == 'Pending' || b.currentStatus == 'CONFIRMED' || b.currentStatus == 'Confirmed'}">
-                                            <form method="post" action="${pageContext.request.contextPath}/cancel-booking" onsubmit="return confirm('Bạn có chắc muốn hủy đặt lịch này?');">
+                                            
+                                        <!-- Cancel button: Only shown for pending/confirmed bookings; submits to cancel-booking servlet -->
+                                           
+                                        <form method="post" action="${pageContext.request.contextPath}/cancel-booking">
                                                 <input type="hidden" name="bookingId" value="${b.id}" />
-                                                <button type="submit" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Hủy yêu cầu</button>
+                                                <button type="button" onclick="if (confirm('Bạn có chắc muốn hủy đặt lịch này?')) this.form.submit();" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Hủy yêu cầu</button>
                                             </form>
                                         </c:when>
                                         <c:otherwise>

@@ -45,6 +45,8 @@
                   </div>
                 </c:if>
 
+               <!-- Main -->
+
                 <div class="bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl p-8 md:p-12 border border-sky-100">
                     <div class="text-center mb-8">
                         <div class="inline-flex items-center bg-white rounded-full shadow-sm px-4 py-2 text-sm text-sky-600 font-medium mb-4">
@@ -57,21 +59,25 @@
                         <p class="text-gray-600 mt-2">Chỉ còn vài bước nữa để hoàn tất lịch hẹn cho bé cưng.</p>
                     </div>
 
+                    <!-- Form -->
+
                     <form action="booking" method="post" class="space-y-6">
-                        <!-- Chọn thú cưng -->
+                        <!-- Choose Pet -->
                         <div>
                             <label class="block font-semibold mb-2 text-gray-700">Chọn thú cưng</label>
                             <select name="petId" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 transition p-3" required>
+                                <!-- Show Pet option from user pet list -->
                                 <c:forEach var="p" items="${pets}">
                                     <option value="${p.id}">${p.name}</option>
                                 </c:forEach>
                             </select>
                         </div>
 
-                        <!-- dịch vụ -->
+                        <!-- Service -->
                         <div>
                             <label class="block font-semibold mb-2 text-gray-700">Dịch vụ</label>
                             <select name="serviceId" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 transition p-3 bg-gray-100" required <c:if test="${not empty selectedServiceId}">disabled</c:if>>
+                                <!-- Show Service for view only -->
                                 <c:forEach var="s" items="${services}">
                                     <option value="${s.id}" <c:if test="${not empty selectedServiceId and selectedServiceId == s.id}">selected</c:if>>${s.name}</option>
                                 </c:forEach>
@@ -81,10 +87,12 @@
                             </c:if>
                         </div>
 
-                        <!-- Chọn khung giờ -->
+                        <!-- Choose Time Slot -->
                         <div>
                             <label class="block font-semibold mb-2 text-gray-700">Chọn khung giờ</label>
                             <select name="slotId" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 transition p-3" required>
+                                
+                                <!-- Show All Slots that are available -->
                                 <c:forEach var="s" items="${availableSlots}">
                                     <option value="${s.id}">
                                         ${s.roomName} —
@@ -95,7 +103,7 @@
                             </select>
                         </div>
 
-                        <!-- Ghi chú -->
+                        <!-- Notes -->
                         <div>
                             <label class="block font-semibold mb-2 text-gray-700">Ghi chú</label>
                             <textarea name="notes" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 transition p-3" rows="3" placeholder="Ví dụ: Bé sợ máy sấy, vui lòng sấy tay..."></textarea>

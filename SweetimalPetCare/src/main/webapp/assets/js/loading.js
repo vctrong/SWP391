@@ -42,13 +42,28 @@
             showLoader();
         }, true);
 
-        // Show loader for normal form submits
+        // Show loader for normal form submits.
+        // Use bubble phase (capture=false) but defer actual showing so that
+        // inline `onsubmit` handlers (which may return false) have a chance
+        // to run and call preventDefault/return false. We schedule the
+        // check in a short timeout and only show the loader if the event
+        // was NOT prevented.
+        // Only show loader for forms that explicitly opt-in via `data-show-loader`.
         document.addEventListener('submit', function(e) {
             var form = e.target;
             if (!form) return;
-            if (form.dataset && form.dataset.noLoader !== undefined) return;
-            showLoader();
-        }, true);
+            if (!(form.dataset && form.dataset.showLoader !== undefined)) return;
+            // Defer to allow other handlers (including inline onsubmit) to run
+            // and possibly prevent the default submission.
+            setTimeout(function() {
+                try {
+                    if (e.defaultPrevented) return;
+                    showLoader();
+                } catch (err) {
+                    console.error('deferred showLoader failed', err);
+                }
+            }, 0);
+        }, false);
 
         // If a navigation or page error prevents window.load from firing or hideLoader
         // from running, ensure the loader doesn't stay visible forever by setting
