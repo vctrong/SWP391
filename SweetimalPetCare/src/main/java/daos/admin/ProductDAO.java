@@ -79,27 +79,28 @@ public class ProductDAO extends db.DBContext {
 
     public ArrayList<ProductImg> getAllImagesByProductId(long productId) {
         ArrayList<ProductImg> imageList = new ArrayList<>();
+        // Lấy ảnh từ bảng ProductImage (schema mới) - liên kết qua variant_id -> ProductVariant để biết product_id
+        String sql = "SELECT pi.image_id, pv.product_id, pi.image_url, pi.alt_text, pi.display_order, pi.created_at "
+            + "FROM ProductImage pi JOIN ProductVariant pv ON pi.variant_id = pv.variant_id "
+            + "WHERE pv.product_id = ? "
+            + "ORDER BY pi.display_order ASC, pi.image_id ASC;";
 
-        // Sắp xếp để ảnh 'is_main' lên đầu, sau đó là thứ tự ưu tiên
-        String sql = "SELECT * FROM ProductImg \n"
-                + "WHERE product_id = ? \n"
-                + "ORDER BY is_main DESC, sort_order ASC, product_img_id ASC;";
-
-        try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = this.openNewConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, productId);
 
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     ProductImg img = new ProductImg();
 
-                    img.setImageId(rs.getLong("product_img_id"));
+                    img.setImageId(rs.getLong("image_id"));
                     img.setProductId(rs.getLong("product_id"));
                     img.setImageUrl(rs.getString("image_url"));
-                    img.setCaption(rs.getString("caption"));
-                    img.setDisplayOrder(rs.getInt("sort_order")); // Dùng tên 'displayOrder' như model
-                    img.setIsMain(rs.getBoolean("is_main"));
-                    img.setUploadedAt(rs.getTimestamp("uploaded_at")); // Dùng Timestamp
+                    img.setCaption(rs.getString("alt_text"));
+                    img.setDisplayOrder(rs.getInt("display_order"));
+                    // In ProductImage schema, display_order == 0 is the main/first image
+                    img.setIsMain(img.getDisplayOrder() != null && img.getDisplayOrder() == 0);
+                    img.setUploadedAt(rs.getTimestamp("created_at"));
 
                     imageList.add(img);
                 }
@@ -160,6 +161,20 @@ public class ProductDAO extends db.DBContext {
             e.printStackTrace();
         }
         return product;
+    }
+
+    // Normalize image_url values from DB: remove leading '/images/' or leading '/' so
+    // controllers/JSP can compose the final URL as contextPath + '/images/' + imageFileName
+    private String normalizeImageUrl(String raw) {
+        if (raw == null) return null;
+        String s = raw.trim();
+        if (s.startsWith("/images/")) {
+            s = s.substring("/images/".length());
+        }
+        if (s.startsWith("/")) {
+            s = s.substring(1);
+        }
+        return s;
     }
 
     public int getTotalProductCount(String searchTerm, int categoryId) {
@@ -286,7 +301,7 @@ public class ProductDAO extends db.DBContext {
                     mv.setSku(rs.getString("main_sku"));
                     mv.setPrice(rs.getBigDecimal("main_price"));
                     mv.setStockQuantity(rs.getInt("main_stock"));
-                    mv.setImageUrl(rs.getString("main_image_url"));
+                    mv.setImageUrl(normalizeImageUrl(rs.getString("main_image_url")));
                     mv.setIsActive(rs.getBoolean("main_variant_is_active"));
                     mv.setCreatedAt(rs.getDate("main_variant_created_at"));
 
@@ -466,9 +481,7 @@ public class ProductDAO extends db.DBContext {
         String sqlInsertVariant = "INSERT INTO ProductVariant (product_id, sku, attribute_json, price, stock_quantity, is_active) "
                 + "VALUES (?, ?, ?, ?, ?, ?);";
 
-        // SQL 3: Thêm các Ảnh (Dùng Batch)
-        String sqlInsertImage = "INSERT INTO ProductImg (product_id, image_url, caption, sort_order, is_main) "
-                + "VALUES (?, ?, ?, ?, ?);";
+        // SQL 3: Thêm các Ảnh (Dùng Batch) - insert into ProductImage (new schema)
 
         try {
             conn = this.openNewConnection();
@@ -508,10 +521,11 @@ public class ProductDAO extends db.DBContext {
                 System.out.println("[DAO DEBUG] Đã thêm Product, ID mới: " + newProductId);
             }
 
-            // ===== BƯỚC 2: INSERT VARIANTS (Dùng Batch) =====
-            // (Chỉ thực hiện nếu có variant)
+            // ===== BƯỚC 2: INSERT VARIANTS (Lấy generated keys) =====
+            // (Chỉ thực hiện nếu có variant) - we need generated variant IDs to attach images to ProductImage.variant_id
+            List<Long> insertedVariantIds = new ArrayList<>();
             if (variants != null && !variants.isEmpty()) {
-                try ( PreparedStatement psVariant = conn.prepareStatement(sqlInsertVariant)) {
+                try (PreparedStatement psVariant = conn.prepareStatement(sqlInsertVariant, Statement.RETURN_GENERATED_KEYS)) {
                     for (ProductVariant variant : variants) {
                         psVariant.setLong(1, newProductId); // Dùng ID mới
                         psVariant.setString(2, variant.getSku());
@@ -520,37 +534,44 @@ public class ProductDAO extends db.DBContext {
                         psVariant.setInt(5, variant.getStockQuantity());
                         psVariant.setBoolean(6, true); // Mặc định Active
 
-                        psVariant.addBatch(); // Thêm vào lô
+                        int rows = psVariant.executeUpdate();
+                        if (rows > 0) {
+                            try (ResultSet gk = psVariant.getGeneratedKeys()) {
+                                if (gk.next()) {
+                                    long vid = gk.getLong(1);
+                                    insertedVariantIds.add(vid);
+                                }
+                            }
+                        }
                     }
-                    psVariant.executeBatch(); // Thực thi lô
                 }
-                System.out.println("[DAO DEBUG] Đã thêm " + variants.size() + " variants.");
+                System.out.println("[DAO DEBUG] Đã thêm " + insertedVariantIds.size() + " variants.");
             }
 
             // ===== BƯỚC 3: INSERT IMAGES (Dùng Batch) =====
             // (Chỉ thực hiện nếu có ảnh)
             System.out.println("[DAO DEBUG] Chuẩn bị thêm " + (images != null ? images.size() : "0") + " ảnh.");
             if (images != null && !images.isEmpty()) {
-                try ( PreparedStatement psImage = conn.prepareStatement(sqlInsertImage)) {
-                    int sortOrder = 1;
-                    boolean isFirstImage = true;
+                int sortOrder = 1;
 
+                // Insert into ProductImage (new schema). We attach images to the first inserted variant if available; otherwise set variant_id = NULL
+                String insertNew = "INSERT INTO ProductImage (variant_id, image_url, alt_text, display_order) VALUES (?, ?, ?, ?);";
+                try (PreparedStatement psImageNew = conn.prepareStatement(insertNew)) {
+                    Long attachVariantId = insertedVariantIds.isEmpty() ? null : insertedVariantIds.get(0);
                     for (ProductImg img : images) {
-                        System.out.println("[DAO DEBUG] Adding Image: " + img.getImageUrl());
-                        psImage.setLong(1, newProductId); // Dùng ID mới
-                        psImage.setString(2, img.getImageUrl()); // URL này Servlet đã cung cấp
-                        psImage.setString(3, img.getCaption()); // (Nếu có)
-                        psImage.setInt(4, sortOrder++);
-
-                        // Gán ảnh đầu tiên làm ảnh chính (is_main = 1)
-                        psImage.setBoolean(5, isFirstImage);
-                        isFirstImage = false;
-
-                        psImage.addBatch();
+                        System.out.println("[DAO DEBUG] ProductImage insert: " + img.getImageUrl());
+                        if (attachVariantId != null) {
+                            psImageNew.setLong(1, attachVariantId);
+                        } else {
+                            psImageNew.setNull(1, java.sql.Types.BIGINT);
+                        }
+                        psImageNew.setString(2, img.getImageUrl());
+                        psImageNew.setString(3, img.getCaption());
+                        psImageNew.setInt(4, sortOrder++);
+                        psImageNew.addBatch();
                     }
-                    System.out.println("[DAO DEBUG] Đang chạy executeBatch cho Ảnh...");
-                    psImage.executeBatch();
-                    System.out.println("[DAO DEBUG] executeBatch Ảnh THÀNH CÔNG.");
+                    psImageNew.executeBatch();
+                    System.out.println("[DAO DEBUG] ProductImage inserts OK.");
                 }
             }
 

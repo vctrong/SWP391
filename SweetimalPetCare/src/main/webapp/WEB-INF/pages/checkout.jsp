@@ -50,8 +50,12 @@
                                                         <c:when test="${fn:startsWith(it.imageUrl,'http')}">
                                                             <img src="${it.imageUrl}" alt="${it.productName}" class="item-img" onerror="this.onerror=null;this.src='${pageContext.request.contextPath}/assets/img/no-image.png'"/>
                                                         </c:when>
-                                                        <c:otherwise>
+                                                        <c:when test="${fn:startsWith(it.imageUrl,'/')}">
                                                             <img src="${pageContext.request.contextPath}${it.imageUrl}" alt="${it.productName}" class="item-img" onerror="this.onerror=null;this.src='${pageContext.request.contextPath}/assets/img/no-image.png'"/>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <!-- filename only, serve via /images/ mapping -->
+                                                            <img src="${pageContext.request.contextPath}/images/${it.imageUrl}" alt="${it.productName}" class="item-img" onerror="this.onerror=null;this.src='${pageContext.request.contextPath}/assets/img/no-image.png'"/>
                                                         </c:otherwise>
                                                     </c:choose>
                                                 </c:when>
@@ -109,37 +113,40 @@
             <form method="post" action="${pageContext.request.contextPath}/checkout" id="checkoutForm">
                 <h3 class="font-semibold mt-6 mb-2">Địa chỉ giao hàng</h3>
 
-                <c:if test="${not empty addresses}">
-                    <div class="space-y-3 mb-4">
-                        <c:forEach var="addr" items="${addresses}">
-                            <label class="block p-3 border rounded cursor-pointer">
-                                <input type="radio" name="shippingAddressId" value="${addr.addressId}" class="mr-2"
-                                    <c:if test="${not empty param.shippingAddressId and param.shippingAddressId == addr.addressId}">checked</c:if>
-                                    <c:if test="${empty param.shippingAddressId and addr.isDefault}">checked</c:if> />
-                                <span class="font-medium">
-                                    <c:out value="${addr.label != null ? addr.label : ''}"/>
-                                    <c:if test="${not empty addr.recipientName}"> - <c:out value="${addr.recipientName}"/></c:if>
-                                </span>
-                                <div class="text-sm muted mt-1">
-                                    <c:if test="${not empty addr.addressLine}"><c:out value="${addr.addressLine}"/></c:if>
-                                    <c:if test="${not empty addr.ward}">, <c:out value="${addr.ward}"/></c:if>
-                                    <c:if test="${not empty addr.district}">, <c:out value="${addr.district}"/></c:if>
-                                    <c:if test="${not empty addr.city}">, <c:out value="${addr.city}"/></c:if>
-                                </div>
-                                <c:if test="${addr.isDefault}">
-                                    <div class="text-xs text-green-600 mt-1">Mặc định</div>
-                                </c:if>
-                            </label>
-                        </c:forEach>
-                    </div>
-                </c:if>
+                <!-- Addresses container: shown only when payment method requires a shipping address (e.g. BANK) -->
+                <div id="addressesBlock">
+                    <c:if test="${not empty addresses}">
+                        <div class="space-y-3 mb-4" id="addressesList">
+                            <c:forEach var="addr" items="${addresses}">
+                                <label class="block p-3 border rounded cursor-pointer">
+                                    <input type="radio" name="shippingAddressId" value="${addr.addressId}" class="mr-2"
+                                        <c:if test="${not empty param.shippingAddressId and param.shippingAddressId == addr.addressId}">checked</c:if>
+                                        <c:if test="${empty param.shippingAddressId and addr.isDefault}">checked</c:if> />
+                                    <span class="font-medium">
+                                        <c:out value="${addr.label != null ? addr.label : ''}"/>
+                                        <c:if test="${not empty addr.recipientName}"> - <c:out value="${addr.recipientName}"/></c:if>
+                                    </span>
+                                    <div class="text-sm muted mt-1">
+                                        <c:if test="${not empty addr.addressLine}"><c:out value="${addr.addressLine}"/></c:if>
+                                        <c:if test="${not empty addr.ward}">, <c:out value="${addr.ward}"/></c:if>
+                                        <c:if test="${not empty addr.district}">, <c:out value="${addr.district}"/></c:if>
+                                        <c:if test="${not empty addr.city}">, <c:out value="${addr.city}"/></c:if>
+                                    </div>
+                                    <c:if test="${addr.isDefault}">
+                                        <div class="text-xs text-green-600 mt-1">Mặc định</div>
+                                    </c:if>
+                                </label>
+                            </c:forEach>
+                        </div>
+                    </c:if>
 
-                <c:if test="${empty addresses}">
-                    <div class="mb-4">
-                        <p class="text-gray-600">Bạn chưa có địa chỉ giao hàng.</p>
-                        <a href="${pageContext.request.contextPath}/account/addresses" class="text-blue-600 hover:underline">Thêm địa chỉ</a>
-                    </div>
-                </c:if>
+                    <c:if test="${empty addresses}">
+                        <div class="mb-4" id="noAddresses">
+                            <p class="text-gray-600">Bạn chưa có địa chỉ giao hàng.</p>
+                            <a href="${pageContext.request.contextPath}/account/addresses" class="text-blue-600 hover:underline">Thêm địa chỉ</a>
+                        </div>
+                    </c:if>
+                </div>
 
                 <h3 class="font-semibold mt-4 mb-2">Phương thức thanh toán</h3>
                 <div class="space-y-2 mb-6">
@@ -153,8 +160,8 @@
                     </div>
                     <div>
                         <c:choose>
-                            <c:when test="${isCustomer}">
-                                <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded">Đặt hàng</button>
+                                <c:when test="${isCustomer}">
+                                <button type="submit" id="placeOrderBtn" class="bg-red-500 text-white px-4 py-2 rounded">Đặt hàng</button>
                             </c:when>
                             <c:when test="${isLoggedIn and not isCustomer}">
                                 <button type="button" disabled class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Đặt hàng</button>
@@ -172,7 +179,7 @@
 
     <%@ include file="/WEB-INF/include/footer.jsp" %>
 
-    <script>
+            <script>
         // Render attribute JSON (same logic as cart.jsp)
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.attr-json').forEach(function (el) {
@@ -191,6 +198,50 @@
                 }
             });
         });
+
+                // Toggle address block based on payment method selection
+                document.addEventListener('DOMContentLoaded', function () {
+                    const addressesBlock = document.getElementById('addressesBlock');
+                    const noAddresses = document.getElementById('noAddresses');
+                    const placeBtn = document.getElementById('placeOrderBtn');
+
+                    function updateAddressVisibility() {
+                        const pm = document.querySelector('input[name="paymentMethod"]:checked');
+                        const pmVal = pm ? pm.value : 'CASH';
+                        // If payment is CASH -> no address needed
+                        if (!addressesBlock) return;
+                        if (pmVal === 'CASH') {
+                            addressesBlock.style.display = 'none';
+                            if (placeBtn) placeBtn.disabled = false;
+                        } else {
+                            // show addresses area; if noAddresses exists, and it is present, require user to add address
+                            addressesBlock.style.display = '';
+                            const hasAddresses = document.querySelectorAll('#addressesList label').length > 0;
+                            if (!hasAddresses) {
+                                // disable submit and show notice
+                                if (placeBtn) placeBtn.disabled = true;
+                            } else {
+                                if (placeBtn) placeBtn.disabled = false;
+                            }
+                        }
+                    }
+
+                    // attach listeners
+                    document.querySelectorAll('input[name="paymentMethod"]').forEach(function (el) {
+                        el.addEventListener('change', updateAddressVisibility);
+                    });
+
+                    // when user selects an address, ensure button enabled
+                    document.addEventListener('change', function (e) {
+                        if (!e.target) return;
+                        if (e.target.name === 'shippingAddressId') {
+                            if (placeBtn) placeBtn.disabled = false;
+                        }
+                    });
+
+                    // initial state
+                    updateAddressVisibility();
+                });
     </script>
 </body>
 </html>
