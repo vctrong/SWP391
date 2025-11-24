@@ -2,7 +2,6 @@ package controller;
 
 import daos.BrandDAO;
 import daos.ProductDAO;
-import daos.ProductImgDAO;
 import daos.ReviewDAO;
 import daos.OrderDAO;
 import java.io.IOException;
@@ -58,11 +57,25 @@ public class productServlet extends HttpServlet {
             List<ProductVariant> variants = productDAO.getVariantsByProductId(productId);
             request.setAttribute("variants", variants);
 
-            // 3. Product images
-            ProductImgDAO productImgDAO = new ProductImgDAO();
+            // 3. Product images (use admin ProductDAO -> ProductImage table)
             List<ProductImg> productImages;
             try {
-                productImages = productImgDAO.findByProductId(productId);
+                daos.admin.ProductDAO adminDao = new daos.admin.ProductDAO();
+                java.util.ArrayList<model.product.ProductImg> imgs = adminDao.getAllImagesByProductId(productId);
+                productImages = new java.util.ArrayList<>();
+                if (imgs != null) {
+                    for (model.product.ProductImg pi : imgs) {
+                        model.ProductImg m = new model.ProductImg();
+                        m.setImageId(pi.getImageId());
+                        m.setProductId(pi.getProductId());
+                        m.setImageUrl(pi.getImageUrl());
+                        m.setCaption(pi.getCaption());
+                        m.setDisplayOrder(pi.getDisplayOrder());
+                        m.setMain(pi.isIsMain());
+                        m.setUploadedAt(pi.getUploadedAt());
+                        productImages.add(m);
+                    }
+                }
             } catch (Exception ex) {
                 LOGGER.log(Level.WARNING, "Error loading product images for product " + productId, ex);
                 productImages = java.util.Collections.emptyList();

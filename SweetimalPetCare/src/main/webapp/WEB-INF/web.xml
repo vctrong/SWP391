@@ -42,4 +42,19 @@
         <url-pattern>/reset-password</url-pattern>
     </servlet-mapping>
 
+    <!-- Explicit mapping for product image servlet to ensure /images/* handled even
+         when annotation scanning is disabled in some environments -->
+    <servlet>
+        <servlet-name>ProductImageServlet</servlet-name>
+        <servlet-class>controller.ProductImageServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ProductImageServlet</servlet-name>
+        <url-pattern>/images/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ProductImageServlet</servlet-name>
+        <url-pattern>/uploads/*</url-pattern>
+    </servlet-mapping>
+
 </web-app>

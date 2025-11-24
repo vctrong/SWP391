@@ -77,6 +77,17 @@
         }
         return null;
     }
+
+    // Escape a string for safe insertion into a JS double-quoted string literal
+    private String jsEscape(String s) {
+        if (s == null) return "";
+        String out = s;
+        out = out.replace("\\", "\\\\");
+        out = out.replace("\"", "\\\"");
+        out = out.replace("'", "\\'");
+        out = out.replace("\n", "\\n").replace("\r", "\\r");
+        return out;
+    }
 %>
 
 <%
@@ -195,10 +206,23 @@
 
             <div class="flex flex-col items-center">
                 <div class="relative w-full h-96 bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <%
+                        String mainSrc = request.getContextPath() + "/assets/img/no-image.png";
+                        if (productImages != null && !productImages.isEmpty()) {
+                            String first = productImages.get(0).getImageUrl();
+                            if (first != null && !first.trim().isEmpty()) {
+                                if (first.startsWith("/")) {
+                                    mainSrc = request.getContextPath() + first;
+                                } else {
+                                    mainSrc = request.getContextPath() + "/images/" + first;
+                                }
+                            }
+                        }
+                    %>
                     <img id="mainImg"
-                         src="<%= request.getContextPath() + ((productImages != null && !productImages.isEmpty()) ? productImages.get(0).getImageUrl() : "/assets/img/no-image.png") %>"
-                         alt="<%= (product != null) ? product.getProductName() : "Không có hình ảnh" %>"
-                         class="w-full h-full object-contain transition-all duration-500 ease-in-out opacity-100">
+                        src="<%= mainSrc %>"
+                        alt="<%= (product != null) ? product.getProductName() : "Không có hình ảnh" %>"
+                        class="w-full h-full object-contain transition-all duration-500 ease-in-out opacity-100">
                     <button type="button" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center shadow-md" onclick="prevImage()">&#10094;</button>
                     <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center shadow-md" onclick="nextImage()">&#10095;</button>
                 </div>
@@ -215,9 +239,18 @@
                                 </c:otherwise>
                             </c:choose>
 
-                            <img src="${pageContext.request.contextPath}${img.imageUrl}" alt="${img.caption}"
-                                 class="thumb w-16 h-16 object-cover rounded-lg cursor-pointer border-2 ${thumbBorder} hover:border-red-400 transition duration-300"
-                                 data-index="${loop.index}" />
+                                                             <c:choose>
+                                                                     <c:when test="${fn:startsWith(img.imageUrl, '/')}">
+                                                                                <img src="${pageContext.request.contextPath}${img.imageUrl}" alt="${img.caption}"
+                                                                                 class="thumb w-16 h-16 object-cover rounded-lg cursor-pointer border-2 ${thumbBorder} hover:border-red-400 transition duration-300"
+                                                                                 data-index="${loop.index}" />
+                                                                     </c:when>
+                                                                     <c:otherwise>
+                                                                                <img src="${pageContext.request.contextPath}/images/${img.imageUrl}" alt="${img.caption}"
+                                                                                 class="thumb w-16 h-16 object-cover rounded-lg cursor-pointer border-2 ${thumbBorder} hover:border-red-400 transition duration-300"
+                                                                                 data-index="${loop.index}" />
+                                                                     </c:otherwise>
+                                                             </c:choose>
                         </c:forEach>
                     </div>
                 </c:if>
@@ -625,7 +658,7 @@
                                                 <img src="${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
                                             </c:when>
                                             <c:otherwise>
-                                                <img src="${pageContext.request.contextPath}${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
+                                                <img src="${pageContext.request.contextPath}/images/${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
                                             </c:otherwise>
                                         </c:choose>
                                     </c:when>
@@ -737,7 +770,7 @@
             defaultPrice: <%= Double.toString(defaultPrice) %>,
             variantsData: [
                 <% if (variants != null) {
-                    for (int i = 0; i < variants.size(); i++) {
+                        for (int i = 0; i < variants.size(); i++) {
                         ProductVariant v = variants.get(i);
                         String attr = v.getAttributeJson();
                         double price = v.getPrice();
@@ -746,11 +779,20 @@
                         long vid = v.getVariantId();
                         if (img == null || img.isEmpty()) {
                             img = "/assets/img/no-image.png";
+                        } else {
+                            if (img.startsWith("/")) {
+                                // already a path like /images/...
+                                // keep as-is
+                            } else if (img.startsWith("http")) {
+                                // external URL, keep
+                            } else {
+                                img = "/images/" + img;
+                            }
                         }
                 %>
                 {
                     id: <%= vid %>,
-                    attr: '<%= attr != null ? attr.replaceAll("'", "\\\\'") : "" %>',
+                    attr: '<%= attr != null ? attr.replace("'", "\\'") : "" %>',
                     price: <%= price %>,
                     img: '<%= request.getContextPath() + img %>',
                     stock: <%= stock %>
@@ -760,10 +802,17 @@
             ],
             images: [
                 <% if (productImages != null) {
-                    for (int i = 0; i < productImages.size(); i++) {
+                        for (int i = 0; i < productImages.size(); i++) {
                         ProductImg pi = productImages.get(i);
                         String url = pi.getImageUrl();
-                        out.print("'" + request.getContextPath() + url + "'");
+                        String full = "/assets/img/no-image.png";
+                        if (url != null && !url.isEmpty()) {
+                            if (url.startsWith("/")) full = request.getContextPath() + url;
+                            else full = request.getContextPath() + "/images/" + url;
+                        } else {
+                            full = request.getContextPath() + "/assets/img/no-image.png";
+                        }
+                        out.print('\'' + full + '\'');
                         if (i < productImages.size() - 1) out.print(",");
                     }
                 } %>

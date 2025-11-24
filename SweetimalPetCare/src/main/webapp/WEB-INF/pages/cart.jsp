@@ -211,7 +211,17 @@
                                         : (variantSku!=null && variantSku.trim().length()>0) ? variantSku
                                         : "[Tên sản phẩm không xác định]";
 
-                                String imgSrc = (img!=null && img.trim().length()>0) ? (img.startsWith("http")?img:request.getContextPath()+img) : request.getContextPath()+"/assets/img/no-image.png";
+                                String imgSrc = request.getContextPath() + "/assets/img/no-image.png";
+                                if (img != null && img.trim().length() > 0) {
+                                    if (img.startsWith("http")) {
+                                        imgSrc = img;
+                                    } else if (img.startsWith("/")) {
+                                        imgSrc = request.getContextPath() + img; // img already contains leading '/'
+                                    } else {
+                                        // common stored filename like 'ganadorchickern.jpg' -> serve via /images/* servlet
+                                        imgSrc = request.getContextPath() + "/images/" + img;
+                                    }
+                                }
                                 double unit = 0;
                                 try { unit = (unitPrice!=null)?Double.parseDouble(unitPrice):0; } catch(Exception e){}
                                 int q = 1;
