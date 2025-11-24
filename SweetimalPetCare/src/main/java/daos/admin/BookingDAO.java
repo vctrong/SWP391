@@ -49,7 +49,7 @@ public class BookingDAO extends db.DBContext {
         }
 
         // Thực thi Query
-        try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try ( Connection conn = this.getConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
             // Gán các tham số vào dấu ?
             for (int i = 0; i < params.size(); i++) {
@@ -62,7 +62,8 @@ public class BookingDAO extends db.DBContext {
                 }
             }
         } catch (SQLException ex) {
-            Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, null, ex);
+            // FIX LỖI LOGGER NULL POINTER
+            Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, "Lỗi countBookings: " + ex.getMessage(), ex);
         }
         return count;
     }
@@ -71,14 +72,18 @@ public class BookingDAO extends db.DBContext {
         List<Booking> list = new ArrayList<>();
         List<Object> params = new ArrayList<>();
 
-        // Xây dựng câu SELECT lấy đầy đủ thông tin (như bạn đã làm trước đây)
+        // Xây dựng câu SELECT
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT b.booking_id, b.customer_id, u.full_name, ");
         sql.append("       b.pet_id, p.name AS pet_name, ");
-        sql.append("       (SELECT TOP 1 st.is_veterinarian ");
+
+        // --- FIX: SQL Server TOP 1 -> Postgres LIMIT 1 ---
+        // LIMIT 1 phải đặt ở CUỐI subquery
+        sql.append("       (SELECT st.is_veterinarian ");
         sql.append("        FROM ScheduleSlot ss ");
         sql.append("        JOIN Users st ON ss.staff_id = st.user_id ");
-        sql.append("        WHERE ss.booking_id = b.booking_id) AS is_vet, ");
+        sql.append("        WHERE ss.booking_id = b.booking_id LIMIT 1) AS is_vet, ");
+
         // Xử lý tên Item (Service hoặc Package)
         sql.append("       CASE WHEN b.service_id IS NOT NULL THEN s.service_name ");
         sql.append("            WHEN b.package_id IS NOT NULL THEN pk.package_name ");
@@ -102,7 +107,7 @@ public class BookingDAO extends db.DBContext {
         sql.append("LEFT JOIN ServicePackage pk ON b.package_id = pk.package_id ");
         sql.append("WHERE 1=1 ");
 
-        // --- XỬ LÝ SEARCH (Giống hàm count) ---
+        // --- XỬ LÝ SEARCH ---
         if (search != null && !search.trim().isEmpty()) {
             sql.append("AND (u.full_name LIKE ? OR u.phone LIKE ?) ");
             String keyword = "%" + search.trim() + "%";
@@ -110,24 +115,27 @@ public class BookingDAO extends db.DBContext {
             params.add(keyword);
         }
 
-        // --- XỬ LÝ FILTER (Giống hàm count) ---
+        // --- XỬ LÝ FILTER ---
         if (status != null && !status.trim().isEmpty()) {
             sql.append("AND b.current_status = ? ");
             params.add(status);
         }
 
-        // --- XỬ LÝ PHÂN TRANG (Pagination) ---
-        // SQL Server bắt buộc phải có ORDER BY trước khi dùng OFFSET
+        // --- FIX: XỬ LÝ PHÂN TRANG CHO POSTGRESQL ---
+        // SQL Server: ORDER BY ... OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+        // PostgreSQL: ORDER BY ... LIMIT ? OFFSET ?
         sql.append("ORDER BY b.booking_id DESC "); // Sắp xếp mới nhất lên đầu
-        sql.append("OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        sql.append("LIMIT ? OFFSET ?"); // LIMIT (Size) trước, OFFSET (Bỏ qua) sau
 
         // Tính toán vị trí cắt dữ liệu
         int offset = (pageIndex - 1) * pageSize;
-        params.add(offset);
-        params.add(pageSize);
+
+        // QUAN TRỌNG: Thứ tự add param cho Postgres khác với SQL Server
+        params.add(pageSize); // Tham số cho LIMIT
+        params.add(offset);   // Tham số cho OFFSET
 
         // Thực thi Query
-        try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try ( Connection conn = this.getConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
             // Gán tham số
             for (int i = 0; i < params.size(); i++) {
@@ -137,17 +145,15 @@ public class BookingDAO extends db.DBContext {
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     // Map dữ liệu vào Model Booking
-                    // (Đảm bảo Constructor của Booking khớp với thứ tự này)
                     Booking b = new Booking(
                             rs.getLong("booking_id"),
                             rs.getLong("customer_id"),
                             rs.getString("full_name"),
                             rs.getLong("pet_id"),
                             rs.getString("pet_name"),
-                            rs.getString("item"), // Lấy theo alias 'item'
-                            rs.getString("type"), // Lấy theo alias 'type'
-                            rs.getInt("duration"), // Lấy theo alias 'duration'
-
+                            rs.getString("item"),
+                            rs.getString("type"),
+                            rs.getInt("duration"),
                             rs.getDate("booking_time"),
                             rs.getDate("requested_date"),
                             rs.getTime("requested_start"),
@@ -163,7 +169,8 @@ public class BookingDAO extends db.DBContext {
                 }
             }
         } catch (SQLException ex) {
-            Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, null, ex);
+            // FIX LỖI LOGGER
+            Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, "Lỗi getBookingsByPage: " + ex.getMessage(), ex);
         }
         return list;
     }
@@ -185,7 +192,7 @@ public class BookingDAO extends db.DBContext {
                 + "LEFT JOIN ServicePackage pk ON b.package_id = pk.package_id "
                 + "WHERE b.requested_date BETWEEN ? AND ?";
 
-        try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = this.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setDate(1, startDate);
             ps.setDate(2, endDate);
@@ -197,62 +204,55 @@ public class BookingDAO extends db.DBContext {
                     // --- XỬ LÝ NGÀY GIỜ VÀ ITEM NAME ---
                     Date date = rs.getDate("requested_date");
                     Time startTime = rs.getTime("requested_start");
-                    String startISO = date.toString() + "T" + startTime.toString(); // "2025-11-12T09:00:00"
+                    String startISO = date.toString() + "T" + startTime.toString();
 
-                    String endISO = null; // Mặc định là NULL (Dành cho Package)
+                    String endISO = null;
                     String itemName;
 
-                    // Kiểm tra xem đây là Service hay Package?
                     String serviceName = rs.getString("service_name");
 
                     if (serviceName != null) {
-                        // === TRƯỜNG HỢP 1: LÀ SERVICE (CÓ DURATION) ===
+                        // === TRƯỜNG HỢP 1: LÀ SERVICE ===
                         itemName = serviceName;
-
-                        // Lấy duration (phút)
                         int durationMin = rs.getInt("base_duration_min");
                         if (durationMin == 0) {
-                            durationMin = 60; // Fallback nếu quên nhập DB
+                            durationMin = 60;
                         }
-                        // Tính End Time = Start + Duration
                         java.util.Calendar cal = java.util.Calendar.getInstance();
                         cal.setTime(startTime);
                         cal.add(java.util.Calendar.MINUTE, durationMin);
                         Time endTime = new Time(cal.getTimeInMillis());
-
-                        endISO = date.toString() + "T" + endTime.toString(); // Set giá trị end
-
+                        endISO = date.toString() + "T" + endTime.toString();
                     } else {
-                        // === TRƯỜNG HỢP 2: LÀ PACKAGE (KHÔNG CÓ END) ===
+                        // === TRƯỜNG HỢP 2: LÀ PACKAGE ===
                         itemName = rs.getString("package_name");
-                        // endISO vẫn giữ nguyên là null -> FullCalendar tự xử
                     }
 
                     String title = itemName + " - " + rs.getString("full_name");
 
-                    // --- XỬ LÝ MÀU SẮC (Giữ nguyên) ---
+                    // --- XỬ LÝ MÀU SẮC ---
                     String status = rs.getString("current_status");
-                    String color = "#3788d8"; // Mặc định xanh dương
+                    String color = "#3788d8";
 
                     if (status != null) {
                         switch (status) {
                             case "PENDING":
-                                color = "#f59e0b"; // Vàng cam (Amber) - Cần chú ý
+                                color = "#f59e0b";
                                 break;
                             case "CONFIRMED":
-                                color = "#10b981"; // Xanh lá (Emerald) - Đã chốt
+                                color = "#10b981";
                                 break;
                             case "IN_PROGRESS":
-                                color = "#3b82f6"; // Xanh dương (Blue) - Đang làm
+                                color = "#3b82f6";
                                 break;
                             case "COMPLETED":
-                                color = "#6b7280"; // Xám (Gray) - Đã xong
+                                color = "#6b7280";
                                 break;
                             case "CANCELLED":
-                                color = "#ef4444"; // Đỏ (Red) - Đã hủy
+                                color = "#ef4444";
                                 break;
                             case "NO_SHOW":
-                                color = "#991b1b"; // Đỏ đậm (Dark Red) - Khách không đến
+                                color = "#991b1b";
                                 break;
                         }
                     }
@@ -271,15 +271,15 @@ public class BookingDAO extends db.DBContext {
                             status
                     );
 
-                    // Truyền endISO (có thể là chuỗi hoặc null) vào DTO
                     CalendarEventDTO dto = new CalendarEventDTO(id, title, startISO, endISO, color);
                     dto.setExtendedProps(props);
 
                     events.add(dto);
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            // FIX LỖI LOGGER CHO ĐỒNG BỘ
+            Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, "Lỗi getBookingForCalendar: " + ex.getMessage(), ex);
         }
         return events;
     }
@@ -305,29 +305,42 @@ public class BookingDAO extends db.DBContext {
                     + "LEFT JOIN ServicePackage pk ON b.package_id = pk.package_id "
                     + "WHERE b.booking_id = ?";
             Object[] params = {id};
-            ResultSet rs = this.executeSelectQuery(qr, params);
-            if (rs.next()) {
-                return new Booking(
-                        rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getLong(4),
-                        rs.getString(5), rs.getString(6), rs.getString(7), rs.getInt(8),
-                        rs.getDate(9), rs.getDate(10), rs.getTime(11),
-                        rs.getString(12), rs.getString(13), rs.getBigDecimal(14),
-                        rs.getString(15), rs.getDate(16), rs.getString(17));
+
+            // Lưu ý: Nếu lớp cha DBContext có hàm executeSelectQuery trả về ResultSet thì dùng
+            // Nhưng ở đây tôi viết chuẩn JDBC để an toàn nhất
+            try ( Connection conn = this.getConnection();  PreparedStatement ps = conn.prepareStatement(qr)) {
+                ps.setLong(1, id);
+                try ( ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return new Booking(
+                                rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getLong(4),
+                                rs.getString(5), rs.getString(6), rs.getString(7), rs.getInt(8),
+                                rs.getDate(9), rs.getDate(10), rs.getTime(11),
+                                rs.getString(12), rs.getString(13), rs.getBigDecimal(14),
+                                rs.getString(15), rs.getDate(16), rs.getString(17));
+                    }
+                }
             }
         } catch (SQLException ex) {
-            Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, null, ex);
+            // FIX LỖI LOGGER
+            Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, "Lỗi getBookingByID: " + ex.getMessage(), ex);
         }
         return null;
     }
 
     public boolean updateBookingStatus(long id, String newStatus) {
         try {
-            String sql = "UPDATE Booking SET current_status = ?, updated_at = GETDATE() WHERE booking_id = ?";
+            // FIX: GETDATE() -> CURRENT_TIMESTAMP
+            String sql = "UPDATE Booking SET current_status = ?, updated_at = CURRENT_TIMESTAMP WHERE booking_id = ?";
 
-            Object[] params = {newStatus, id};
-            return this.executeQuery(sql, params) > 0;
+            try ( Connection conn = this.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, newStatus);
+                ps.setLong(2, id);
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException ex) {
-            Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, null, ex);
+            // FIX LỖI LOGGER
+            Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, "Lỗi updateBookingStatus: " + ex.getMessage(), ex);
         }
         return false;
     }
@@ -343,7 +356,7 @@ public class BookingDAO extends db.DBContext {
                 + " weight_kg, temperature_c, symptoms, diagnosis_summary, treatment_notes, follow_up_date) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = this.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, bookingId);
             ps.setLong(2, petId);
@@ -352,22 +365,20 @@ public class BookingDAO extends db.DBContext {
             ps.setString(5, visitType);
             ps.setTimestamp(6, visitDate);
 
-            // Xử lý số thực (có thể null)
             ps.setBigDecimal(7, weight);
             ps.setBigDecimal(8, temperature);
 
-            // Xử lý chuỗi (có thể null/empty)
             ps.setString(9, symptoms);
             ps.setString(10, diagnosis);
             ps.setString(11, treatment);
 
-            // Xử lý ngày tái khám (có thể null)
             ps.setDate(12, followUpDate);
 
             return ps.executeUpdate() > 0;
 
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } catch (SQLException ex) {
+            // FIX LỖI LOGGER CHO ĐỒNG BỘ
+            Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, "Lỗi insertVetVisit: " + ex.getMessage(), ex);
         }
         return false;
     }
