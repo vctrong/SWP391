@@ -15,7 +15,7 @@
     <title>Xác nhận đơn hàng - Sweetimal Pet Care</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 font-sans pt-20">
+<body>
     <%@ include file="/WEB-INF/include/header.jsp" %>
 
     <div class="max-w-3xl mx-auto p-6">

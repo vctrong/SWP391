@@ -455,9 +455,18 @@
                                                  alt="${p.productName} - Hình ảnh chính">
                                         </c:when>
                                         <c:otherwise>
-                                            <img src="${pageContext.request.contextPath}${p.mainVariant.imageUrl}"
-                                                 class="w-full h-full object-cover"
-                                                 alt="${p.productName} - Hình ảnh chính">
+                                            <c:choose>
+                                                <c:when test="${fn:startsWith(p.mainVariant.imageUrl, '/')}">
+                                                    <img src="${pageContext.request.contextPath}${p.mainVariant.imageUrl}"
+                                                         class="w-full h-full object-cover"
+                                                         alt="${p.productName} - Hình ảnh chính">
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <img src="${pageContext.request.contextPath}/images/${p.mainVariant.imageUrl}"
+                                                         class="w-full h-full object-cover"
+                                                         alt="${p.productName} - Hình ảnh chính">
+                                                </c:otherwise>
+                                            </c:choose>
                                         </c:otherwise>
                                     </c:choose>
                                 </c:when>

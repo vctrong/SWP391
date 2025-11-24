@@ -13,5 +13,4 @@
         <param-name>MAIL_PASS</param-name>
         <param-value>hkcrvveljritgaob</param-value>
     </context-param>
-
 </web-app>

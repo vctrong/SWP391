@@ -235,7 +235,7 @@ public class OrderDAO extends DBContext {
     public List<OrderItem> listOrderItems(long orderId) throws SQLException {
         List<OrderItem> list = new ArrayList<>();
         String sql = "SELECT oi.order_item_id, oi.order_id, oi.variant_id, oi.unit_price, oi.quantity, oi.line_total, "
-                + "pv.image_url AS image_url, p.product_name AS product_name "
+            + "pv.image_url AS image_url, p.product_name AS product_name, pv.attribute_json AS attribute_json "
                 + "FROM OrderItems oi LEFT JOIN ProductVariant pv ON oi.variant_id = pv.variant_id LEFT JOIN Product p ON pv.product_id = p.product_id "
                 + "WHERE oi.order_id = ? ORDER BY oi.order_item_id ASC";
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
@@ -262,6 +262,8 @@ public class OrderDAO extends DBContext {
                         it.setLineTotal(rs.getDouble("line_total"));
                     }
                     it.setImageUrl(rs.getString("image_url"));
+                    // new: pass attribute JSON from variant to OrderItem for display in JSP
+                    try { it.setAttributeJson(rs.getString("attribute_json")); } catch (SQLException ignore) {}
                     String prodName = null;
                     try {
                         prodName = rs.getString("product_name");

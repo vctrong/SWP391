@@ -26,10 +26,9 @@ public class FileUploadUtil {
     public static final String PRODUCT_UPLOAD_DIR = "assets/products_img";
 
     /**
-     * Đường dẫn URL ảo (virtual path) khi chạy Local. (Phải khớp với <Context>
-     * trong server.xml của Tomcat).
+     * NOTE: when running locally we want uploaded files to be saved into the
+     * project's `products_img` folder so the image servlet can serve them.
      */
-    private static final String LOCAL_URL_PATH = "local-uploads";
 
     private static String getBaseUploadPath(HttpServletRequest request) {
 
@@ -44,8 +43,8 @@ public class FileUploadUtil {
 
         } else {
             // 2. ĐANG CHẠY LOCAL
-            // Trả về đường dẫn CỨNG (hardcoded) mà bạn chỉ định
-            String localPath = "D:/BackUp_Important/ChuyenNganh/KY5/SWP391/SWP391/products_img";
+            // Trả về đường dẫn tới thư mục `products_img` trong workspace
+            String localPath = "D:/SWP391_project/SWP391/products_img";
             System.out.println("[FileUploadUtil] Local Env. Dùng đường dẫn CỨNG: " + localPath);
             return localPath;
         }
@@ -102,14 +101,15 @@ public class FileUploadUtil {
             Files.copy(input, Paths.get(savePath), StandardCopyOption.REPLACE_EXISTING);
         }
 
-        // Trả về URL chính xác
+        // Trả về URL chính xác (giá trị để lưu vào CSDL)
         String renderInstanceId = System.getenv("RENDER_INSTANCE_ID");
         if (renderInstanceId != null) {
             // 1. RENDER: Trả về URL thật (ví dụ: "assets/products_img/file.jpg")
             return relativeUploadDir.replace(File.separator, "/") + "/" + uniqueFileName;
         } else {
-            // 2. LOCAL: Trả về URL ảo (ví dụ: "local-uploads/file.jpg")
-            return "/" + LOCAL_URL_PATH + "/" + uniqueFileName;
+            // 2. LOCAL: Trả về chỉ TÊN FILE (ví dụ: "file.jpg").
+            //     DAO và JSP sẽ kết hợp thành '/images/<filename>' khi hiển thị.
+            return uniqueFileName;
         }
     }
 }
