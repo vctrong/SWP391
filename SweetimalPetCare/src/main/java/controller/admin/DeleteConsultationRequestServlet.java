@@ -19,15 +19,12 @@ public class DeleteConsultationRequestServlet extends HttpServlet {
         long id = -1L;
         try {
             id = Long.parseLong(idParam);
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
 
         if (id > 0) {
             ConsultationRequestDAO dao = new ConsultationRequestDAO();
-            try {
-                dao.deleteById(id);
-            } catch (SQLException e) {
-                request.getSession().setAttribute("deleteError", "Không thể xóa yêu cầu: " + e.getMessage());
-            }
+            dao.deleteById(id);
         } else {
             request.getSession().setAttribute("deleteError", "ID yêu cầu không hợp lệ.");
         }

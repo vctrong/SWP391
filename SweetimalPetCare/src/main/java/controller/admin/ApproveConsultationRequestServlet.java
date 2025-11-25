@@ -19,15 +19,14 @@ public class ApproveConsultationRequestServlet extends HttpServlet {
         long id = -1L;
         try {
             id = Long.parseLong(idParam);
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
 
         if (id > 0) {
             ConsultationRequestDAO dao = new ConsultationRequestDAO();
-            try {
-                dao.updateStatus(id, "ANSWERED");
-            } catch (SQLException e) {
-                request.getSession().setAttribute("approveError", "Không thể duyệt yêu cầu: " + e.getMessage());
-            }
+
+            dao.updateStatus(id, "ANSWERED");
+
         } else {
             request.getSession().setAttribute("approveError", "ID yêu cầu không hợp lệ.");
         }
