@@ -20,8 +20,8 @@ import model.Product;
 import model.ProductCategory;
 
 /**
- * Updated shopServlet: always forwards to /WEB-INF/pages/shop.jsp.
- * The JSP itself checks X-Requested-With and renders either full page or fragment.
+ * 
+ * @author Pham Nguyen Xuan Mai - CE190106
  */
 @WebServlet(name = "ShopServlet", urlPatterns = {"/shop"})
 public class shopServlet extends HttpServlet {
@@ -95,6 +95,9 @@ public class shopServlet extends HttpServlet {
         } catch (NumberFormatException ignored) {}
 
         // Use ShopDAO (shop/listing responsibilities)
+        // If this is a pagination-only AJAX request (pageOnly=1), skip expensive sidebar queries
+        boolean pageOnly = request.getParameter("pageOnly") != null;
+
         int totalProducts = shopDAO.countProductsWithFilter(categoryList, brandList, minPrice, maxPrice, stockFilter);
         if (totalProducts < 0) totalProducts = 0;
 
@@ -106,11 +109,16 @@ public class shopServlet extends HttpServlet {
 
         List<Product> products = shopDAO.getProductsWithFilterPaged(categoryList, brandList, minPrice, maxPrice, stockFilter, sort, pageSize, offset);
 
-        int inStockCount = shopDAO.countVariantsInStock(categoryList, brandList, minPrice, maxPrice);
-        int outStockCount = shopDAO.countVariantsOutOfStock(categoryList, brandList, minPrice, maxPrice);
-
-        List<Brand> brands = brandDAO.getBrandsWithCountFiltered(categoryList, minPrice, maxPrice, stockFilter);
-        List<ProductCategory> categories = categoryDAO.getCategoriesWithCountFiltered(brandList, minPrice, maxPrice, stockFilter);
+        int inStockCount = 0;
+        int outStockCount = 0;
+        List<Brand> brands = null;
+        List<ProductCategory> categories = null;
+        if (!pageOnly) {
+            inStockCount = shopDAO.countVariantsInStock(categoryList, brandList, minPrice, maxPrice);
+            outStockCount = shopDAO.countVariantsOutOfStock(categoryList, brandList, minPrice, maxPrice);
+            brands = brandDAO.getBrandsWithCountFiltered(categoryList, minPrice, maxPrice, stockFilter);
+            categories = categoryDAO.getCategoriesWithCountFiltered(brandList, minPrice, maxPrice, stockFilter);
+        }
 
         request.setAttribute("products", products);
         request.setAttribute("brands", brands);

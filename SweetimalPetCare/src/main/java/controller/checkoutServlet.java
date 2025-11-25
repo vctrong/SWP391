@@ -22,11 +22,6 @@ import model.CartItem;
 /**
  *
  * @author Pham Nguyen Xuan Mai - CE190106
- *
- * CHANGES:
- * - Use direct getters on CartItem and UserAddress (no reflection).
- * - Resolve session user only from session.getAttribute("user").
- * - Keep LOG static logger and overall checkout flow unchanged.
  */
 @WebServlet(name = "checkoutServlet", urlPatterns = {"/checkout"})
 public class checkoutServlet extends HttpServlet {
