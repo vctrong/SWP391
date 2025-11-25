@@ -171,7 +171,6 @@
                         <tbody>
                 <%
                             int idx=0;
-                            StringBuilder pageDebug = new StringBuilder();
                             for (Object it : cartList) {
                                 idx++;
                                 Class<?> cls = (it==null)?null:it.getClass();
@@ -200,11 +199,6 @@
                                     variantIdLong = safeLong(variantObj, "variantId", "variant_id", "getVariantId");
                                 }
                                 String variantIdStr = (variantIdLong != null) ? variantIdLong.toString() : "";
-
-                                String debugLine = String.format("cartItems[%d] class=%s; getters=[%s]; pname=%s; simpleName=%s; qty=%s; unitPrice=%s; variantSku=%s; attrJson=%s; variantId=%s",
-                                        idx, className, methodsSb.toString(), pname, simpleName, qty, unitPrice, variantSku, attrJson, variantIdStr);
-                                System.out.println("[CART-DEBUG] " + debugLine);
-                                if (debug) pageDebug.append(debugLine).append("\n");
 
                                 String displayName = (pname!=null && pname.trim().length()>0) ? pname
                                         : (simpleName!=null && simpleName.trim().length()>0) ? simpleName
@@ -272,20 +266,10 @@
                             </tr>
                 <%
                             } // end for
-                            if (debug) {
-                %>
-                        </tbody>
-                    </table>
-
-                    <h3 class="mt-6">Debug output (also logged to catalina.out with prefix [CART-DEBUG])</h3>
-                    <pre class="debug"><%= pageDebug.toString() %></pre>
-                <%
-                            } else {
                 %>
                         </tbody>
                     </table>
                 <%
-                            } // end debug conditional
                         } // end cart not empty
                     } // end rawCart null check
                 %>

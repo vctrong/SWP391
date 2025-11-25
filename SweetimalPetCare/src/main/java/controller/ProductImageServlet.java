@@ -19,7 +19,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 
 /**
- * Hiển thị ảnh sản phẩm từ thư mục products_img
+ * 
  * @author Pham Nguyen Xuan Mai - CE190106
  */
 @WebServlet(name="ProductImageServlet", urlPatterns={"/uploads/*", "/images/*"})
@@ -48,16 +48,12 @@ public class ProductImageServlet extends HttpServlet {
 
         File file = new File(IMAGE_DIR, relativePath);
 
-        // Debug logging to help diagnose missing images (will appear in Tomcat stdout)
-        System.out.println("[ProductImageServlet] RequestedPath='" + requestedPath + "', Relative='" + relativePath + "', Resolved='" + file.getAbsolutePath() + "'");
-
         // If file not found or not readable, add a debug header and return 404 with small text
         if (!file.exists() || file.isDirectory() || !file.canRead()) {
-            response.setHeader("X-Requested-Path", requestedPath);
-            response.setHeader("X-Resolved-Path", file.getAbsolutePath());
+            // Avoid exposing server file system paths or printing them to stdout in production.
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             response.setContentType("text/plain; charset=UTF-8");
-            String body = "Image not found. Resolved path: " + file.getAbsolutePath();
+            String body = "Image not found.";
             response.setContentLength(body.getBytes("UTF-8").length);
             try (OutputStream out = response.getOutputStream()) {
                 out.write(body.getBytes("UTF-8"));
@@ -76,8 +72,11 @@ public class ProductImageServlet extends HttpServlet {
         }
         if (mime == null) mime = "application/octet-stream";
 
-        // Expose resolved path in header for debugging in browser devtools
-        response.setHeader("X-Resolved-Path", file.getAbsolutePath());
+        // Set caching headers so browsers can reuse images between navigations.
+        // Public cache for 7 days (adjust if you prefer shorter TTL during development).
+        response.setHeader("Cache-Control", "public, max-age=604800");
+        response.setDateHeader("Expires", System.currentTimeMillis() + 604800L * 1000L);
+        response.setDateHeader("Last-Modified", file.lastModified());
         response.setContentType(mime);
         response.setContentLengthLong(file.length());
 

@@ -25,8 +25,8 @@ import model.ReviewReply;
 import model.Users;
 
 /**
- * Product detail controller (GET only).
- * POST related to reviews/replies is handled by productReviewServlet.
+ * 
+ * @author Pham Nguyen Xuan Mai - CE190106
  */
 @WebServlet(name = "productServlet", urlPatterns = {"/product"})
 public class productServlet extends HttpServlet {

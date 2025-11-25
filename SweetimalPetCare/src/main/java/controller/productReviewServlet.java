@@ -15,8 +15,8 @@ import java.util.logging.Logger;
 import model.Users;
 
 /**
- * productReviewServlet - handles create/edit/delete reviews and replies
- * Returns JSON for AJAX requests, redirects for non-AJAX (PRG).
+ * 
+ * @author Pham Nguyen Xuan Mai - CE190106
  */
 @WebServlet(name = "productReviewServlet", urlPatterns = {"/product/review"})
 public class productReviewServlet extends HttpServlet {
