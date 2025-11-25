@@ -135,8 +135,11 @@ contentType="text/html" pageEncoding="UTF-8"%>
       // confirm delete with pet name from the same row
       function confirmDelete(form) {
         try {
+          // finds the row that contains the form
           var tr = form.closest("tr");
+          // finds the first cell (name) in that row
           var nameCell = tr ? tr.querySelector("td") : null;
+          // Reads visible text content (plain text) from that cell and trims whitespace.
           var petName = nameCell ? nameCell.textContent.trim() : "";
           if (!petName) petName = "thú cưng này";
           return confirm("Bạn có chắc muốn xóa " + petName + " không?");
