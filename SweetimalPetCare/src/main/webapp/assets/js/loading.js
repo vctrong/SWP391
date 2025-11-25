@@ -1,8 +1,3 @@
-/* 
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/JavaScript.js to edit this template
- */
-
 
 // Lightweight page loader controller
 (function () {
@@ -43,7 +38,6 @@
         window.addEventListener('load', function () {
             hideLoader();
         }, {passive: true});
-
         // Show loader for internal navigation clicks (SPA-like experience)
         document.addEventListener('click', function (e) {
             var a = e.target.closest && e.target.closest('a');
@@ -136,13 +130,11 @@
             } catch (e) {
             }
         };
-
         // Hide loader on global JS errors or unhandled promise rejections so page isn't stuck
         window.addEventListener('error', function (ev) {
             console.error('Unhandled error:', ev && ev.error ? ev.error : ev);
             hideLoader();
         });
-
         window.addEventListener('unhandledrejection', function (ev) {
             console.error('Unhandled rejection:', ev && ev.reason ? ev.reason : ev);
             hideLoader();

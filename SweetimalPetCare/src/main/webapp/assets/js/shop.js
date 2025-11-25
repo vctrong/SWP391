@@ -303,10 +303,21 @@
         document.querySelectorAll('a.ajax-shop-link').forEach(a => {
             a.onclick = (e) => {
                 e.preventDefault();
-                const resolved = resolveHref(a.getAttribute('href'));
+                const href = a.getAttribute('href');
+                const resolved = resolveHref(href);
                 if (!resolved) return;
                 if (isShopUrl(resolved)) {
-                    fetchAndReplace(resolved);
+                    try {
+                        // Indicate to the server that this request is a pagination-only request.
+                        // Server can skip recomputing sidebar counts/filters to speed up response.
+                        // Do NOT push the page parameter into the browser URL (admin-style behavior).
+                        const u = new URL(resolved);
+                        u.searchParams.set('pageOnly', '1');
+                        // pass pushState=false so the URL stays unchanged
+                        fetchAndReplace(u.toString(), false);
+                    } catch (err) {
+                        fetchAndReplace(resolved, false);
+                    }
                 } else {
                     window.location.href = resolved;
                 }

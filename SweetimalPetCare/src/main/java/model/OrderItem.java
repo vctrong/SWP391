@@ -25,6 +25,8 @@ public class OrderItem {
     // Convenience fields for JSP rendering
     private String productName;
     private String imageUrl;
+    // JSON-like attribute string from ProductVariant (eg {"weight":"1kg","color":"Red"})
+    private String attributeJson;
 
     public OrderItem() {
     }
@@ -113,6 +115,14 @@ public class OrderItem {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public String getAttributeJson() {
+        return attributeJson;
+    }
+
+    public void setAttributeJson(String attributeJson) {
+        this.attributeJson = attributeJson;
     }
 
     public double getLineTotal() {

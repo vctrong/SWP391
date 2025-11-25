@@ -13,33 +13,4 @@
         <param-name>MAIL_PASS</param-name>
         <param-value>hkcrvveljritgaob</param-value>
     </context-param>
-
-    <!-- Explicit servlet mappings (fallback if annotation scanning is disabled) -->
-    <servlet>
-        <servlet-name>ForgotPasswordServlet</servlet-name>
-        <servlet-class>controller.ForgotPasswordServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>ForgotPasswordServlet</servlet-name>
-        <url-pattern>/forgot-password</url-pattern>
-    </servlet-mapping>
-
-    <servlet>
-        <servlet-name>VerifyOTPServlet</servlet-name>
-        <servlet-class>controller.VerifyOTPServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>VerifyOTPServlet</servlet-name>
-        <url-pattern>/verify-otp</url-pattern>
-    </servlet-mapping>
-
-    <servlet>
-        <servlet-name>ResetPasswordServlet</servlet-name>
-        <servlet-class>controller.ResetPasswordServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>ResetPasswordServlet</servlet-name>
-        <url-pattern>/reset-password</url-pattern>
-    </servlet-mapping>
-
 </web-app>

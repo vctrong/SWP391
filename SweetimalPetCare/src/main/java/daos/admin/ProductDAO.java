@@ -138,6 +138,22 @@ public class ProductDAO extends db.DBContext {
         return product;
     }
 
+    // Normalize image_url values from DB: remove leading '/images/' or leading '/' so
+    // controllers/JSP can compose the final URL as contextPath + '/images/' + imageFileName
+    private String normalizeImageUrl(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String s = raw.trim();
+        if (s.startsWith("/images/")) {
+            s = s.substring("/images/".length());
+        }
+        if (s.startsWith("/")) {
+            s = s.substring(1);
+        }
+        return s;
+    }
+
     public int getTotalProductCount(String searchTerm, int categoryId) {
         String sql = "SELECT COUNT(p.product_id) AS TotalCount "
                 + "FROM Product p "
@@ -250,7 +266,6 @@ public class ProductDAO extends db.DBContext {
                         mv.setCreatedAt(rs.getDate("main_variant_created_at"));
                         p.setMainVariant(mv);
                     }
-
                     productList.add(p);
                 }
             }
@@ -373,11 +388,9 @@ public class ProductDAO extends db.DBContext {
     public long addNewProductTransaction(Product product, List<ProductVariant> variants, List<ProductImg> images) throws SQLException {
         Connection conn = null;
         long newProductId = 0;
-
         String sqlInsertProduct = "INSERT INTO Product (product_code, product_name, product_category_id, brand_id, description, is_active) VALUES (?, ?, ?, ?, ?, ?)";
         String sqlInsertVariant = "INSERT INTO ProductVariant (product_id, sku, attribute_json, price, stock_quantity, is_active) VALUES (?, ?, ?, ?, ?, ?)";
         String sqlInsertImage = "INSERT INTO ProductImg (product_id, image_url, caption, sort_order, is_main) VALUES (?, ?, ?, ?, ?)";
-
         try {
             conn = this.getConnection();
             conn.setAutoCommit(false);
@@ -407,9 +420,8 @@ public class ProductDAO extends db.DBContext {
                     }
                 }
             }
-
             if (variants != null && !variants.isEmpty()) {
-                try ( PreparedStatement psVariant = conn.prepareStatement(sqlInsertVariant)) {
+                try ( PreparedStatement psVariant = conn.prepareStatement(sqlInsertVariant, Statement.RETURN_GENERATED_KEYS)) {
                     for (ProductVariant variant : variants) {
                         psVariant.setLong(1, newProductId);
                         psVariant.setString(2, variant.getSku());
@@ -422,7 +434,6 @@ public class ProductDAO extends db.DBContext {
                     psVariant.executeBatch();
                 }
             }
-
             if (images != null && !images.isEmpty()) {
                 try ( PreparedStatement psImage = conn.prepareStatement(sqlInsertImage)) {
                     int sortOrder = 1;

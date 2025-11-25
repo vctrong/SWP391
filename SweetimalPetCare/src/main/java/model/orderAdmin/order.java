@@ -4,6 +4,7 @@
  */
 package model.orderAdmin;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -21,8 +22,8 @@ public class order {
     private String paymentMethodCode;
     private String paymentStatus;
     private double subtotalAmount;
-    private double shippingFee;
-    private double totalAmount;
+    private BigDecimal shippingFee;
+    private BigDecimal totalAmount;
     private String notes;
     private Date createdAt;
     private Date updatedAt;
@@ -33,11 +34,12 @@ public class order {
     // MỚI: hiển thị địa chỉ đã format sẵn cho view
     private String shippingAddressLine;
     private String customerName;
+    private String customerPhone;
 
     public order() {
     }
 
-    public order(long orderId, String orderCode, long customerId, Long shippingAddressId, String orderStatus, String paymentMethodCode, String paymentStatus, double subtotalAmount, double shippingFee, double totalAmount, String notes, Date createdAt, Date updatedAt, List<orderItem> items, String shippingAddressLine, String customerName) {
+    public order(long orderId, String orderCode, long customerId, Long shippingAddressId, String orderStatus, String paymentMethodCode, String paymentStatus, double subtotalAmount, BigDecimal shippingFee, BigDecimal totalAmount, String notes, Date createdAt, Date updatedAt, List<orderItem> items, String shippingAddressLine, String customerName) {
         this.orderId = orderId;
         this.orderCode = orderCode;
         this.customerId = customerId;
@@ -54,6 +56,14 @@ public class order {
         this.items = items;
         this.shippingAddressLine = shippingAddressLine;
         this.customerName = customerName;
+    }
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
     }
 
     public long getOrderId() {
@@ -120,19 +130,19 @@ public class order {
         this.subtotalAmount = subtotalAmount;
     }
 
-    public double getShippingFee() {
+    public BigDecimal getShippingFee() {
         return shippingFee;
     }
 
-    public void setShippingFee(double shippingFee) {
+    public void setShippingFee(BigDecimal shippingFee) {
         this.shippingFee = shippingFee;
     }
 
-    public double getTotalAmount() {
+    public BigDecimal getTotalAmount() {
         return totalAmount;
     }
 
-    public void setTotalAmount(double totalAmount) {
+    public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
     }
 

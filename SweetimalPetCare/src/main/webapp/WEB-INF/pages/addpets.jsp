@@ -12,7 +12,8 @@
         <main class="min-h-screen flex flex-col items-center justify-center">
 
             <!-- Form -->
-            <form id="speciesForm" action="pets" method="get"
+            <form id="speciesForm" action="pets" method="get">
+                <input type="hidden" name="action" value="add"/>
                 class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full">
                 <h2 class="text-2xl font-bold mb-6 text-blue-700 text-center">Thêm thú cưng</h2>
 

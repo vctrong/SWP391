@@ -8,7 +8,17 @@
       <case-sensitivity plain-identifiers="lower" quoted-identifiers="exact" />
       <secret-storage>session</secret-storage>
       <user-name>swp391_user</user-name>
+<<<<<<< HEAD
       <schema-mapping />
+=======
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="database" qname="sweetimailpetcare">
+            <node kind="schema" qname="public" />
+          </node>
+        </introspection-scope>
+      </schema-mapping>
+>>>>>>> 75cfb510ce7d2093110bbdbb5927fec3fb94140a
       <ssl-config use-ide-store="true" use-java-store="true" use-system-store="true">
         <enabled>true</enabled>
         <mode>REQUIRE</mode>

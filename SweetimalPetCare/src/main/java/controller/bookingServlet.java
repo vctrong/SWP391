@@ -182,11 +182,11 @@ public class bookingServlet extends HttpServlet {
             }
             java.math.BigDecimal totalPrice = svc.getPrice();
 
-            // 3) create booking and assign to slot atomically via BookingDAO
+            // 3) create booking and assign to slot via BookingDAO
             daos.BookingDAO bookingDAO = new daos.BookingDAO();
             int bookingId = bookingDAO.createBookingAndAssignSlot((int) customerId, petId, serviceId, null,
-                    slotStart.toLocalDate(),
-                    slotStart.toLocalTime(),
+                    slotStart.toLocalDate(), // gets the date part (2025-11-23)
+                    slotStart.toLocalTime(), // gets the time part (14:30:00)
                     notes, totalPrice, slotId);
 
             if (bookingId > 0) {

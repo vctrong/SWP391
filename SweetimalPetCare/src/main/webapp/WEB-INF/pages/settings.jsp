@@ -21,6 +21,7 @@
             </p>
             <form action="settings" method="post" class="space-x-4">
                 <button name="action" value="deactivate"
+                        onclick="return confirm('Bạn có chắc muốn vô hiệu hóa tài khoản này?');"
                         class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
                     Vô hiệu hóa tài khoản
                 </button>

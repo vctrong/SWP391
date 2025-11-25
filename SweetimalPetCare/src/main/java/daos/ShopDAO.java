@@ -328,6 +328,23 @@ public class ShopDAO extends db.DBContext{
                             rs.getBoolean("variant_active"),
                             rs.getTimestamp("variant_created")
                     );
+                    // If variant has no image_url, try to fallback to first ProductImage for this product
+                    try {
+                        String iu = v.getImageUrl();
+                        if (iu == null || iu.trim().isEmpty()) {
+                            String imgSql = "SELECT TOP 1 pi.image_url FROM ProductImage pi JOIN ProductVariant pv2 ON pi.variant_id = pv2.variant_id WHERE pv2.product_id = ? ORDER BY pi.display_order ASC, pi.image_id ASC";
+                            try (PreparedStatement psImg = getConnection().prepareStatement(imgSql)) {
+                                psImg.setLong(1, p.getProductId());
+                                try (ResultSet rsImg = psImg.executeQuery()) {
+                                    if (rsImg.next()) {
+                                        v.setImageUrl(rsImg.getString(1));
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        // ignore fallback errors
+                    }
                     p.setMainVariant(v);
                 } else {
                     p.setMainVariant(null);
@@ -486,6 +503,23 @@ public class ShopDAO extends db.DBContext{
                             rs.getBoolean("variant_active"),
                             rs.getTimestamp("variant_created")
                     );
+                    // fallback to ProductImage if variant.image_url is empty
+                    try {
+                        String iu = v.getImageUrl();
+                        if (iu == null || iu.trim().isEmpty()) {
+                            String imgSql = "SELECT TOP 1 pi.image_url FROM ProductImage pi JOIN ProductVariant pv2 ON pi.variant_id = pv2.variant_id WHERE pv2.product_id = ? ORDER BY pi.display_order ASC, pi.image_id ASC";
+                            try (PreparedStatement psImg = getConnection().prepareStatement(imgSql)) {
+                                psImg.setLong(1, p.getProductId());
+                                try (ResultSet rsImg = psImg.executeQuery()) {
+                                    if (rsImg.next()) {
+                                        v.setImageUrl(rsImg.getString(1));
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        // ignore
+                    }
                     p.setMainVariant(v);
                 } else {
                     p.setMainVariant(null);

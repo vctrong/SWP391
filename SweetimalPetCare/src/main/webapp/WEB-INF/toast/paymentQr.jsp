@@ -14,7 +14,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <%@ include file="/WEB-INF/include/library.jsp" %>
 </head>
-<body class="bg-gray-50 font-sans pt-20">
+<body>
     <%@ include file="/WEB-INF/include/header.jsp" %>
 
     <div class="max-w-md mx-auto p-6">
