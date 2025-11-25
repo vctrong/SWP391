@@ -647,45 +647,59 @@
             <h3 class="text-xl font-bold mb-4">Sản phẩm liên quan</h3>
 
             <c:if test="${not empty relatedProducts}">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <c:forEach var="rp" items="${relatedProducts}">
-                        <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col">
-                            <a href="product?id=${rp.productId}" class="block h-28 mb-3">
-                                <c:choose>
-                                    <c:when test="${not empty rp.mainVariant and not empty rp.mainVariant.imageUrl}">
-                                        <c:choose>
-                                            <c:when test="${fn:startsWith(rp.mainVariant.imageUrl, 'http')}">
-                                                <img src="${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
-                                            </c:when>
-                                            <c:otherwise>
-                                                <img src="${pageContext.request.contextPath}/images/${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </c:when>
-                                    <c:otherwise>
-                                        <img src="${pageContext.request.contextPath}/images/no-image.png" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
-                                    </c:otherwise>
-                                </c:choose>
-                            </a>
+                <div class="relative">
+                    <div class="overflow-x-auto overflow-y-hidden">
+                        <div id="relatedTrack" class="flex gap-4 transition-transform duration-300">
+                            <c:forEach var="rp" items="${relatedProducts}">
+                                <div class="flex-shrink-0 w-1/2 md:w-1/4">
+                                    <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-3 flex flex-col h-full">
+                                        <a href="product?id=${rp.productId}" class="block h-28 mb-3">
+                                            <c:choose>
+                                                <c:when test="${not empty rp.mainVariant and not empty rp.mainVariant.imageUrl}">
+                                                    <c:choose>
+                                                        <c:when test="${fn:startsWith(rp.mainVariant.imageUrl, 'http')}">
+                                                            <img src="${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <img src="${pageContext.request.contextPath}/images/${rp.mainVariant.imageUrl}" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <img src="${pageContext.request.contextPath}/images/no-image.png" alt="${rp.productName}" class="w-full h-full object-cover rounded" />
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </a>
 
-                            <div class="flex-1">
-                                <a href="product?id=${rp.productId}" class="text-sm font-semibold hover:text-red-500 block mb-1">${rp.productName}</a>
-                                <p class="text-xs text-gray-500">Thương hiệu: ${rp.brandName}</p>
-                                <div class="mt-2">
-                                    <c:choose>
-                                        <c:when test="${not empty rp.mainVariant and rp.mainVariant.price ne 0}">
-                                            <p class="text-red-600 font-bold text-sm">
-                                                <fmt:formatNumber value="${rp.mainVariant.price}" type="number" groupingUsed="true"/>₫
-                                            </p>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <p class="text-gray-500 italic text-sm">Liên hệ</p>
-                                        </c:otherwise>
-                                    </c:choose>
+                                        <div class="flex-1">
+                                            <a href="product?id=${rp.productId}" class="text-sm font-semibold hover:text-red-500 block mb-1">${rp.productName}</a>
+                                            <p class="text-xs text-gray-500">Thương hiệu: ${rp.brandName}</p>
+                                            <div class="mt-2">
+                                                <c:choose>
+                                                    <c:when test="${not empty rp.mainVariant and rp.mainVariant.price ne 0}">
+                                                        <p class="text-red-600 font-bold text-sm">
+                                                            <fmt:formatNumber value="${rp.mainVariant.price}" type="number" groupingUsed="true"/>₫
+                                                        </p>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <p class="text-gray-500 italic text-sm">Liên hệ</p>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            </c:forEach>
                         </div>
-                    </c:forEach>
+                    </div>
+
+                    <!-- Controls -->
+                    <button id="relPrev" type="button" class="absolute left-0 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow-md" aria-label="Previous related">
+                        &#10094;
+                    </button>
+                    <button id="relNext" type="button" class="absolute right-0 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow-md" aria-label="Next related">
+                        &#10095;
+                    </button>
                 </div>
             </c:if>
 
@@ -822,5 +836,35 @@
 
     <script src="${pageContext.request.contextPath}/assets/js/loading.js"></script>
     <script src="${pageContext.request.contextPath}/assets/js/product.js"></script>
+    <script>
+    // Related products carousel: show 4 per view, scroll by container width
+    document.addEventListener('DOMContentLoaded', function(){
+        var track = document.getElementById('relatedTrack');
+        if (!track) return;
+        // container is the scrollable wrapper
+        var container = track.parentElement; 
+        var prev = document.getElementById('relPrev');
+        var next = document.getElementById('relNext');
+
+        function updateButtons(){
+            try{
+                var atStart = container.scrollLeft <= 1;
+                var atEnd = (container.scrollLeft + container.clientWidth) >= (track.scrollWidth - 1);
+                if (prev) { prev.disabled = atStart; prev.classList.toggle('opacity-50', atStart); }
+                if (next) { next.disabled = atEnd; next.classList.toggle('opacity-50', atEnd); }
+            }catch(e){ console.error(e); }
+        }
+
+        if (prev) prev.addEventListener('click', function(){ container.scrollBy({ left: -container.clientWidth, behavior: 'smooth' }); setTimeout(updateButtons, 420); });
+        if (next) next.addEventListener('click', function(){ container.scrollBy({ left: container.clientWidth, behavior: 'smooth' }); setTimeout(updateButtons, 420); });
+
+        // allow wrapper to be scrolled by drag/wheel on desktop
+        container.addEventListener('scroll', function(){ updateButtons(); });
+        window.addEventListener('resize', function(){ updateButtons(); });
+
+        // initial
+        setTimeout(updateButtons, 50);
+    });
+    </script>
 </body>
 </html>

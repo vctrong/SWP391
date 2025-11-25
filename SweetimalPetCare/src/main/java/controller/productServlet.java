@@ -123,7 +123,8 @@ public class productServlet extends HttpServlet {
             List<Product> relatedProducts;
             try {
                 int categoryId = product.getProductCategoryId();
-                relatedProducts = productDAO.getRelatedProductsByCategory(categoryId, productId, 6);
+                // Show up to 8 related products (server-side limit)
+                relatedProducts = productDAO.getRelatedProductsByCategory(categoryId, productId, 8);
             } catch (Exception ex) {
                 LOGGER.log(Level.WARNING, "Cannot load related products for product " + productId, ex);
                 relatedProducts = java.util.Collections.emptyList();
