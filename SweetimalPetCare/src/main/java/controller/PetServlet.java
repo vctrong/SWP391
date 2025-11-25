@@ -47,7 +47,7 @@ public class PetServlet extends HttpServlet {
 
         String action = request.getParameter("action");
 
-// ✅ If no action but speciesId is present (means user changed species)
+// If no action but speciesId is present (means user changed species)
         if (action == null && request.getParameter("speciesId") != null) {
             action = "add";
         }
@@ -55,10 +55,12 @@ public class PetServlet extends HttpServlet {
             if ("add".equalsIgnoreCase(action)) {
                 List<PetSpecies> speciesList = speciesDAO.getAllSpecies();
                 List<PetBreed> breedList;
+
+                // must find speciesId param to filter breeds
                 String speciesIdParam = request.getParameter("speciesId");
-                if (speciesIdParam != null && !speciesIdParam.isEmpty()) {
+                if (speciesIdParam != null && !speciesIdParam.isEmpty()) { // exists
                     int speciesId = Integer.parseInt(speciesIdParam);
-                    breedList = breedDAO.getBreedsBySpecies(speciesId);
+                    breedList = breedDAO.getBreedsBySpecies(speciesId); // fetch breeds for selected species
                 } else {
                     breedList = breedDAO.getBreedsBySpecies(1); // default or empty list
                 }
@@ -180,7 +182,8 @@ public class PetServlet extends HttpServlet {
     }
 
     /**
-     * Attempt to delete a pet. Returns true if deleted, false if blocked (e.g., bookings exist).
+     * Attempt to delete a pet. Returns true if deleted, false if blocked (e.g.,
+     * bookings exist).
      */
     private boolean handleDelete(HttpServletRequest request, Users user) throws Exception {
         String petIdStr = request.getParameter("petId");
@@ -214,7 +217,7 @@ public class PetServlet extends HttpServlet {
         String name = request.getParameter("name");
         int speciesId = Integer.parseInt(request.getParameter("speciesId"));
 
-        // ✅ Breed may be optional
+        // Breed may be optional
         String breedIdStr = request.getParameter("breedId");
         Integer breedId = null;
         if (breedIdStr != null && !breedIdStr.isEmpty()) {
@@ -236,7 +239,7 @@ public class PetServlet extends HttpServlet {
         String color = request.getParameter("color");
         String notes = request.getParameter("notes");
 
-        // ✅ assign values
+        // assign values
         pet.setName(name);
         pet.setSpeciesId(speciesId);
         pet.setBreedId(breedId);

@@ -16,12 +16,13 @@
         <%@include file="/WEB-INF/include/header.jsp" %>
 
         <main class="min-h-screen flex flex-col items-center justify-center">
-                        <form id="editPetForm" action="pets" method="post"
-                                    class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full">
-                                <h2 class="text-2xl font-bold mb-6 text-blue-700 text-center">Chỉnh sửa thú cưng</h2>
-                                <!-- default hidden action is 'edit' for auto-submits (species change); submit button will set to 'update' -->
-                                <input type="hidden" id="formAction" name="action" value="edit"/>
-                                <input type="hidden" name="petId" value="${pet.id}"/>
+
+            <form id="editPetForm" action="pets" method="post"
+                  class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full">
+                <h2 class="text-2xl font-bold mb-6 text-blue-700 text-center">Chỉnh sửa thú cưng</h2>
+                <!-- default hidden action is 'edit' for auto-submits (species change); submit button will set to 'update' -->
+                <input type="hidden" id="formAction" name="action" value="edit"/>
+                <input type="hidden" name="petId" value="${pet.id}"/>
 
                 <!-- Tên -->
                 <div>
@@ -33,10 +34,10 @@
                 <!-- Loài -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Loài</label>
-            <select name="speciesId"
-                class="w-full border rounded px-3 py-2"
+                    <select name="speciesId"
+                            class="w-full border rounded px-3 py-2"
                             onchange="preserveAndSubmit(this.form)"
-                required>
+                            required>
                         <c:forEach var="s" items="${speciesList}">
                             <option value="${s.id}" <c:if test="${s.id == pet.speciesId}">selected</c:if>>
                                 ${s.name}
@@ -99,7 +100,7 @@
                               class="w-full border rounded px-3 py-2">${pet.notes}</textarea>
                 </div>
 
-                <button type="submit" onclick="document.getElementById('formAction').value='update';"
+                <button type="submit" onclick="document.getElementById('formAction').value = 'update';"
                         class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                     Lưu thay đổi
                 </button>
@@ -111,12 +112,12 @@
     <script>
         // copy visible form values into hidden inputs before auto-submit so data persists
         function preserveAndSubmit(form) {
-            const fields = ['name','gender','birthdate','color','weightKg','notes','petId'];
-            fields.forEach(function(n){
+            const fields = ['name', 'gender', 'birthdate', 'color', 'weightKg', 'notes', 'petId'];
+            fields.forEach(function (n) {
                 // Find the visible form element with the current field name
-                let el = form.querySelector('[name="'+n+'"]');
+                let el = form.querySelector('[name="' + n + '"]');
                 // Find the existing hidden input for this field, if any
-                let hidden = form.querySelector('input[type=hidden][name="'+n+'"]');
+                let hidden = form.querySelector('input[type=hidden][name="' + n + '"]');
                 if (!hidden) {
                     hidden = document.createElement('input');
                     hidden.type = 'hidden';
