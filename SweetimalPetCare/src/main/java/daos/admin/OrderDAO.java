@@ -26,12 +26,12 @@ public class OrderDAO extends db.DBContext {
 
     public List<order> getAllOrders() {
         List<order> list = new ArrayList<>();
-        // Sửa lại tên cột trong hàm CONCAT cho khớp với bảng UserAddress của bạn
+        // Postgres dùng CONCAT tương tự SQL Server, OK
         String sql = "SELECT o.order_id, o.order_code, o.customer_id, o.shipping_address_id, "
                 + "o.order_status, o.payment_method_code, o.payment_status, "
                 + "o.subtotal_amount, o.shipping_fee, o.total_amount, "
                 + "o.notes, o.created_at, o.updated_at, "
-                + "u.full_name, " // Giả định cột tên là full_name
+                + "u.full_name, "
                 + "CONCAT(ua.address_line1, ', ', ua.ward, ', ', ua.district, ', ', ua.city) AS full_address "
                 + "FROM Orders o "
                 + "JOIN Users u ON o.customer_id = u.user_id "
@@ -64,7 +64,7 @@ public class OrderDAO extends db.DBContext {
 
                 order.setNotes(rs.getString("notes"));
 
-                // SQL Server trả về DATETIME2 -> Timestamp -> java.util.Date
+                // Postgres trả về Timestamp chuẩn -> java.util.Date
                 order.setCreatedAt(rs.getTimestamp("created_at"));
                 order.setUpdatedAt(rs.getTimestamp("updated_at"));
 
@@ -86,20 +86,26 @@ public class OrderDAO extends db.DBContext {
 
     public List<ProductForNewOrderDTO> searchProducts(String keyword) {
         List<ProductForNewOrderDTO> list = new ArrayList<>();
-        // SQL Server dùng TOP thay vì LIMIT
+
+        // FIX: Postgres dùng boolean (true/false) hoặc 1/0 nếu cột là smallint
+        // Giả sử is_active của Product và Variant là BOOLEAN trong Postgres
+        // Nếu là SMALLINT (như bảng users) thì dùng = 1
+        // Code dưới đây dùng = true cho an toàn với Postgres boolean chuẩn
+        // Nếu lỗi, đổi thành = 1
         String sql = "SELECT pv.variant_id, p.product_name, pv.sku, pv.attribute_json, "
                 + "pv.price, pv.stock_quantity, pv.image_url "
                 + "FROM ProductVariant pv "
                 + "JOIN Product p ON pv.product_id = p.product_id "
-                + "WHERE p.is_active = 1 AND pv.is_active = 1 "
+                + "WHERE p.is_active IS TRUE AND pv.is_active IS TRUE " // Sửa = 1 thành IS TRUE
                 + "AND (p.product_name LIKE ? OR pv.sku LIKE ? OR p.product_code LIKE ?)";
 
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             String searchPattern = "%" + keyword + "%";
-            ps.setNString(1, searchPattern); // product_name (NVARCHAR)
-            ps.setNString(2, searchPattern); // sku
-            ps.setNString(3, searchPattern); // product_code
+            // FIX: Postgres dùng setString thay vì setNString
+            ps.setString(1, searchPattern);
+            ps.setString(2, searchPattern);
+            ps.setString(3, searchPattern);
 
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -128,8 +134,6 @@ public class OrderDAO extends db.DBContext {
                 + "shipping_fee, total_amount, notes) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        // 2. Câu SQL Insert bảng OrderItems
-        // Lưu ý: Không insert cột line_total vì trong DB nó là cột tự tính (AS unit * qty)
         String sqlItem = "INSERT INTO OrderItems (order_id, variant_id, unit_price, quantity) VALUES (?, ?, ?, ?)";
 
         Connection conn = null;
@@ -140,25 +144,40 @@ public class OrderDAO extends db.DBContext {
         try {
             conn = this.openNewConnection();
             conn.setAutoCommit(false);
+
+            // Postgres hỗ trợ RETURN_GENERATED_KEYS tốt
             psOrder = conn.prepareStatement(sqlOrder, Statement.RETURN_GENERATED_KEYS);
+
             psOrder.setString(1, order.getOrderCode());
             psOrder.setLong(2, order.getCustomerId());
-            psOrder.setLong(3, order.getShippingAddressId());
-            psOrder.setString(4, order.getOrderStatus());      // Thường là 'PENDING'
+
+            // Xử lý null cho address_id nếu không có
+            if (order.getShippingAddressId() > 0) {
+                psOrder.setLong(3, order.getShippingAddressId());
+            } else {
+                psOrder.setNull(3, java.sql.Types.BIGINT);
+            }
+
+            psOrder.setString(4, order.getOrderStatus());
             psOrder.setString(5, order.getPaymentMethodCode());
-            psOrder.setString(6, order.getPaymentStatus());    // Thường là 'PENDING'
-            psOrder.setDouble(7, order.getSubtotalAmount());
+            psOrder.setString(6, order.getPaymentStatus());
+
+            // FIX: Nên dùng setBigDecimal cho tiền tệ
+            psOrder.setBigDecimal(7, BigDecimal.valueOf(order.getSubtotalAmount()));
             psOrder.setBigDecimal(8, order.getShippingFee());
             psOrder.setBigDecimal(9, order.getTotalAmount());
+
             psOrder.setString(10, order.getNotes());
+
             int affectedRows = psOrder.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Creating order failed, no rows affected.");
             }
+
             rs = psOrder.getGeneratedKeys();
             if (rs.next()) {
-                generatedOrderId = rs.getLong(1); // Đây là order_id
-                order.setOrderId(generatedOrderId); // Set ngược lại vào object để dùng nếu cần
+                generatedOrderId = rs.getLong(1);
+                order.setOrderId(generatedOrderId);
             } else {
                 throw new SQLException("Creating order failed, no ID obtained.");
             }
@@ -167,19 +186,17 @@ public class OrderDAO extends db.DBContext {
             List<orderItem> items = order.getItems();
             if (items != null && !items.isEmpty()) {
                 for (orderItem item : items) {
-                    psItem.setLong(1, generatedOrderId); // Dùng ID vừa lấy ở trên
+                    psItem.setLong(1, generatedOrderId);
                     psItem.setLong(2, item.getVariantId());
                     psItem.setBigDecimal(3, item.getUnitPrice());
                     psItem.setInt(4, item.getQuantity());
 
-                    psItem.addBatch(); // Thêm vào hàng đợi
+                    psItem.addBatch();
                 }
-                // Chạy một lần hết danh sách
                 psItem.executeBatch();
             }
             conn.commit();
         } catch (Exception e) {
-            // Nếu có lỗi, ROLLBACK (Hoàn tác) lại toàn bộ, không lưu dòng nào cả
             try {
                 if (conn != null) {
                     conn.rollback();
@@ -188,9 +205,8 @@ public class OrderDAO extends db.DBContext {
                 ex.printStackTrace();
             }
             e.printStackTrace();
-            return -1; // Trả về -1 báo hiệu lỗi
+            return -1;
         } finally {
-            // Đóng kết nối
             try {
                 if (rs != null) {
                     rs.close();
@@ -202,7 +218,7 @@ public class OrderDAO extends db.DBContext {
                     psItem.close();
                 }
                 if (conn != null) {
-                    conn.setAutoCommit(true); // Bật lại auto commit cho các lệnh khác
+                    conn.setAutoCommit(true);
                     conn.close();
                 }
             } catch (SQLException e) {
@@ -213,13 +229,11 @@ public class OrderDAO extends db.DBContext {
     }
 
     public BigDecimal getPriceVariantById(long variantId) {
-        String sql = "select price from ProductVariant\n"
-                + "where variant_id = ?";
+        String sql = "select price from ProductVariant where variant_id = ?";
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, variantId);
             try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-
                     return rs.getBigDecimal(1);
                 }
             }
@@ -238,8 +252,7 @@ public class OrderDAO extends db.DBContext {
         try {
             conn = this.openNewConnection();
 
-            // BƯỚC 1: Lấy thông tin chung (Header) của đơn hàng
-            // Join bảng Users để lấy tên khách, UserAddress để lấy địa chỉ full
+            // BƯỚC 1: Lấy thông tin chung
             String sqlOrder = "SELECT o.*, u.full_name, ua.phone, "
                     + "CONCAT(ua.address_line1, ', ', ua.ward, ', ', ua.district, ', ', ua.city) AS full_address "
                     + "FROM Orders o "
@@ -253,16 +266,20 @@ public class OrderDAO extends db.DBContext {
 
             if (rs.next()) {
                 order = new order();
-                // Map các cột DB vào Model Order
                 order.setOrderId(rs.getLong("order_id"));
                 order.setOrderCode(rs.getString("order_code"));
                 order.setCustomerId(rs.getLong("customer_id"));
-                order.setShippingAddressId(rs.getLong("shipping_address_id"));
+
+                // Check null cho ID
+                long shipId = rs.getLong("shipping_address_id");
+                if (!rs.wasNull()) {
+                    order.setShippingAddressId(shipId);
+                }
+
                 order.setOrderStatus(rs.getString("order_status"));
                 order.setPaymentMethodCode(rs.getString("payment_method_code"));
                 order.setPaymentStatus(rs.getString("payment_status"));
 
-                // Lưu ý: DB là Decimal, Model là double
                 order.setSubtotalAmount(rs.getDouble("subtotal_amount"));
                 order.setShippingFee(rs.getBigDecimal("shipping_fee"));
                 order.setTotalAmount(rs.getBigDecimal("total_amount"));
@@ -271,27 +288,23 @@ public class OrderDAO extends db.DBContext {
                 order.setCreatedAt(rs.getTimestamp("created_at"));
                 order.setUpdatedAt(rs.getTimestamp("updated_at"));
 
-                // Các trường hiển thị (Joined columns)
                 order.setCustomerName(rs.getString("full_name"));
                 order.setCustomerPhone(rs.getString("phone"));
                 String address = rs.getString("full_address");
                 order.setShippingAddressLine(address != null ? address : "Nhận tại cửa hàng / Không có địa chỉ");
             }
 
-            // Nếu không tìm thấy order thì return null luôn
             if (order == null) {
                 return null;
             }
 
-            // BƯỚC 2: Lấy danh sách sản phẩm (Items) của đơn hàng đó
-            // Join ProductVariant và Product để lấy tên và ảnh hiển thị lên Modal
+            // BƯỚC 2: Lấy danh sách sản phẩm
             String sqlItems = "SELECT oi.*, p.product_name, pv.sku, pv.image_url "
                     + "FROM OrderItems oi "
                     + "JOIN ProductVariant pv ON oi.variant_id = pv.variant_id "
                     + "JOIN Product p ON pv.product_id = p.product_id "
                     + "WHERE oi.order_id = ?";
 
-            // Đóng ResultSet/Statement cũ để dùng cái mới
             rs.close();
             ps.close();
 
@@ -305,28 +318,23 @@ public class OrderDAO extends db.DBContext {
                 item.setOrderItemId(rs.getLong("order_item_id"));
                 item.setOrderId(rs.getLong("order_id"));
                 item.setVariantId(rs.getLong("variant_id"));
-                item.setUnitPrice(rs.getBigDecimal("unit_price")); // Model bạn dùng BigDecimal
+                item.setUnitPrice(rs.getBigDecimal("unit_price"));
                 item.setQuantity(rs.getInt("quantity"));
 
-                // Tính lineTotal: Trong DB không có cột này, tự tính hoặc lấy từ AS nếu có
-                // Ở đây mình tự tính cho chắc: unit * qty
                 double lineTotal = item.getUnitPrice().doubleValue() * item.getQuantity();
                 item.setLineTotal(lineTotal);
 
-                // Map các trường hiển thị bổ sung
                 item.setProductName(rs.getString("product_name"));
                 item.setImageUrl(rs.getString("image_url"));
 
                 items.add(item);
             }
 
-            // Gán danh sách items vào Order
             order.setItems(items);
 
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            // Đóng kết nối
             try {
                 if (rs != null) {
                     rs.close();
@@ -345,7 +353,8 @@ public class OrderDAO extends db.DBContext {
     }
 
     public boolean updateOrderStatus(long orderId, String newStatus) {
-        String sql = "UPDATE Orders SET order_status = ?, updated_at = SYSUTCDATETIME() WHERE order_id = ?";
+        // FIX: SYSUTCDATETIME() -> CURRENT_TIMESTAMP
+        String sql = "UPDATE Orders SET order_status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?";
 
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -353,7 +362,7 @@ public class OrderDAO extends db.DBContext {
             ps.setLong(2, orderId);
 
             int rowsAffected = ps.executeUpdate();
-            return rowsAffected > 0; // Trả về true nếu update thành công
+            return rowsAffected > 0;
 
         } catch (Exception e) {
             e.printStackTrace();

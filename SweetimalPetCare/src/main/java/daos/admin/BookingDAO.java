@@ -62,7 +62,7 @@ public class BookingDAO extends db.DBContext {
                 }
             }
         } catch (SQLException ex) {
-            // FIX LỖI LOGGER NULL POINTER
+            // FIX LỖI LOGGER
             Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, "Lỗi countBookings: " + ex.getMessage(), ex);
         }
         return count;
@@ -278,7 +278,7 @@ public class BookingDAO extends db.DBContext {
                 }
             }
         } catch (Exception ex) {
-            // FIX LỖI LOGGER CHO ĐỒNG BỘ
+            // FIX LỖI LOGGER
             Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, "Lỗi getBookingForCalendar: " + ex.getMessage(), ex);
         }
         return events;
@@ -306,8 +306,6 @@ public class BookingDAO extends db.DBContext {
                     + "WHERE b.booking_id = ?";
             Object[] params = {id};
 
-            // Lưu ý: Nếu lớp cha DBContext có hàm executeSelectQuery trả về ResultSet thì dùng
-            // Nhưng ở đây tôi viết chuẩn JDBC để an toàn nhất
             try ( Connection conn = this.getConnection();  PreparedStatement ps = conn.prepareStatement(qr)) {
                 ps.setLong(1, id);
                 try ( ResultSet rs = ps.executeQuery()) {
@@ -377,7 +375,7 @@ public class BookingDAO extends db.DBContext {
             return ps.executeUpdate() > 0;
 
         } catch (SQLException ex) {
-            // FIX LỖI LOGGER CHO ĐỒNG BỘ
+            // FIX LỖI LOGGER
             Logger.getLogger(BookingDAO.class.getName()).log(Level.SEVERE, "Lỗi insertVetVisit: " + ex.getMessage(), ex);
         }
         return false;

@@ -28,17 +28,18 @@ public class ServiceDAO extends db.DBContext {
 
     public ArrayList<serviceCate> getServiceCate() {
         try {
-            String qr = "select  service_category_id, category_name, description\n"
-                    + "from ServiceCategory";
+            String qr = "select service_category_id, category_name, description from ServiceCategory";
 
             ArrayList<serviceCate> temp = new ArrayList<>();
-            ResultSet rs = this.executeSelectQuery(qr, null);
-            while (rs.next()) {
-                temp.add(new serviceCate(rs.getLong(1), rs.getString(2), rs.getString(3)));
+            // Sử dụng executeSelectQuery nếu class cha hỗ trợ
+            try ( ResultSet rs = this.executeSelectQuery(qr, null)) {
+                while (rs.next()) {
+                    temp.add(new serviceCate(rs.getLong(1), rs.getString(2), rs.getString(3)));
+                }
             }
             return temp;
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi getServiceCate: " + ex.getMessage(), ex);
         }
         return null;
     }
@@ -46,24 +47,26 @@ public class ServiceDAO extends db.DBContext {
     public ArrayList<ServiceForListPackageDTO> getServiceForListPackage() {
         try {
             String qr = "select service_id, service_category_id, service_code, "
-                    + "service_name, description, base_duration_min, current_price, status, created_at\n"
+                    + "service_name, description, base_duration_min, current_price, status, created_at "
                     + "from services ";
             ArrayList<ServiceForListPackageDTO> temp = new ArrayList<>();
-            ResultSet rs = this.executeSelectQuery(qr, null);
-            while (rs.next()) {
-                temp.add(new ServiceForListPackageDTO(rs.getLong(1), rs.getLong(2),
-                        rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6),
-                        rs.getBigDecimal(7), rs.getString(8), rs.getDate(9)));
+            try ( ResultSet rs = this.executeSelectQuery(qr, null)) {
+                while (rs.next()) {
+                    temp.add(new ServiceForListPackageDTO(rs.getLong(1), rs.getLong(2),
+                            rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6),
+                            rs.getBigDecimal(7), rs.getString(8), rs.getDate(9)));
+                }
             }
             return temp;
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi getServiceForListPackage: " + ex.getMessage(), ex);
         }
         return null;
     }
 
     public ArrayList<service> getServiceAdmin() {
         try {
+            // Query UNION ALL này chuẩn SQL, chạy tốt trên cả SQL Server và Postgres
             String qr = "select service_id as id, s.service_category_id, service_code as code, service_name as name, \n"
                     + "s.description, base_duration_min, current_price as price, status, created_at, sc.category_name, 'Service' as type\n"
                     + "from Services s \n"
@@ -78,15 +81,16 @@ public class ServiceDAO extends db.DBContext {
                     + "GROUP BY sp.package_id, sp.package_code, sp.package_name, \n"
                     + "sp.description, sp.package_price, sp.status, sp.created_at";
             ArrayList<service> temp = new ArrayList<>();
-            ResultSet rs = this.executeSelectQuery(qr, null);
-            while (rs.next()) {
-                temp.add(new service(rs.getLong(1), rs.getLong(2), rs.getString(3),
-                        rs.getString(4), rs.getString(5), rs.getInt(6), rs.getBigDecimal(7),
-                        rs.getString(8), rs.getDate(9), rs.getString(10), rs.getString(11)));
+            try ( ResultSet rs = this.executeSelectQuery(qr, null)) {
+                while (rs.next()) {
+                    temp.add(new service(rs.getLong(1), rs.getLong(2), rs.getString(3),
+                            rs.getString(4), rs.getString(5), rs.getInt(6), rs.getBigDecimal(7),
+                            rs.getString(8), rs.getDate(9), rs.getString(10), rs.getString(11)));
+                }
             }
             return temp;
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi getServiceAdmin: " + ex.getMessage(), ex);
         }
         return null;
     }
@@ -95,28 +99,33 @@ public class ServiceDAO extends db.DBContext {
         try {
             String qr = "select sp.package_id, package_code, package_name, "
                     + "sp.description, sp.status, package_price, sp.created_at, s.service_id, \n"
-                    + "	s.service_name, pi.quantity, s.base_duration_min\n"
-                    + "	from ServicePackage sp\n"
-                    + "	left join PackageItem pi on pi.package_id = sp.package_id\n"
-                    + "	left join Services s on pi.service_id = s.service_id\n"
-                    + "	where sp.package_id = ?";
+                    + " s.service_name, pi.quantity, s.base_duration_min\n"
+                    + " from ServicePackage sp\n"
+                    + " left join PackageItem pi on pi.package_id = sp.package_id\n"
+                    + " left join Services s on pi.service_id = s.service_id\n"
+                    + " where sp.package_id = ?";
             servicePackage sp = null;
-            PreparedStatement ps = getConnection().prepareStatement(qr);
-            ps.setLong(1, id);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                if (sp == null) {
-                    sp = new servicePackage(rs.getLong(1), rs.getString(2),
-                            rs.getString(3), rs.getString(4), rs.getString(5), rs.getBigDecimal(6), rs.getDate(7));
-                    sp.setItem(new ArrayList<>());
-                }
-                serviceDTO item = new serviceDTO(rs.getLong(8), rs.getString(9), rs.getInt(10), rs.getInt(11));
-                sp.getItem().add(item);
-            }
 
+            try ( Connection conn = this.getConnection();  PreparedStatement ps = conn.prepareStatement(qr)) {
+                ps.setLong(1, id);
+                try ( ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        if (sp == null) {
+                            sp = new servicePackage(rs.getLong(1), rs.getString(2),
+                                    rs.getString(3), rs.getString(4), rs.getString(5), rs.getBigDecimal(6), rs.getDate(7));
+                            sp.setItem(new ArrayList<>());
+                        }
+                        // Chỉ add item nếu có service (tránh trường hợp package rỗng service sẽ trả về null ở các cột joined)
+                        if (rs.getObject(8) != null) {
+                            serviceDTO item = new serviceDTO(rs.getLong(8), rs.getString(9), rs.getInt(10), rs.getInt(11));
+                            sp.getItem().add(item);
+                        }
+                    }
+                }
+            }
             return sp;
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi getPackageServiceByID: " + ex.getMessage(), ex);
         }
         return null;
     }
@@ -129,14 +138,15 @@ public class ServiceDAO extends db.DBContext {
                     + "join ServiceCategory sc on sc.service_category_id = s.service_category_id\n"
                     + "where s.service_id = ?";
             Object[] params = {id};
-            ResultSet rs = this.executeSelectQuery(qr, params);
-            if (rs.next()) {
-                return new service(rs.getLong(1), rs.getLong(2), rs.getString(3),
-                        rs.getString(4), rs.getString(5), rs.getInt(6), rs.getBigDecimal(7),
-                        rs.getString(8), rs.getDate(9), rs.getString(10), rs.getString(11));
+            try ( ResultSet rs = this.executeSelectQuery(qr, params)) {
+                if (rs.next()) {
+                    return new service(rs.getLong(1), rs.getLong(2), rs.getString(3),
+                            rs.getString(4), rs.getString(5), rs.getInt(6), rs.getBigDecimal(7),
+                            rs.getString(8), rs.getDate(9), rs.getString(10), rs.getString(11));
+                }
             }
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi getServiceByID: " + ex.getMessage(), ex);
         }
         return null;
 
@@ -150,7 +160,7 @@ public class ServiceDAO extends db.DBContext {
             Object[] params = {serviceCateID, code, name, description, duration, price, status};
             return this.executeQuery(qr, params);
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi createService: " + ex.getMessage(), ex);
         }
         return 0;
     }
@@ -159,12 +169,13 @@ public class ServiceDAO extends db.DBContext {
         try {
             String qr = "SELECT COUNT(*) FROM Services WHERE service_code = ?";
             Object[] params = {code};
-            ResultSet rs = this.executeSelectQuery(qr, params);
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+            try ( ResultSet rs = this.executeSelectQuery(qr, params)) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
             }
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi exitsServiceCode: " + ex.getMessage(), ex);
         }
         return true;
     }
@@ -173,12 +184,13 @@ public class ServiceDAO extends db.DBContext {
         try {
             String qr = "SELECT COUNT(*) FROM ServicePackage WHERE package_code = ?";
             Object[] params = {code};
-            ResultSet rs = this.executeSelectQuery(qr, params);
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+            try ( ResultSet rs = this.executeSelectQuery(qr, params)) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
             }
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi exitsPackageCode: " + ex.getMessage(), ex);
         }
         return true;
     }
@@ -189,7 +201,7 @@ public class ServiceDAO extends db.DBContext {
             Object[] params = {cateName, description};
             return this.executeQuery(qr, params);
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi createServiceCate: " + ex.getMessage(), ex);
         }
         return 0;
 
@@ -202,7 +214,7 @@ public class ServiceDAO extends db.DBContext {
             Object[] params = {packagesCode, name, description, status, price};
             return this.executeQuery(qr, params);
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi createServicePackage: " + ex.getMessage(), ex);
         }
         return 0;
     }
@@ -223,7 +235,7 @@ public class ServiceDAO extends db.DBContext {
             Object[] params = {cateID, code, name, description, duration, price, status, id};
             return this.executeQuery(qr, params);
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi updateService: " + ex.getMessage(), ex);
         }
         return 0;
     }
@@ -236,6 +248,7 @@ public class ServiceDAO extends db.DBContext {
         try {
             txConn = this.openNewConnection();
             txConn.setAutoCommit(false);
+
             String qrServicePackage = "UPDATE ServicePackage SET package_name = ?,\n"
                     + "package_price = ?, status = ?,\n"
                     + "description = ? WHERE package_id = ?";
@@ -268,7 +281,7 @@ public class ServiceDAO extends db.DBContext {
             txConn.commit();
             return 1;
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi updatePackageService: " + ex.getMessage(), ex);
             if (txConn != null) {
                 try {
                     txConn.rollback();
@@ -291,10 +304,12 @@ public class ServiceDAO extends db.DBContext {
 
     public boolean checkBookingService(long id) {
         try {
-            String qr = "SELECT TOP 1 1 \n"
+            // FIX: CAST(GETDATE() AS DATE) -> CURRENT_DATE
+            // FIX: TOP 1 -> LIMIT 1
+            String qr = "SELECT 1 \n"
                     + "FROM Booking AS B \n"
                     + "WHERE \n"
-                    + "B.requested_date >= CAST(GETDATE() AS DATE) \n"
+                    + "B.requested_date >= CURRENT_DATE \n"
                     + "AND B.current_status IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS') \n"
                     + "AND ( \n"
                     + "B.service_id = ?\n"
@@ -302,28 +317,32 @@ public class ServiceDAO extends db.DBContext {
                     + "SELECT PI.package_id \n"
                     + "FROM PackageItem AS PI \n"
                     + "WHERE PI.service_id = ?\n"
-                    + "));";
+                    + ")) LIMIT 1;";
             Object[] param = {id, id};
-            ResultSet rs = this.executeSelectQuery(qr, param);
-            return rs.next();
+            try ( ResultSet rs = this.executeSelectQuery(qr, param)) {
+                return rs.next();
+            }
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi checkBookingService: " + ex.getMessage(), ex);
         }
         return false;
     }
 
     public boolean checkBookingPackage(long id) {
         try {
-            String qr = "select top 1 1 \n"
-                    + "	from booking as b\n"
-                    + "	where b.requested_date >= cast(GETDATE() as date)\n"
-                    + "	and b.current_status in ('PENDING', 'CONFIRMED', 'IN_PROGRESS')\n"
-                    + "	and b.package_id = ?";
+            // FIX: cast(GETDATE() as date) -> CURRENT_DATE
+            // FIX: top 1 -> LIMIT 1
+            String qr = "select 1 \n"
+                    + " from booking as b\n"
+                    + " where b.requested_date >= CURRENT_DATE\n"
+                    + " and b.current_status in ('PENDING', 'CONFIRMED', 'IN_PROGRESS')\n"
+                    + " and b.package_id = ? LIMIT 1";
             Object[] params = {id};
-            ResultSet rs = this.executeSelectQuery(qr, params);
-            return rs.next();
+            try ( ResultSet rs = this.executeSelectQuery(qr, params)) {
+                return rs.next();
+            }
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi checkBookingPackage: " + ex.getMessage(), ex);
         }
         return false;
     }
@@ -331,6 +350,7 @@ public class ServiceDAO extends db.DBContext {
     public ArrayList<service> searchServices(String query, String filter) {
         try {
             ArrayList<service> temp = new ArrayList<>();
+            // Query này UNION và logic LIKE vẫn ổn trên Postgres
             String qr = "SELECT * FROM ( "
                     + "    select service_id as id, s.service_category_id, service_code as code, service_name as name, \n"
                     + "           s.description, base_duration_min, current_price as price, status, created_at, sc.category_name, 'Service' as type\n"
@@ -353,15 +373,16 @@ public class ServiceDAO extends db.DBContext {
             String search = "%" + query + "%";
             String filterP = "all".equalsIgnoreCase(filter) ? "%%" : filter;
             Object[] params = {search, search, filterP};
-            ResultSet rs = this.executeSelectQuery(qr, params);
-            while (rs.next()) {
-                temp.add(new service(rs.getLong(1), rs.getLong(2), rs.getString(3),
-                        rs.getString(4), rs.getString(5), rs.getInt(6), rs.getBigDecimal(7),
-                        rs.getString(8), rs.getDate(9), rs.getString(10), rs.getString(11)));
+            try ( ResultSet rs = this.executeSelectQuery(qr, params)) {
+                while (rs.next()) {
+                    temp.add(new service(rs.getLong(1), rs.getLong(2), rs.getString(3),
+                            rs.getString(4), rs.getString(5), rs.getInt(6), rs.getBigDecimal(7),
+                            rs.getString(8), rs.getDate(9), rs.getString(10), rs.getString(11)));
+                }
             }
             return temp;
         } catch (SQLException ex) {
-            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceDAO.class.getName()).log(Level.SEVERE, "Lỗi searchServices: " + ex.getMessage(), ex);
         }
         return null;
     }

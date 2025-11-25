@@ -53,14 +53,23 @@ public class UserDAO extends db.DBContext {
         String fullName = rs.getString("full_name");
         int gender = rs.getInt("gender");
         Date birthday = rs.getDate("birthday");
-        boolean isActive = rs.getBoolean("is_active");
+
+        // [FIX POSTGRES]: Vì trong DB cột is_active là SMALLINT (1/0), 
+        // nên an toàn nhất là lấy getInt rồi so sánh với 1
+        boolean isActive = rs.getInt("is_active") == 1;
+
         String avatar = rs.getString("avatar_url");
-        String roleName = rs.getString("role_name");
+        // Kiểm tra xem câu query có join bảng roles để lấy role_name không, nếu không thì có thể null
+        String roleName = "";
+        try {
+            roleName = rs.getString("role_name");
+        } catch (SQLException e) {
+            // Bỏ qua nếu query không select cột này
+        }
 
         // 2. Quyết định tạo Object nào dựa trên Role ID
         switch (roleId) {
-            case 3: {
-                // --- TRƯỜNG HỢP VET (BÁC SĨ) ---
+            case 3: { // VET
                 String pos = rs.getString("position_title");
                 Date hire = rs.getDate("hire_date");
                 String spec = rs.getString("specialty");
@@ -70,16 +79,14 @@ public class UserDAO extends db.DBContext {
                 return new VetDTO(id, username, email, phone, fullName, gender, birthday,
                         isActive, avatar, roleId, roleName, pos, hire, spec, license, rating);
             }
-            case 2: {
-                // --- TRƯỜNG HỢP STAFF ---
+            case 2: { // STAFF
                 String pos = rs.getString("position_title");
                 Date hire = rs.getDate("hire_date");
 
                 return new StaffDTO(id, username, email, phone, fullName, gender, birthday,
                         isActive, avatar, roleId, roleName, pos, hire);
             }
-            default:
-                // --- TRƯỜNG HỢP CUSTOMER ---
+            default: // CUSTOMER
                 return new UserDTO(id, username, email, phone, fullName, gender, birthday,
                         isActive, avatar, roleId, roleName);
         }
@@ -98,7 +105,6 @@ public class UserDAO extends db.DBContext {
             ps.setInt(1, roleId);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    // Gọi hàm mapper helper bên dưới để chuyển row thành object tương ứng
                     list.add(mapRowToDTO(rs, roleId));
                 }
             }
@@ -112,43 +118,48 @@ public class UserDAO extends db.DBContext {
         String sql = "INSERT INTO Users ("
                 + "username, password_hash, email, phone, full_name, "
                 + "gender, role_id, is_active, avatar_url, "
-                + "position_title, hire_date, " // Trường của Staff
-                + "specialty, license_number, is_veterinarian" // Trường của Vet
+                + "position_title, hire_date, "
+                + "specialty, license_number, is_veterinarian"
                 + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            // --- SET CÁC TRƯỜNG CHUNG (UserDTO) ---
             ps.setString(1, user.getUsername());
-            ps.setString(2, hashMd5(passRaw)); // Mặc định pass, sau này hash sau
+            ps.setString(2, hashMd5(passRaw));
             ps.setString(3, user.getEmail());
+            // Xử lý null cho phone
             ps.setString(4, (user.getPhone() == null || user.getPhone().isEmpty()) ? null : user.getPhone());
             ps.setString(5, user.getFullName());
             ps.setInt(6, user.getGender());
             ps.setInt(7, user.getRoleId());
-            ps.setBoolean(8, user.isIsActive());
+
+            // [FIX POSTGRES]: is_active là SMALLINT -> Phải setInt (1 hoặc 0)
+            ps.setInt(8, user.isIsActive() ? 1 : 0);
+
             ps.setString(9, (user.getAvatarUrl() == null || user.getAvatarUrl().isEmpty()) ? null : user.getAvatarUrl());
 
-            // --- XỬ LÝ STAFF FIELDS (Nếu user là StaffDTO hoặc VetDTO) ---
+            // --- XỬ LÝ STAFF FIELDS ---
             if (user instanceof StaffDTO) {
                 StaffDTO staff = (StaffDTO) user;
                 ps.setString(10, staff.getPositionTitle());
                 ps.setDate(11, staff.getHireDate());
             } else {
-                // Nếu là Customer -> Set NULL
-                ps.setNull(10, Types.NVARCHAR);
+                // [FIX POSTGRES]: Dùng Types.VARCHAR thay vì NVARCHAR
+                ps.setNull(10, Types.VARCHAR);
                 ps.setNull(11, Types.DATE);
             }
 
-            // --- XỬ LÝ VET FIELDS (Nếu user là VetDTO) ---
+            // --- XỬ LÝ VET FIELDS ---
             if (user instanceof VetDTO) {
                 VetDTO vet = (VetDTO) user;
                 ps.setString(12, vet.getSpecialty());
                 ps.setString(13, vet.getLicenseNumber());
-                ps.setBoolean(14, true); // is_veterinarian = 1
+                // is_veterinarian trong DB là BOOLEAN -> setBoolean OK
+                ps.setBoolean(14, true);
             } else {
-                ps.setNull(12, Types.NVARCHAR);
-                ps.setNull(13, Types.NVARCHAR);
+                // [FIX POSTGRES]: Dùng Types.VARCHAR thay vì NVARCHAR
+                ps.setNull(12, Types.VARCHAR);
+                ps.setNull(13, Types.VARCHAR);
                 ps.setBoolean(14, false);
             }
 
@@ -163,7 +174,7 @@ public class UserDAO extends db.DBContext {
     public boolean updateUser(UserDTO user) {
         String sql = "UPDATE Users SET "
                 + "full_name=?, email=?, phone=?, gender=?, is_active=?, role_id=?, "
-                + "position_title=?, specialty=?, license_number=? " // Chỉ update các trường chính
+                + "position_title=?, specialty=?, license_number=? "
                 + "WHERE user_id=?";
 
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -172,29 +183,30 @@ public class UserDAO extends db.DBContext {
             ps.setString(2, user.getEmail());
             ps.setString(3, user.getPhone());
             ps.setInt(4, user.getGender());
-            ps.setBoolean(5, user.isIsActive());
+
+            // [FIX POSTGRES]: is_active là SMALLINT -> setInt
+            ps.setInt(5, user.isIsActive() ? 1 : 0);
+
             ps.setInt(6, user.getRoleId());
 
-            // LOGIC QUAN TRỌNG: DỌN DẸP DỮ LIỆU KHI ĐỔI ROLE
-            // Nếu role là Customer (1), ép buộc set NULL các trường chuyên môn
-            if (user.getRoleId() == 1) {
-                ps.setNull(7, Types.NVARCHAR);
-                ps.setNull(8, Types.NVARCHAR);
-                ps.setNull(9, Types.NVARCHAR);
+            if (user.getRoleId() == 1) { // Customer
+                // [FIX POSTGRES]: Types.VARCHAR
+                ps.setNull(7, Types.VARCHAR);
+                ps.setNull(8, Types.VARCHAR);
+                ps.setNull(9, Types.VARCHAR);
             } else {
-                // Nếu là Staff/Vet thì lấy dữ liệu từ object (nếu có)
                 if (user instanceof StaffDTO) {
                     ps.setString(7, ((StaffDTO) user).getPositionTitle());
                 } else {
-                    ps.setNull(7, Types.NVARCHAR);
+                    ps.setNull(7, Types.VARCHAR);
                 }
 
                 if (user instanceof VetDTO) {
                     ps.setString(8, ((VetDTO) user).getSpecialty());
                     ps.setString(9, ((VetDTO) user).getLicenseNumber());
                 } else {
-                    ps.setNull(8, Types.NVARCHAR);
-                    ps.setNull(9, Types.NVARCHAR);
+                    ps.setNull(8, Types.VARCHAR);
+                    ps.setNull(9, Types.VARCHAR);
                 }
             }
 
@@ -208,10 +220,13 @@ public class UserDAO extends db.DBContext {
     }
 
     public boolean toggleUserStatus(long userId, boolean newStatus) {
+        // [FIX POSTGRES]: Chuyển boolean thành số 1 hoặc 0 để update vào cột smallint
         String sql = "UPDATE Users SET is_active = ? WHERE user_id = ?";
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setBoolean(1, newStatus);
+
+            ps.setInt(1, newStatus ? 1 : 0); // Thay setBoolean bằng setInt
             ps.setLong(2, userId);
+
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();

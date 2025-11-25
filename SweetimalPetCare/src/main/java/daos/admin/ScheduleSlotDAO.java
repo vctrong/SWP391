@@ -7,7 +7,9 @@ package daos.admin;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,26 +19,37 @@ import java.util.logging.Logger;
  */
 public class ScheduleSlotDAO extends db.DBContext {
 
-    public boolean isSlotBusy(long staffId, java.sql.Timestamp newStart, java.sql.Timestamp newEnd) {
-        try {
-            // Logic: Kiểm tra xem có bất kỳ slot nào của nhân viên này
-            // mà thời gian giao nhau với khung giờ mới không.
-            String sql = "SELECT COUNT(*) FROM ScheduleSlot "
-                    + "WHERE staff_id = ? "
-                    + "AND (start_time < ? AND end_time > ?)"; // Công thức Overlap chuẩn
-            Object[] params = {staffId, newStart, newEnd};
-            return this.executeQuery(sql, params) > 0;
+    public boolean isSlotBusy(long staffId, Timestamp newStart, Timestamp newEnd) {
+        // FIX: Chuyển sang dùng PreparedStatement chuẩn để an toàn và tối ưu cho Postgres
+        String sql = "SELECT 1 FROM ScheduleSlot "
+                + "WHERE staff_id = ? "
+                + "AND (start_time < ? AND end_time > ?) " // Logic overlap chuẩn
+                + "LIMIT 1"; // Postgres dùng LIMIT 1 thay vì TOP 1 để check tồn tại nhanh hơn
+
+        try ( Connection conn = this.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, staffId);
+            ps.setTimestamp(2, newStart);
+            ps.setTimestamp(3, newEnd);
+
+            try ( ResultSet rs = ps.executeQuery()) {
+                return rs.next(); // Nếu có kết quả -> Bận
+            }
         } catch (SQLException ex) {
-            Logger.getLogger(ScheduleSlotDAO.class.getName()).log(Level.SEVERE, null, ex);
+            // FIX LỖI LOGGER
+            Logger.getLogger(ScheduleSlotDAO.class.getName()).log(Level.SEVERE, "Lỗi isSlotBusy: " + ex.getMessage(), ex);
         }
         return false;
     }
 
     public int generateSlots(long staffId, Date startDate, Date endDate,
             int startHour, int endHour, int durationMin, boolean skipLunch, String roomName) {
+
         int count = 0;
         String sql = "INSERT INTO ScheduleSlot (staff_id, start_time, end_time, status, room_name) VALUES (?, ?, ?, 'OPEN', ?)";
         long currentTimeMillis = System.currentTimeMillis();
+
+        // Giữ nguyên this.openNewConnection() theo yêu cầu
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             java.util.Calendar cal = java.util.Calendar.getInstance();
@@ -49,36 +62,47 @@ public class ScheduleSlotDAO extends db.DBContext {
                 timePointer.set(java.util.Calendar.HOUR_OF_DAY, startHour);
                 timePointer.set(java.util.Calendar.MINUTE, 0);
                 timePointer.set(java.util.Calendar.SECOND, 0);
+                timePointer.set(java.util.Calendar.MILLISECOND, 0); // Reset mili giây cho sạch
 
                 // Vòng lặp GIỜ (SLOT)
                 while (timePointer.get(java.util.Calendar.HOUR_OF_DAY) < endHour) {
 
                     // 1. Tính toán khung giờ dự kiến tạo
-                    java.sql.Timestamp slotStart = new java.sql.Timestamp(timePointer.getTimeInMillis());
+                    Timestamp slotStart = new Timestamp(timePointer.getTimeInMillis());
 
                     timePointer.add(java.util.Calendar.MINUTE, durationMin); // Tăng thời gian lên
-                    java.sql.Timestamp slotEnd = new java.sql.Timestamp(timePointer.getTimeInMillis());
+                    Timestamp slotEnd = new Timestamp(timePointer.getTimeInMillis());
+
+                    // Kiểm tra nếu slotEnd vượt quá giờ kết thúc làm việc thì bỏ qua (để tránh slot bị cắt lửng)
+                    if (timePointer.get(java.util.Calendar.HOUR_OF_DAY) > endHour
+                            || (timePointer.get(java.util.Calendar.HOUR_OF_DAY) == endHour && timePointer.get(java.util.Calendar.MINUTE) > 0)) {
+                        break;
+                    }
+
+                    // Không tạo slot trong quá khứ
                     if (slotStart.getTime() < currentTimeMillis) {
                         continue;
                     }
+
                     // 2. Check nghỉ trưa
                     int currentHour = slotStart.toLocalDateTime().getHour();
                     if (skipLunch && (currentHour >= 12 && currentHour < 13)) {
                         continue;
                     }
 
-                    // 3. CHECK TRÙNG LỊCH (MỚI THÊM)
-                    // Nếu giờ này bác sĩ đã có lịch (dù là OPEN hay BOOKED) thì BỎ QUA, không tạo đè.
+                    // 3. CHECK TRÙNG LỊCH
                     if (isSlotBusy(staffId, slotStart, slotEnd)) {
-                        System.out.println("Bỏ qua slot: " + slotStart + " vì nhân viên bận.");
-                        continue; // Nhảy qua vòng lặp kế tiếp
+                        // System.out.println("Bỏ qua slot: " + slotStart + " vì nhân viên bận.");
+                        continue;
                     }
 
-                    // 4. Nếu rảnh thì thêm vào batch để Insert
+                    // 4. Thêm vào batch
                     ps.setLong(1, staffId);
                     ps.setTimestamp(2, slotStart);
                     ps.setTimestamp(3, slotEnd);
-                    ps.setString(4, "Phòng khám 1");
+
+                    // FIX LỖI HARDCODE: Dùng biến roomName truyền vào thay vì "Phòng khám 1"
+                    ps.setString(4, (roomName != null && !roomName.isEmpty()) ? roomName : "Phòng khám chung");
 
                     ps.addBatch();
                     count++;
@@ -88,11 +112,12 @@ public class ScheduleSlotDAO extends db.DBContext {
             }
 
             if (count > 0) {
-                ps.executeBatch(); // Chỉ execute nếu có slot hợp lệ
+                ps.executeBatch(); // Thực thi hàng loạt
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            // FIX LOGGER cho đồng bộ
+            Logger.getLogger(ScheduleSlotDAO.class.getName()).log(Level.SEVERE, "Lỗi generateSlots: " + e.getMessage(), e);
             return -1;
         }
         return count;
