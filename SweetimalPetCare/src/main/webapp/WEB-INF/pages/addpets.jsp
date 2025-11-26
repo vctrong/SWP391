@@ -12,9 +12,10 @@
         <main class="min-h-screen flex flex-col items-center justify-center">
 
             <!-- Form -->
-            <form id="speciesForm" action="pets" method="get">
+            <form id="speciesForm" action="pets" method="get"
+                  class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full">
                 <input type="hidden" name="action" value="add"/>
-                class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full">
+
                 <h2 class="text-2xl font-bold mb-6 text-blue-700 text-center">Thêm thú cưng</h2>
 
                 <!-- Loài -->
@@ -42,13 +43,13 @@
                 </div>
             </form>
 
-                        <!-- Second form for actual add -->
-                        <form id="addPetForm" action="pets" method="post"
-                                    class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full mt-4">
-                                <input type="hidden" name="action" value="add"/>
-                                <input type="hidden" name="speciesId" value="${param.speciesId}"/>
-                                <!-- persist selected breed from the GET form so POST includes it -->
-                                <input type="hidden" name="breedId" value="${param.breedId}"/>
+            <!-- Second form for actual add -->
+            <form id="addPetForm" action="pets" method="post"
+                  class="bg-white shadow-lg rounded-xl p-8 space-y-6 max-w-lg w-full mt-4">
+                <input type="hidden" name="action" value="add"/>
+                <input type="hidden" name="speciesId" value="${param.speciesId}"/>
+                <!-- persist selected breed from the GET form so POST includes it -->
+                <input type="hidden" name="breedId" value="${param.breedId}"/>
 
                 <!-- Other fields -->
                 <div>
@@ -97,20 +98,25 @@
         <%@include file="/WEB-INF/include/footer.jsp" %>
     </body>
     <script>
-        (function(){
+        (function () {
             var addForm = document.getElementById('addPetForm');
             var speciesForm = document.getElementById('speciesForm');
-            if (!addForm) return;
-            addForm.addEventListener('submit', function(e){
+            if (!addForm)
+                return;
+            addForm.addEventListener('submit', function (e) {
                 try {
                     // copy selected breed/species from the visible form into hidden inputs
                     var visibleBreed = document.querySelector('#speciesForm select[name="breedId"]');
                     var visibleSpecies = document.querySelector('#speciesForm select[name="speciesId"]');
                     var hiddenBreed = addForm.querySelector('input[name="breedId"]');
                     var hiddenSpecies = addForm.querySelector('input[name="speciesId"]');
-                    if (visibleBreed && hiddenBreed) hiddenBreed.value = visibleBreed.value || '';
-                    if (visibleSpecies && hiddenSpecies) hiddenSpecies.value = visibleSpecies.value || '';
-                } catch (err) { console.error('Failed to sync breed/species into add form', err); }
+                    if (visibleBreed && hiddenBreed)
+                        hiddenBreed.value = visibleBreed.value || '';
+                    if (visibleSpecies && hiddenSpecies)
+                        hiddenSpecies.value = visibleSpecies.value || '';
+                } catch (err) {
+                    console.error('Failed to sync breed/species into add form', err);
+                }
             });
         })();
     </script>
