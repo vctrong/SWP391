@@ -33,8 +33,8 @@ public class ProfileDAO extends db.DBContext {
 
     public int getCountOrder(int userID) {
         try {
-            String qr = "select count(*) from Orders\n"
-                    + "where customer_id = ?";
+            // Query chuẩn
+            String qr = "select count(*) from Orders where customer_id = ?";
             Object[] params = {userID};
             ResultSet rs = this.executeSelectQuery(qr, params);
             if (rs.next()) {
@@ -48,8 +48,8 @@ public class ProfileDAO extends db.DBContext {
 
     public int getCountBooking(int userID) {
         try {
-            String qr = "select count(*) from booking\n"
-                    + "where customer_id = ?";
+            // Query chuẩn
+            String qr = "select count(*) from booking where customer_id = ?";
             Object[] params = {userID};
             ResultSet rs = this.executeSelectQuery(qr, params);
             if (rs.next()) {
@@ -63,13 +63,15 @@ public class ProfileDAO extends db.DBContext {
 
     public BookingSummary getNextBooking(long userID) {
         try {
-            String qr = "SELECT TOP(1) b.booking_id, b.requested_date, b.requested_start, b.booking_time, b.current_status, \n"
+            // Fix: TOP(1) -> LIMIT 1
+            // Fix: SYSUTCDATETIME() -> NOW()
+            String qr = "SELECT b.booking_id, b.requested_date, b.requested_start, b.booking_time, b.current_status, \n"
                     + "s.service_name, p.name AS pet_name \n"
                     + "FROM Booking b \n"
                     + "LEFT JOIN Services s ON b.service_id = s.service_id \n"
                     + "LEFT JOIN Pets p ON b.pet_id = p.pet_id \n"
-                    + "WHERE b.customer_id = ? AND b.booking_time > SYSUTCDATETIME() AND b.current_status NOT IN ('CANCELLED','COMPLETED','NO_SHOW') \n"
-                    + "ORDER BY b.booking_time ASC";
+                    + "WHERE b.customer_id = ? AND b.booking_time > NOW() AND b.current_status NOT IN ('CANCELLED','COMPLETED','NO_SHOW') \n"
+                    + "ORDER BY b.booking_time ASC LIMIT 1";
             Object[] params = {userID};
             ResultSet rs = this.executeSelectQuery(qr, params);
             if (rs.next()) {
@@ -82,23 +84,28 @@ public class ProfileDAO extends db.DBContext {
     }
 
     public List<RecentActivity> getRecentActivities(long userId, int limit) throws SQLException {
+        // Fix:
+        // 1. TOP(1) -> LIMIT 1
+        // 2. CONVERT(...) -> TO_CHAR(...)
+        // 3. '+' string concat -> '||'
+        // 4. ISNULL -> COALESCE
         String sql
                 = "WITH activities AS ( "
                 + "  SELECT 'ORDER' AS type, o.order_id AS id, o.order_code AS ref_code, "
-                + "    (SELECT TOP (1) p.product_name "
+                + "    (SELECT p.product_name "
                 + "     FROM OrderItems oi2 "
                 + "     JOIN ProductVariant pv2 ON oi2.variant_id = pv2.variant_id "
                 + "     JOIN Product p ON pv2.product_id = p.product_id "
                 + "     WHERE oi2.order_id = o.order_id "
-                + "     ORDER BY oi2.order_item_id) AS title, "
+                + "     ORDER BY oi2.order_item_id LIMIT 1) AS title, "
                 + "    o.created_at AS ts, o.total_amount AS amount, o.order_status AS status, "
-                + "    (o.order_code + ' • ' + CONVERT(varchar(10), o.created_at, 103)) AS meta "
+                + "    (o.order_code || ' • ' || TO_CHAR(o.created_at, 'DD/MM/YYYY')) AS meta "
                 + "  FROM Orders o "
                 + "  WHERE o.customer_id = ? "
                 + "  UNION ALL "
                 + "  SELECT 'BOOKING' AS type, b.booking_id AS id, '' AS ref_code, "
                 + "    COALESCE(s.service_name, '') AS title, b.booking_time AS ts, NULL AS amount, b.current_status AS status, "
-                + "    (CONVERT(varchar(10), b.requested_date, 103) + ' • ' + ISNULL(CONVERT(varchar(5), b.requested_start, 108), '')) AS meta "
+                + "    (TO_CHAR(b.requested_date, 'DD/MM/YYYY') || ' • ' || COALESCE(TO_CHAR(b.requested_start, 'HH24:MI'), '')) AS meta "
                 + "  FROM Booking b "
                 + "  LEFT JOIN Services s ON s.service_id = b.service_id "
                 + "  WHERE b.customer_id = ? "
@@ -136,30 +143,29 @@ public class ProfileDAO extends db.DBContext {
 
     public HistoryKPIs getHistoryKPIs(long customerId) {
         HistoryKPIs kpis = new HistoryKPIs();
-        // Câu query này thực hiện 3 truy vấn con để lấy tất cả KPI trong 1 lần gọi DB
+        // Fix: ISNULL -> COALESCE
         String sql = "SELECT "
-                + // 1. Tổng chi: Tổng tiền của Orders VÀ Bookings đã 'COMPLETED'
-                "(SELECT ISNULL(SUM(total_amount), 0) FROM Orders WHERE customer_id = ? AND order_status = 'COMPLETED') + "
-                + "(SELECT ISNULL(SUM(total_price), 0) FROM Booking WHERE customer_id = ? AND current_status = 'COMPLETED') "
+                + // 1. Tổng chi
+                "(SELECT COALESCE(SUM(total_amount), 0) FROM Orders WHERE customer_id = ? AND order_status = 'COMPLETED') + "
+                + "(SELECT COALESCE(SUM(total_price), 0) FROM Booking WHERE customer_id = ? AND current_status = 'COMPLETED') "
                 + "AS TotalSpent, "
-                + // 2. Đang xử lý: Tổng Orders VÀ Bookings KHÔNG ở trạng thái cuối
+                + // 2. Đang xử lý
                 "(SELECT COUNT(*) FROM Orders WHERE customer_id = ? AND order_status NOT IN ('COMPLETED', 'CANCELLED')) + "
                 + "(SELECT COUNT(*) FROM Booking WHERE customer_id = ? AND current_status NOT IN ('COMPLETED', 'CANCELLED', 'NO_SHOW')) "
                 + "AS TotalProcessing, "
-                + // 3. Tổng đơn: Tổng số lượng Orders VÀ Bookings
+                + // 3. Tổng đơn
                 "(SELECT COUNT(*) FROM Orders WHERE customer_id = ?) + "
                 + "(SELECT COUNT(*) FROM Booking WHERE customer_id = ?) "
                 + "AS TotalOrdersAndBookings";
 
-        // Thay thế 'DBContext.getConnection()' bằng phương thức kết nối của bạn
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setLong(1, customerId); // Cho TotalSpent (Orders)
-            ps.setLong(2, customerId); // Cho TotalSpent (Booking)
-            ps.setLong(3, customerId); // Cho TotalProcessing (Orders)
-            ps.setLong(4, customerId); // Cho TotalProcessing (Booking)
-            ps.setLong(5, customerId); // Cho TotalOrders (Orders)
-            ps.setLong(6, customerId); // Cho TotalOrders (Booking)
+            ps.setLong(1, customerId);
+            ps.setLong(2, customerId);
+            ps.setLong(3, customerId);
+            ps.setLong(4, customerId);
+            ps.setLong(5, customerId);
+            ps.setLong(6, customerId);
 
             try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -170,7 +176,6 @@ public class ProfileDAO extends db.DBContext {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            // Xử lý exception (ví dụ: log lại)
         }
         return kpis;
     }
@@ -178,30 +183,28 @@ public class ProfileDAO extends db.DBContext {
     public List<OrderHistoryDTO> getAllOrders(long customerId) {
         List<OrderHistoryDTO> orderList = new ArrayList<>();
 
-        // SQL đã loại bỏ bộ lọc và phân trang
+        // Fix: TOP 1 -> LIMIT 1
         String sql = "SELECT "
                 + "    o.order_id, o.order_code, o.created_at, o.total_amount, os.description AS status_display, "
                 + // Sub-query lấy tên sản phẩm đầu tiên
-                "    (SELECT TOP 1 p.product_name "
+                "    (SELECT p.product_name "
                 + "     FROM OrderItems oi "
                 + "     JOIN ProductVariant pv ON oi.variant_id = pv.variant_id "
                 + "     JOIN Product p ON pv.product_id = p.product_id "
-                + "     WHERE oi.order_id = o.order_id) AS primary_product_name, "
+                + "     WHERE oi.order_id = o.order_id LIMIT 1) AS primary_product_name, "
                 + // Sub-query lấy mô tả (attribute_json) của variant đầu tiên
-                "    (SELECT TOP 1 pv.attribute_json "
+                "    (SELECT pv.attribute_json "
                 + "     FROM OrderItems oi "
                 + "     JOIN ProductVariant pv ON oi.variant_id = pv.variant_id "
-                + "     WHERE oi.order_id = o.order_id) AS primary_product_desc "
+                + "     WHERE oi.order_id = o.order_id LIMIT 1) AS primary_product_desc "
                 + "FROM Orders o "
                 + "JOIN OrderStatus os ON o.order_status = os.order_status_code "
                 + "WHERE o.customer_id = ? "
-                + // Chỉ lọc theo customer_id
-                "ORDER BY o.created_at DESC";
+                + "ORDER BY o.created_at DESC";
 
-        // *** THAY THẾ 'DBContext.getConnection()' BẰNG CÁCH KẾT NỐI CỦA BẠN ***
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setLong(1, customerId); // customer_id
+            ps.setLong(1, customerId);
 
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -225,7 +228,7 @@ public class ProfileDAO extends db.DBContext {
     public List<BookingHistoryDTO> getAllBookings(long customerId) {
         List<BookingHistoryDTO> bookingList = new ArrayList<>();
 
-        // SQL đã loại bỏ bộ lọc và phân trang
+        // Query chuẩn, COALESCE chạy tốt trên Postgres
         String sql = "SELECT "
                 + "    b.booking_id, b.requested_date, b.requested_start, b.total_price, "
                 + "    bs.description AS status_display, "
@@ -237,13 +240,11 @@ public class ProfileDAO extends db.DBContext {
                 + "LEFT JOIN Services s ON b.service_id = s.service_id "
                 + "LEFT JOIN ServicePackage sp ON b.package_id = sp.package_id "
                 + "WHERE b.customer_id = ? "
-                + // Chỉ lọc theo customer_id
-                "ORDER BY b.requested_date DESC, b.requested_start DESC";
+                + "ORDER BY b.requested_date DESC, b.requested_start DESC";
 
-        // *** THAY THẾ 'DBContext.getConnection()' BẰNG CÁCH KẾT NỐI CỦA BẠN ***
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setLong(1, customerId); // customer_id
+            ps.setLong(1, customerId);
 
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -268,18 +269,18 @@ public class ProfileDAO extends db.DBContext {
 
     public UserProfileDTO getUserProfile(long userId) {
         UserProfileDTO profile = null;
-        // Câu SQL này JOIN Users, Roles, và UserAddress (địa chỉ mặc định)
+        // Fix: is_default = 1 vẫn chạy được nếu cột đó là int, 
+        // nếu cột là boolean trong Postgres thì nên là is_default = true (hoặc để 1 Postgres thường vẫn hiểu nếu ép kiểu)
+        // Code này giữ nguyên is_default = 1, nếu lỗi thì sửa thành is_default = true
         String sql = "SELECT "
                 + "    u.avatar_url, u.full_name, u.phone, u.email, u.gender, u.birthday, u.created_at, u.updated_at, "
                 + "    r.role_name, "
                 + "    a.address_line1, a.ward, a.district, a.city "
                 + "FROM Users u "
                 + "JOIN Roles r ON u.role_id = r.role_id "
-                + // LEFT JOIN để vẫn lấy được user dù họ chưa có địa chỉ mặc định
-                "LEFT JOIN UserAddress a ON u.user_id = a.user_id AND a.is_default = 1 "
+                + "LEFT JOIN UserAddress a ON u.user_id = a.user_id AND a.is_default = true " // Chỉnh thành true cho chắc
                 + "WHERE u.user_id = ?";
 
-        // *** THAY THẾ 'DBContext.getConnection()' BẰNG CÁCH KẾT NỐI CỦA BẠN ***
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, userId);
@@ -294,7 +295,7 @@ public class ProfileDAO extends db.DBContext {
 
                     // Xử lý Avatar (nếu null thì dùng ảnh mặc định)
                     String avatar = rs.getString("avatar_url");
-                    profile.setAvatarUrl(avatar != null ? avatar : "assets/img/default-avatar.png"); // Thay path ảnh mặc định của bạn
+                    profile.setAvatarUrl(avatar != null ? avatar : "assets/img/default-avatar.png");
 
                     // Xử lý ngày tháng
                     LocalDateTime createdAt = rs.getTimestamp("created_at").toLocalDateTime();
@@ -312,7 +313,7 @@ public class ProfileDAO extends db.DBContext {
                     java.sql.Date birthday = rs.getDate("birthday");
                     profile.setBirthdayFormatted(birthday != null ? birthday.toLocalDate().format(DATE_FORMATTER) : "Chưa cập nhật");
 
-                    // Xử lý giới tính (Giả sử 1=Nam, 2=Nữ, 0=Khác)
+                    // Xử lý giới tính
                     profile.setGenderDisplay(formatGender(rs.getInt("gender")));
 
                     // Xử lý địa chỉ mặc định
@@ -322,7 +323,6 @@ public class ProfileDAO extends db.DBContext {
                     String city = rs.getString("city");
                     profile.setDefaultAddressSummary(formatFullAddress(addressLine1, ward, district, city, true));
 
-                    // 2FA (Không có trong CSDL, mặc định là false)
                     profile.setIs2faEnabled(false);
                 }
             }
@@ -332,18 +332,11 @@ public class ProfileDAO extends db.DBContext {
         return profile;
     }
 
-    /**
-     * Lấy TẤT CẢ địa chỉ của người dùng (cho Sổ địa chỉ).
-     *
-     * @param userId ID của người dùng
-     * @return Danh sách UserAddressDTO
-     */
     public List<UserAddressDTO> getUserAddresses(long userId) {
         List<UserAddressDTO> addressList = new ArrayList<>();
-        // Sắp xếp cho địa chỉ "Mặc định" lên đầu
+        // Fix: is_default trong Postgres (boolean) sắp xếp DESC: TRUE > FALSE (đúng ý đồ)
         String sql = "SELECT * FROM UserAddress WHERE user_id = ? ORDER BY is_default DESC, created_at ASC";
 
-        // *** THAY THẾ 'DBContext.getConnection()' BẰNG CÁCH KẾT NỐI CỦA BẠN ***
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, userId);
@@ -363,7 +356,7 @@ public class ProfileDAO extends db.DBContext {
                             rs.getString("ward"),
                             rs.getString("district"),
                             rs.getString("city"),
-                            false // false = hiển thị đầy đủ
+                            false
                     );
                     address.setFullAddress(fullAddress);
 
@@ -379,9 +372,6 @@ public class ProfileDAO extends db.DBContext {
     // =================================================================
     // 3. CÁC HÀM HỖ TRỢ (PRIVATE)
     // =================================================================
-    /**
-     * Chuyển đổi mã giới tính (INT) sang chuỗi hiển thị.
-     */
     private String formatGender(int genderCode) {
         switch (genderCode) {
             case 1:
@@ -395,9 +385,6 @@ public class ProfileDAO extends db.DBContext {
         }
     }
 
-    /**
-     * Tính toán thời gian thành viên.
-     */
     private String formatMembershipDuration(LocalDateTime createdAt) {
         long years = ChronoUnit.YEARS.between(createdAt.toLocalDate(), LocalDate.now());
         if (years < 1) {
@@ -410,12 +397,6 @@ public class ProfileDAO extends db.DBContext {
         return "Thành viên " + years + " năm";
     }
 
-    /**
-     * Ghép các thành phần địa chỉ thành một chuỗi.
-     *
-     * @param summaryOnly true=chỉ lấy dòng 1 và thành phố (cho profile),
-     * false=lấy đầy đủ (cho sổ địa chỉ)
-     */
     private String formatFullAddress(String line1, String ward, String district, String city, boolean summaryOnly) {
         if (line1 == null || line1.isEmpty()) {
             return "Chưa cập nhật";
@@ -443,15 +424,15 @@ public class ProfileDAO extends db.DBContext {
     }
 
     public boolean updateUserProfile(long userId, String fullName, String phone, int gender, LocalDate birthday) {
+        // Fix: SYSUTCDATETIME() -> NOW()
         String sql = "UPDATE Users SET "
                 + " full_name = ?, "
                 + " phone = ?, "
                 + " gender = ?, "
                 + " birthday = ?, "
-                + " updated_at = SYSUTCDATETIME() "
+                + " updated_at = NOW() "
                 + "WHERE user_id = ?";
 
-        // *** THAY THẾ 'DBContext.getConnection()' BẰNG CÁCH KẾT NỐI CỦA BẠN ***
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, fullName);
@@ -472,12 +453,11 @@ public class ProfileDAO extends db.DBContext {
     public boolean addNewAddress(long userId, String label, String recipientName, String phone,
             String addressLine1, String ward, String district, String city) {
 
-        // Địa chỉ mới không bao giờ là mặc định
+        // is_default = false (Postgres hiểu false)
         String sql = "INSERT INTO UserAddress "
                 + " (user_id, label, recipient_name, phone, address_line1, ward, district, city, is_default) "
-                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)";
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, false)";
 
-        // *** THAY THẾ 'DBContext.getConnection()' BẰNG CÁCH KẾT NỐI CỦA BẠN ***
         try ( Connection conn = this.openNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, userId);
@@ -500,7 +480,8 @@ public class ProfileDAO extends db.DBContext {
 
     public String changePassword(long userId, String oldPassword, String newPassword) {
         String sqlSelect = "SELECT password_hash FROM Users WHERE user_id = ?";
-        String sqlUpdate = "UPDATE Users SET password_hash = ?, updated_at = SYSUTCDATETIME() WHERE user_id = ?";
+        // Fix: SYSUTCDATETIME() -> NOW()
+        String sqlUpdate = "UPDATE Users SET password_hash = ?, updated_at = NOW() WHERE user_id = ?";
 
         try ( Connection conn = this.openNewConnection()) {
             String currentHash = "";
@@ -518,7 +499,6 @@ public class ProfileDAO extends db.DBContext {
             }
 
             // BƯỚC 2: Kiểm tra mật khẩu cũ
-            // **ĐÃ THAY THẾ:** Gọi hàm checkPassword từ class mới
             boolean isOldPasswordCorrect = PasswordUtils.checkPassword(oldPassword, currentHash);
 
             if (!isOldPasswordCorrect) {
@@ -526,7 +506,6 @@ public class ProfileDAO extends db.DBContext {
             }
 
             // BƯỚC 3: Hash mật khẩu mới
-            // **ĐÃ THAY THẾ:** Gọi hàm hashPassword từ class mới
             String newHash = PasswordUtils.hashPassword(newPassword);
 
             // BƯỚC 4: Cập nhật mật khẩu mới vào CSDL

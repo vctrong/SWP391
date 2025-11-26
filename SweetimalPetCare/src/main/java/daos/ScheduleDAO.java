@@ -20,6 +20,7 @@ public class ScheduleDAO extends db.DBContext {
 
     public List<ScheduleSlot> getSlotsByStaff(int staffId) throws SQLException {
         List<ScheduleSlot> slots = new ArrayList<>();
+        // Query chuẩn, chạy tốt trên Postgres
         String sql = "SELECT * FROM ScheduleSlot WHERE staff_id = ? ORDER BY start_time";
         ResultSet rs = executeSelectQuery(sql, new Object[]{staffId});
         while (rs.next()) {
@@ -38,6 +39,7 @@ public class ScheduleDAO extends db.DBContext {
 
     public List<ScheduleSlot> getAvailableSlots() throws SQLException {
         List<ScheduleSlot> list = new ArrayList<>();
+        // Query chuẩn, chạy tốt trên Postgres
         String sql = "SELECT * FROM ScheduleSlot WHERE booking_id IS NULL AND status = 'OPEN' ORDER BY start_time";
         ResultSet rs = executeSelectQuery(sql, null);
         while (rs.next()) {
@@ -55,16 +57,19 @@ public class ScheduleDAO extends db.DBContext {
     }
 
     public void addSlot(int staffId, String roomName, LocalDateTime start, LocalDateTime end) throws SQLException {
-        String sql = "INSERT INTO ScheduleSlot (staff_id, room_name, start_time, end_time, status, created_at) VALUES (?, ?, ?, ?, 'OPEN', GETDATE())";
+        // Đã sửa: Thay GETDATE() thành NOW() cho PostgreSQL
+        String sql = "INSERT INTO ScheduleSlot (staff_id, room_name, start_time, end_time, status, created_at) VALUES (?, ?, ?, ?, 'OPEN', NOW())";
         executeQuery(sql, new Object[]{staffId, roomName, Timestamp.valueOf(start), Timestamp.valueOf(end)});
     }
 
     public void assignBookingToSlot(int slotId, int bookingId) throws SQLException {
+        // Query chuẩn, chạy tốt trên Postgres
         String sql = "UPDATE ScheduleSlot SET booking_id = ?, status = 'BOOKED' WHERE slot_id = ?";
         executeQuery(sql, new Object[]{bookingId, slotId});
     }
 
     public ScheduleSlot getSlotById(int slotId) throws SQLException {
+        // Query chuẩn, chạy tốt trên Postgres
         String sql = "SELECT * FROM ScheduleSlot WHERE slot_id = ?";
         ResultSet rs = executeSelectQuery(sql, new Object[]{slotId});
         if (rs.next()) {
@@ -82,10 +87,11 @@ public class ScheduleDAO extends db.DBContext {
     }
 
     /**
-     * Free any schedule slots linked to the given bookingId.
-     * Sets booking_id = NULL and status = 'OPEN'.
+     * Free any schedule slots linked to the given bookingId. Sets booking_id =
+     * NULL and status = 'OPEN'.
      */
     public void freeSlotsByBookingId(int bookingId) throws SQLException {
+        // Query chuẩn, chạy tốt trên Postgres
         String sql = "UPDATE ScheduleSlot SET booking_id = NULL, status = 'OPEN' WHERE booking_id = ?";
         executeQuery(sql, new Object[]{bookingId});
     }

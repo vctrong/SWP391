@@ -20,14 +20,15 @@ import model.Users;
 public class UserDAO extends db.DBContext {
 
     /**
-     * Return true if the user has any Booking rows referencing them.
-     * This is used to prevent hard delete when related booking data exists.
+     * Return true if the user has any Booking rows referencing them. This is
+     * used to prevent hard delete when related booking data exists.
      */
     public boolean hasBookings(long userId) throws SQLException {
+        // Query chuẩn, chạy tốt trên Postgres
         String sql = "SELECT COUNT(*) AS c FROM Booking WHERE customer_id = ?";
-        try (java.sql.PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( java.sql.PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setLong(1, userId);
-            try (java.sql.ResultSet rs = ps.executeQuery()) {
+            try ( java.sql.ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt("c") > 0;
                 }
@@ -37,6 +38,7 @@ public class UserDAO extends db.DBContext {
     }
 
     public void updateUserStatus(long userId, boolean isActive) throws SQLException {
+        // Query chuẩn. Postgres hỗ trợ setBoolean cho cột BOOLEAN rất tốt.
         String sql = "UPDATE Users SET is_active=? WHERE user_id=?";
         try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setBoolean(1, isActive);
@@ -46,6 +48,7 @@ public class UserDAO extends db.DBContext {
     }
 
     public void deleteUser(long userId) throws SQLException {
+        // Query chuẩn
         String sql = "DELETE FROM Users WHERE user_id=?";
         try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setLong(1, userId);
@@ -55,6 +58,7 @@ public class UserDAO extends db.DBContext {
 
     public Users findByEmail(String email) {
         try {
+            // Query chuẩn
             String sql = "select user_id, username, full_name, email, phone, is_active, gender, avatar_url, role_id, birthday, created_at, 0 as nop from users where email = ?";
             ResultSet rs = this.executeSelectQuery(sql, new Object[]{email});
             if (rs.next()) {
@@ -64,7 +68,11 @@ public class UserDAO extends db.DBContext {
                 u.setFullName(rs.getString("full_name"));
                 u.setEmail(rs.getString("email"));
                 u.setPhone(rs.getString("phone"));
-                u.setActive(rs.getInt("is_active"));
+
+                // ĐÃ SỬA: Postgres không cho phép getInt trên cột Boolean.
+                // Phải dùng getBoolean rồi chuyển về int (1: active, 0: inactive)
+                u.setActive(rs.getBoolean("is_active") ? 1 : 0);
+
                 u.setGender(rs.getInt("gender"));
                 u.setUrlImg(rs.getString("avatar_url"));
                 u.setRole(rs.getInt("role_id"));
@@ -82,6 +90,7 @@ public class UserDAO extends db.DBContext {
     public boolean updatePasswordByEmail(String email, String rawNewPassword) {
         try {
             String hash = hashMd5(rawNewPassword);
+            // Query chuẩn
             String sql = "update users set password_hash = ? where email = ?";
             int n = this.executeQuery(sql, new Object[]{hash, email});
             return n > 0;

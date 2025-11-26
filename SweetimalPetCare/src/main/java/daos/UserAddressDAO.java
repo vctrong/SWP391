@@ -14,18 +14,20 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import model.UserAddress;
+
 /**
  *
  * @author Pham Nguyen Xuan Mai - CE190106
  */
-public class UserAddressDAO extends db.DBContext{
-    
+public class UserAddressDAO extends db.DBContext {
+
     public List<UserAddress> getAddressesByUser(int userId) {
         List<UserAddress> list = new ArrayList<>();
         try {
-            // Chỉ SELECT các cột tồn tại trong DB để tránh Invalid column name
+            // Query chuẩn, chạy tốt trên PostgreSQL
+            // Postgres: Boolean TRUE > FALSE, nên ORDER BY ... DESC sẽ đưa địa chỉ mặc định lên đầu.
             String sql = "SELECT address_id, user_id, label, recipient_name, phone, address_line1, ward, district, city, is_default, created_at "
-                       + "FROM UserAddress WHERE user_id = ? ORDER BY is_default DESC, address_id ASC";
+                    + "FROM UserAddress WHERE user_id = ? ORDER BY is_default DESC, address_id ASC";
 
             PreparedStatement ps = getConnection().prepareStatement(sql);
             ps.setInt(1, userId);
@@ -48,7 +50,7 @@ public class UserAddressDAO extends db.DBContext{
                 a.setDistrict(rs.getString("district"));
                 a.setCity(rs.getString("city"));
 
-                // is_default normalization (int/bit/boolean -> boolean)
+                // Logic này an toàn cho cả SQL Server (BIT) và Postgres (BOOLEAN)
                 boolean isDef = false;
                 try {
                     Object isDefObj = rs.getObject("is_default");
@@ -56,18 +58,23 @@ public class UserAddressDAO extends db.DBContext{
                         if (isDefObj instanceof Number) {
                             isDef = ((Number) isDefObj).intValue() != 0;
                         } else {
+                            // Postgres JDBC trả về Boolean object, toString() sẽ ra "true"/"false"
                             String s = isDefObj.toString();
                             isDef = "1".equals(s) || "true".equalsIgnoreCase(s);
                         }
                     }
-                } catch (SQLException ignore) {}
+                } catch (SQLException ignore) {
+                }
                 a.setIsDefault(isDef);
 
                 // created_at -> java.util.Date (nếu cột tồn tại)
                 try {
                     Timestamp ts = rs.getTimestamp("created_at");
-                    if (ts != null) a.setCreatedAt(new Date(ts.getTime()));
-                } catch (SQLException ignore) {}
+                    if (ts != null) {
+                        a.setCreatedAt(new Date(ts.getTime()));
+                    }
+                } catch (SQLException ignore) {
+                }
 
                 list.add(a);
             }

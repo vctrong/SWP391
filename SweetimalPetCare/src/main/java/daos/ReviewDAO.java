@@ -16,15 +16,17 @@ import model.ReviewReply;
  * @author Pham Nguyen Xuan Mai - CE190106
  */
 public class ReviewDAO extends db.DBContext {
+
     public List<Review> getReviewsByProduct(int productId) throws SQLException {
+        // Query chuẩn
         String sql = "SELECT r.review_id, r.service_id, r.product_id, r.staff_id, r.customer_id, "
                 + "r.rating, r.comment, r.created_at, u.full_name "
                 + "FROM Reviews r LEFT JOIN Users u ON r.customer_id = u.user_id "
                 + "WHERE r.product_id = ? ORDER BY r.created_at DESC";
         List<Review> list = new ArrayList<>();
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, productId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Review r = new Review();
                     // review_id
@@ -45,7 +47,10 @@ public class ReviewDAO extends db.DBContext {
                     r.setComment(rs.getString("comment"));
                     Timestamp ts = rs.getTimestamp("created_at");
                     r.setCreatedAt(ts);
-                    try { r.setUserName(rs.getString("full_name")); } catch (Throwable ignored) {}
+                    try {
+                        r.setUserName(rs.getString("full_name"));
+                    } catch (Throwable ignored) {
+                    }
                     list.add(r);
                 }
             }
@@ -54,9 +59,10 @@ public class ReviewDAO extends db.DBContext {
     }
 
     public boolean addReview(int productId, int customerId, int rating, String comment) throws SQLException {
+        // Query chuẩn
         String sql = "INSERT INTO Reviews (service_id, product_id, staff_id, customer_id, rating, comment, created_at) "
                 + "VALUES (NULL, ?, NULL, ?, ?, ?, ?)";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, productId);
             ps.setInt(2, customerId);
             ps.setInt(3, rating);
@@ -68,10 +74,11 @@ public class ReviewDAO extends db.DBContext {
     }
 
     public double getAverageRatingByProduct(int productId) throws SQLException {
+        // Query chuẩn (CAST AS FLOAT chạy tốt trên Postgres)
         String sql = "SELECT AVG(CAST(rating AS FLOAT)) AS avg_rating FROM Reviews WHERE product_id = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, productId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getDouble("avg_rating");
                 }
@@ -81,25 +88,29 @@ public class ReviewDAO extends db.DBContext {
     }
 
     public boolean userHasReviewedProduct(int customerId, int productId) throws SQLException {
-        String sql = "SELECT TOP 1 1 FROM Reviews WHERE customer_id = ? AND product_id = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        // Đã sửa: Thay SELECT TOP 1 ... thành SELECT ... LIMIT 1
+        String sql = "SELECT 1 FROM Reviews WHERE customer_id = ? AND product_id = ? LIMIT 1";
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, customerId);
             ps.setInt(2, productId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
         }
     }
 
     /**
-     * Insert review. finalComment = title + "\n\n" + comment (trim / truncated).
-     * Throws SQLException on DB error.
+     * Insert review. finalComment = title + "\n\n" + comment (trim /
+     * truncated). Throws SQLException on DB error.
      */
     public void insertReview(int productId, int customerId, int rating, String title, String comment) throws SQLException {
+        // Query chuẩn
         String sql = "INSERT INTO Reviews (product_id, customer_id, rating, comment, created_at) VALUES (?, ?, ?, ?, ?)";
         String finalComment = (title == null ? "" : title.trim()) + "\n\n" + (comment == null ? "" : comment.trim());
-        if (finalComment.length() > 1000) finalComment = finalComment.substring(0, 1000);
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        if (finalComment.length() > 1000) {
+            finalComment = finalComment.substring(0, 1000);
+        }
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, productId);
             ps.setInt(2, customerId);
             ps.setInt(3, rating);
@@ -110,8 +121,9 @@ public class ReviewDAO extends db.DBContext {
     }
 
     public boolean deleteReviewByUserProduct(int productId, int customerId) throws SQLException {
+        // Query chuẩn
         String sql = "DELETE FROM Reviews WHERE product_id = ? AND customer_id = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, productId);
             ps.setInt(2, customerId);
             int affected = ps.executeUpdate();
@@ -120,10 +132,13 @@ public class ReviewDAO extends db.DBContext {
     }
 
     public boolean updateReviewByUserProduct(int productId, int customerId, int rating, String title, String comment) throws SQLException {
+        // Query chuẩn
         String sql = "UPDATE Reviews SET rating = ?, comment = ?, created_at = ? WHERE product_id = ? AND customer_id = ?";
         String finalComment = (title == null ? "" : title.trim()) + "\n\n" + (comment == null ? "" : comment.trim());
-        if (finalComment.length() > 1000) finalComment = finalComment.substring(0, 1000);
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        if (finalComment.length() > 1000) {
+            finalComment = finalComment.substring(0, 1000);
+        }
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, rating);
             ps.setString(2, finalComment);
             ps.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
@@ -135,11 +150,12 @@ public class ReviewDAO extends db.DBContext {
     }
 
     public Review getReviewByUserProduct(int productId, int customerId) throws SQLException {
+        // Query chuẩn
         String sql = "SELECT review_id, rating, comment, created_at FROM Reviews WHERE product_id = ? AND customer_id = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, productId);
             ps.setInt(2, customerId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Review r = new Review();
                     int tmp = rs.getInt("review_id");
@@ -157,15 +173,15 @@ public class ReviewDAO extends db.DBContext {
     // -----------------------
     // Reply-related methods
     // -----------------------
-
     /**
      * Fetch reply for a given review_id (returns null if none).
      */
     public ReviewReply getReplyByReviewId(long reviewId) throws SQLException {
+        // Query chuẩn
         String sql = "SELECT reply_id, review_id, replied_by_staff_id, reply_content, created_at FROM ReviewReply WHERE review_id = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setLong(1, reviewId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     ReviewReply rr = new ReviewReply();
                     rr.setReplyId(rs.getLong("reply_id"));
@@ -182,12 +198,12 @@ public class ReviewDAO extends db.DBContext {
     }
 
     /**
-     * Create a reply for a review.
-     * Returns true if inserted.
+     * Create a reply for a review. Returns true if inserted.
      */
     public boolean createReply(long reviewId, long staffId, String content) throws SQLException {
+        // Query chuẩn
         String sql = "INSERT INTO ReviewReply (review_id, replied_by_staff_id, reply_content, created_at) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setLong(1, reviewId);
             ps.setLong(2, staffId);
             ps.setString(3, content);
@@ -198,11 +214,13 @@ public class ReviewDAO extends db.DBContext {
     }
 
     /**
-     * Update existing reply (by review_id). Returns true if at least one row affected.
+     * Update existing reply (by review_id). Returns true if at least one row
+     * affected.
      */
     public boolean updateReply(long reviewId, long staffId, String content) throws SQLException {
+        // Query chuẩn
         String sql = "UPDATE ReviewReply SET reply_content = ?, replied_by_staff_id = ?, created_at = ? WHERE review_id = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setString(1, content);
             ps.setLong(2, staffId);
             ps.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
@@ -216,8 +234,9 @@ public class ReviewDAO extends db.DBContext {
      * Delete reply by review_id. Returns true if deleted.
      */
     public boolean deleteReply(long reviewId) throws SQLException {
+        // Query chuẩn
         String sql = "DELETE FROM ReviewReply WHERE review_id = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setLong(1, reviewId);
             int n = ps.executeUpdate();
             return n > 0;

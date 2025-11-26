@@ -19,10 +19,11 @@ import model.ProductImg;
  *
  * @author Pham Nguyen Xuan Mai - CE190106
  */
-public class ProductImgDAO extends db.DBContext{
-/**
-     * Find product images for a given productId.
-     * Uses ProductImage (joined with ProductVariant) to get images belonging to any variant of the product.
+public class ProductImgDAO extends db.DBContext {
+
+    /**
+     * Find product images for a given productId. Uses ProductImage (joined with
+     * ProductVariant) to get images belonging to any variant of the product.
      *
      * @param productId product id
      * @return list of ProductImg (may be empty)
@@ -31,15 +32,16 @@ public class ProductImgDAO extends db.DBContext{
     public List<ProductImg> findByProductId(int productId) throws SQLException {
         List<ProductImg> list = new ArrayList<>();
 
-        String sql = "SELECT pi.image_id, pv.product_id, pi.image_url, pi.alt_text, pi.display_order, pi.created_at " +
-                     "FROM ProductImage pi " +
-                     "JOIN ProductVariant pv ON pi.variant_id = pv.variant_id " +
-                     "WHERE pv.product_id = ? " +
-                     "ORDER BY pi.display_order ASC, pi.image_id ASC";
+        // Query chuẩn SQL, chạy tốt trên cả SQL Server và PostgreSQL
+        String sql = "SELECT pi.image_id, pv.product_id, pi.image_url, pi.alt_text, pi.display_order, pi.created_at "
+                + "FROM ProductImage pi "
+                + "JOIN ProductVariant pv ON pi.variant_id = pv.variant_id "
+                + "WHERE pv.product_id = ? "
+                + "ORDER BY pi.display_order ASC, pi.image_id ASC";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, productId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     ProductImg pi = new ProductImg();
 

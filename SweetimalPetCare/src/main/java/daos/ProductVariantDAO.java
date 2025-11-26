@@ -22,6 +22,7 @@ public class ProductVariantDAO extends DBContext {
     public List<ProductVariant> getVariantsByProductId(long productId) {
         List<ProductVariant> list = new ArrayList<>();
         try {
+            // Query chuẩn
             String sql = "SELECT variant_id, product_id, sku, attribute_json, price, "
                     + "stock_quantity, image_url, is_active, created_at "
                     + "FROM ProductVariant WHERE product_id = ?";
@@ -44,11 +45,16 @@ public class ProductVariantDAO extends DBContext {
     // Lấy 1 variant "chính" (ví dụ TOP 1 theo created_at hoặc theo is_active)
     public ProductVariant getMainVariantByProductId(long productId) {
         try {
-            String sql = "SELECT TOP 1 variant_id, product_id, sku, attribute_json, price, "
+            // Fix: 
+            // 1. Bỏ TOP 1 ở đầu
+            // 2. Thêm LIMIT 1 ở cuối
+            // 3. is_active = 1 -> is_active = true
+            String sql = "SELECT variant_id, product_id, sku, attribute_json, price, "
                     + "stock_quantity, image_url, is_active, created_at "
                     + "FROM ProductVariant "
-                    + "WHERE product_id = ? AND is_active = 1 "
-                    + "ORDER BY created_at ASC";
+                    + "WHERE product_id = ? AND is_active = true "
+                    + "ORDER BY created_at ASC LIMIT 1";
+
             PreparedStatement ps = getConnection().prepareStatement(sql);
             ps.setLong(1, productId);
             ResultSet rs = ps.executeQuery();
@@ -92,18 +98,17 @@ public class ProductVariantDAO extends DBContext {
 
         return v;
     }
-    
-      
+
     /**
-     * Trả về giá lớn nhất (unit: ví dụ đ = đồng) giữa các variant.
-     * Trả về null nếu không có giá nào.
+     * Trả về giá lớn nhất (unit: ví dụ đ = đồng) giữa các variant. Trả về null
+     * nếu không có giá nào.
      */
     public Integer getMaxPrice() {
-        String sql = "SELECT MAX(price) AS max_price FROM ProductVariant WHERE is_active = 1";
+        // Fix: is_active = 1 -> is_active = true
+        String sql = "SELECT MAX(price) AS max_price FROM ProductVariant WHERE is_active = true";
 
         try (
-             PreparedStatement ps = getConnection().prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+                 PreparedStatement ps = getConnection().prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
 
             if (rs.next()) {
                 BigDecimal max = rs.getBigDecimal("max_price");

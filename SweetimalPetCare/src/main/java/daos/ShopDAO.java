@@ -18,17 +18,19 @@ import model.ProductVariant;
  *
  * @author Pham Nguyen Xuan Mai - CE190106
  */
-public class ShopDAO extends db.DBContext{
+public class ShopDAO extends db.DBContext {
 
     // ----------------- Helper -----------------
     private void appendPlaceholders(StringBuilder sb, int count) {
         for (int i = 0; i < count; i++) {
-            if (i > 0) sb.append(",");
+            if (i > 0) {
+                sb.append(",");
+            }
             sb.append("?");
         }
     }
 
-    // 🟢 Lấy tất cả sản phẩm (dùng khi cần, hiếm dùng cho listing lớn)
+    // 🟢 Lấy tất cả sản phẩm (Query chuẩn, chạy tốt trên Postgres)
     public List<Product> getAllProducts() {
         List<Product> list = new ArrayList<>();
         try {
@@ -40,7 +42,7 @@ public class ShopDAO extends db.DBContext{
                     + "FROM Product p "
                     + "LEFT JOIN Brand b ON p.brand_id = b.brand_id "
                     + "JOIN ProductVariant v ON p.product_id = v.product_id "
-                    + "WHERE p.is_active = 1 AND v.is_active = 1 AND v.price > 0";
+                    + "WHERE p.is_active = true AND v.is_active = true AND v.price > 0"; // Postgres dùng true/false hoặc '1'/'0' tùy setup, chuẩn là true
 
             PreparedStatement st = getConnection().prepareStatement(sql);
             ResultSet rs = st.executeQuery();
@@ -81,7 +83,7 @@ public class ShopDAO extends db.DBContext{
         return list;
     }
 
-    // 🟢 Lấy sản phẩm theo Brand (dùng cho listing filtered by brand)
+    // 🟢 Lấy sản phẩm theo Brand (Query chuẩn)
     public List<Product> getProductsByBrand(int brandId) {
         List<Product> list = new ArrayList<>();
         try {
@@ -93,7 +95,7 @@ public class ShopDAO extends db.DBContext{
                     + "FROM Product p "
                     + "LEFT JOIN Brand b ON p.brand_id = b.brand_id "
                     + "JOIN ProductVariant v ON p.product_id = v.product_id "
-                    + "WHERE p.is_active = 1 AND v.is_active = 1 AND v.price > 0 AND p.brand_id = ?";
+                    + "WHERE p.is_active = true AND v.is_active = true AND v.price > 0 AND p.brand_id = ?";
 
             PreparedStatement ps = getConnection().prepareStatement(sql);
             ps.setInt(1, brandId);
@@ -134,7 +136,7 @@ public class ShopDAO extends db.DBContext{
         return list;
     }
 
-    // 🟢 Lấy sản phẩm theo Category (dùng cho listing filtered by category)
+    // 🟢 Lấy sản phẩm theo Category (Query chuẩn)
     public List<Product> getProductsByCategory(int categoryId) {
         List<Product> list = new ArrayList<>();
         try {
@@ -146,7 +148,7 @@ public class ShopDAO extends db.DBContext{
                     + "FROM Product p "
                     + "LEFT JOIN Brand b ON p.brand_id = b.brand_id "
                     + "JOIN ProductVariant v ON p.product_id = v.product_id "
-                    + "WHERE p.is_active = 1 AND v.is_active = 1 AND v.price > 0 AND p.product_category_id = ?";
+                    + "WHERE p.is_active = true AND v.is_active = true AND v.price > 0 AND p.product_category_id = ?";
 
             PreparedStatement ps = getConnection().prepareStatement(sql);
             ps.setInt(1, categoryId);
@@ -188,12 +190,11 @@ public class ShopDAO extends db.DBContext{
     }
 
     /**
-     * Lấy products với filter (không phân trang) - giữ OUTER APPLY logic để chọn mainVariant phù hợp.
-     * ALWAYS require v.price > 0 so products without a priced mainVariant are excluded.
-     * Also require v.variant_id IS NOT NULL so products with no matching variant are excluded.
+     * PostgreSQL Version: - Thay OUTER APPLY bằng LEFT JOIN LATERAL ... ON true
+     * - Thay TOP 1 bằng LIMIT 1 ở cuối subquery
      */
     public List<Product> getProductsWithFilter(List<Integer> categoryIds, List<Integer> brandIds,
-                                               Double minPrice, Double maxPrice, String stock, String sort) {
+            Double minPrice, Double maxPrice, String stock, String sort) {
         List<Product> list = new ArrayList<>();
         try {
             StringBuilder sql = new StringBuilder();
@@ -205,15 +206,17 @@ public class ShopDAO extends db.DBContext{
             sql.append("v.is_active AS variant_active, v.created_at AS variant_created ");
             sql.append("FROM Product p ");
             sql.append("LEFT JOIN Brand b ON p.brand_id = b.brand_id ");
-            sql.append("OUTER APPLY ( ");
-            sql.append("    SELECT TOP 1 v.variant_id, v.sku, v.attribute_json, v.price, ");
+
+            // Fix: OUTER APPLY -> LEFT JOIN LATERAL
+            sql.append("LEFT JOIN LATERAL ( ");
+            sql.append("    SELECT v.variant_id, v.sku, v.attribute_json, v.price, "); // Bỏ TOP 1
             sql.append("           v.stock_quantity, v.image_url, v.is_active, v.created_at ");
             sql.append("    FROM ProductVariant v ");
-            sql.append("    WHERE v.product_id = p.product_id AND v.is_active = 1 ");
+            sql.append("    WHERE v.product_id = p.product_id AND v.is_active = true ");
             // require priced variant
             sql.append("    AND v.price > 0 ");
 
-            // price & stock filter inside OUTER APPLY (so mainVariant respects price filter)
+            // price & stock filter inside Lateral Join
             if (minPrice != null) {
                 sql.append("AND v.price >= ? ");
             }
@@ -229,9 +232,11 @@ public class ShopDAO extends db.DBContext{
             }
 
             sql.append("    ORDER BY v.price ASC ");
-            sql.append(") v ");
-            // require that OUTER APPLY returned a variant (exclude products with no priced/main variant)
-            sql.append("WHERE p.is_active = 1 AND v.variant_id IS NOT NULL ");
+            sql.append("    LIMIT 1 "); // Fix: Thêm LIMIT 1 thay cho TOP 1
+            sql.append(") v ON true "); // Fix: Thêm ON true cho Lateral Join
+
+            // require that OUTER APPLY returned a variant
+            sql.append("WHERE p.is_active = true AND v.variant_id IS NOT NULL ");
 
             // category / brand filters on product level
             if (categoryIds != null && !categoryIds.isEmpty()) {
@@ -246,7 +251,7 @@ public class ShopDAO extends db.DBContext{
                 sql.append(") ");
             }
 
-            // Build ORDER BY clause (SQL Server compatible)
+            // Build ORDER BY clause
             String orderClause = " ORDER BY p.product_name ASC"; // default
 
             if (sort != null) {
@@ -273,7 +278,6 @@ public class ShopDAO extends db.DBContext{
                         orderClause = " ORDER BY p.created_at DESC";
                         break;
                     default:
-                        // keep default
                         break;
                 }
             }
@@ -283,9 +287,13 @@ public class ShopDAO extends db.DBContext{
             PreparedStatement ps = getConnection().prepareStatement(sql.toString());
 
             int index = 1;
-            // bind price filters first (used in OUTER APPLY)
-            if (minPrice != null) ps.setDouble(index++, minPrice);
-            if (maxPrice != null) ps.setDouble(index++, maxPrice);
+            // bind price filters first (used in LATERAL JOIN)
+            if (minPrice != null) {
+                ps.setDouble(index++, minPrice);
+            }
+            if (maxPrice != null) {
+                ps.setDouble(index++, maxPrice);
+            }
 
             // bind category ids
             if (categoryIds != null && !categoryIds.isEmpty()) {
@@ -315,7 +323,6 @@ public class ShopDAO extends db.DBContext{
                 );
                 p.setBrandName(rs.getString("brand_name"));
 
-                // tạo mainVariant nếu variant_id không null
                 if (rs.getObject("variant_id") != null) {
                     ProductVariant v = new ProductVariant(
                             rs.getLong("variant_id"),
@@ -328,14 +335,16 @@ public class ShopDAO extends db.DBContext{
                             rs.getBoolean("variant_active"),
                             rs.getTimestamp("variant_created")
                     );
-                    // If variant has no image_url, try to fallback to first ProductImage for this product
+
+                    // Fallback image logic
                     try {
                         String iu = v.getImageUrl();
                         if (iu == null || iu.trim().isEmpty()) {
-                            String imgSql = "SELECT TOP 1 pi.image_url FROM ProductImage pi JOIN ProductVariant pv2 ON pi.variant_id = pv2.variant_id WHERE pv2.product_id = ? ORDER BY pi.display_order ASC, pi.image_id ASC";
-                            try (PreparedStatement psImg = getConnection().prepareStatement(imgSql)) {
+                            // Fix: TOP 1 -> LIMIT 1
+                            String imgSql = "SELECT pi.image_url FROM ProductImage pi JOIN ProductVariant pv2 ON pi.variant_id = pv2.variant_id WHERE pv2.product_id = ? ORDER BY pi.display_order ASC, pi.image_id ASC LIMIT 1";
+                            try ( PreparedStatement psImg = getConnection().prepareStatement(imgSql)) {
                                 psImg.setLong(1, p.getProductId());
-                                try (ResultSet rsImg = psImg.executeQuery()) {
+                                try ( ResultSet rsImg = psImg.executeQuery()) {
                                     if (rsImg.next()) {
                                         v.setImageUrl(rsImg.getString(1));
                                     }
@@ -363,14 +372,12 @@ public class ShopDAO extends db.DBContext{
     }
 
     /**
-     * Paged version of getProductsWithFilter. Uses SQL Server OFFSET/FETCH for pagination.
-     * limit = pageSize, offset = (currentPage-1)*pageSize
-     * Ensures main variant has price > 0 and respects min/max price and stock.
-     * Also excludes products where OUTER APPLY returned no variant (v.variant_id IS NOT NULL).
+     * PostgreSQL Version: - Fix Lateral Join - Fix Pagination syntax: OFFSET ?
+     * LIMIT ?
      */
     public List<Product> getProductsWithFilterPaged(List<Integer> categoryIds, List<Integer> brandIds,
-                                                    Double minPrice, Double maxPrice, String stock, String sort,
-                                                    int limit, int offset) {
+            Double minPrice, Double maxPrice, String stock, String sort,
+            int limit, int offset) {
         List<Product> list = new ArrayList<>();
         try {
             StringBuilder sql = new StringBuilder();
@@ -382,11 +389,13 @@ public class ShopDAO extends db.DBContext{
             sql.append("v.is_active AS variant_active, v.created_at AS variant_created ");
             sql.append("FROM Product p ");
             sql.append("LEFT JOIN Brand b ON p.brand_id = b.brand_id ");
-            sql.append("OUTER APPLY ( ");
-            sql.append("    SELECT TOP 1 v.variant_id, v.sku, v.attribute_json, v.price, ");
+
+            // Fix: Lateral Join
+            sql.append("LEFT JOIN LATERAL ( ");
+            sql.append("    SELECT v.variant_id, v.sku, v.attribute_json, v.price, ");
             sql.append("           v.stock_quantity, v.image_url, v.is_active, v.created_at ");
             sql.append("    FROM ProductVariant v ");
-            sql.append("    WHERE v.product_id = p.product_id AND v.is_active = 1 ");
+            sql.append("    WHERE v.product_id = p.product_id AND v.is_active = true ");
             // require priced variant
             sql.append("    AND v.price > 0 ");
 
@@ -405,9 +414,11 @@ public class ShopDAO extends db.DBContext{
             }
 
             sql.append("    ORDER BY v.price ASC ");
-            sql.append(") v ");
-            // require that OUTER APPLY returned a variant (exclude products with no priced/main variant)
-            sql.append("WHERE p.is_active = 1 AND v.variant_id IS NOT NULL ");
+            sql.append("    LIMIT 1 "); // Fix LIMIT
+            sql.append(") v ON true "); // Fix ON true
+
+            // require that OUTER APPLY returned a variant
+            sql.append("WHERE p.is_active = true AND v.variant_id IS NOT NULL ");
 
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 sql.append("AND p.product_category_id IN (");
@@ -452,14 +463,20 @@ public class ShopDAO extends db.DBContext{
             }
             sql.append(orderClause);
 
-            // Append pagination (SQL Server OFFSET/FETCH)
-            sql.append(" OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+            // Fix: Pagination for Postgres (OFFSET ... LIMIT ...)
+            // Note: Thứ tự bind tham số trong Java vẫn là offset trước, limit sau
+            // Nên query phải là OFFSET ? LIMIT ?
+            sql.append(" OFFSET ? LIMIT ?");
 
             PreparedStatement ps = getConnection().prepareStatement(sql.toString());
 
             int index = 1;
-            if (minPrice != null) ps.setDouble(index++, minPrice);
-            if (maxPrice != null) ps.setDouble(index++, maxPrice);
+            if (minPrice != null) {
+                ps.setDouble(index++, minPrice);
+            }
+            if (maxPrice != null) {
+                ps.setDouble(index++, maxPrice);
+            }
 
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 for (int id : categoryIds) {
@@ -503,14 +520,15 @@ public class ShopDAO extends db.DBContext{
                             rs.getBoolean("variant_active"),
                             rs.getTimestamp("variant_created")
                     );
-                    // fallback to ProductImage if variant.image_url is empty
+                    // fallback to ProductImage
                     try {
                         String iu = v.getImageUrl();
                         if (iu == null || iu.trim().isEmpty()) {
-                            String imgSql = "SELECT TOP 1 pi.image_url FROM ProductImage pi JOIN ProductVariant pv2 ON pi.variant_id = pv2.variant_id WHERE pv2.product_id = ? ORDER BY pi.display_order ASC, pi.image_id ASC";
-                            try (PreparedStatement psImg = getConnection().prepareStatement(imgSql)) {
+                            // Fix: TOP 1 -> LIMIT 1
+                            String imgSql = "SELECT pi.image_url FROM ProductImage pi JOIN ProductVariant pv2 ON pi.variant_id = pv2.variant_id WHERE pv2.product_id = ? ORDER BY pi.display_order ASC, pi.image_id ASC LIMIT 1";
+                            try ( PreparedStatement psImg = getConnection().prepareStatement(imgSql)) {
                                 psImg.setLong(1, p.getProductId());
-                                try (ResultSet rsImg = psImg.executeQuery()) {
+                                try ( ResultSet rsImg = psImg.executeQuery()) {
                                     if (rsImg.next()) {
                                         v.setImageUrl(rsImg.getString(1));
                                     }
@@ -536,34 +554,34 @@ public class ShopDAO extends db.DBContext{
         return list;
     }
 
-    /**
-     * COUNT products matching filters.
-     * IMPORTANT: this count enforces that the product has at least one active variant
-     * with price > 0 and that satisfies optional min/max price and stock filters.
-     */
+    // 🟢 Count Products (Standard SQL - OK)
     public int countProductsWithFilter(List<Integer> categoryIds, List<Integer> brandIds,
-                                       Double minPrice, Double maxPrice, String stock) {
+            Double minPrice, Double maxPrice, String stock) {
         try {
             StringBuilder sql = new StringBuilder();
             List<Object> params = new ArrayList<>();
 
-            sql.append("SELECT COUNT(*) FROM Product p WHERE p.is_active = 1 ");
+            sql.append("SELECT COUNT(*) FROM Product p WHERE p.is_active = true ");
 
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 sql.append(" AND p.product_category_id IN (");
                 appendPlaceholders(sql, categoryIds.size());
                 sql.append(") ");
-                for (Integer id : categoryIds) params.add(id);
+                for (Integer id : categoryIds) {
+                    params.add(id);
+                }
             }
             if (brandIds != null && !brandIds.isEmpty()) {
                 sql.append(" AND p.brand_id IN (");
                 appendPlaceholders(sql, brandIds.size());
                 sql.append(") ");
-                for (Integer id : brandIds) params.add(id);
+                for (Integer id : brandIds) {
+                    params.add(id);
+                }
             }
 
             // enforce existence of at least one variant matching variant-level filters (and priced)
-            sql.append(" AND EXISTS (SELECT 1 FROM ProductVariant v WHERE v.product_id = p.product_id AND v.is_active = 1 AND v.price > 0 ");
+            sql.append(" AND EXISTS (SELECT 1 FROM ProductVariant v WHERE v.product_id = p.product_id AND v.is_active = true AND v.price > 0 ");
             if (minPrice != null) {
                 sql.append(" AND v.price >= ? ");
                 params.add(minPrice);
@@ -585,15 +603,22 @@ public class ShopDAO extends db.DBContext{
 
             int idx = 1;
             for (Object o : params) {
-                if (o instanceof Integer) ps.setInt(idx++, (Integer) o);
-                else if (o instanceof Double) ps.setDouble(idx++, (Double) o);
-                else if (o instanceof Long) ps.setLong(idx++, (Long) o);
-                else ps.setObject(idx++, o);
+                if (o instanceof Integer) {
+                    ps.setInt(idx++, (Integer) o);
+                } else if (o instanceof Double) {
+                    ps.setDouble(idx++, (Double) o);
+                } else if (o instanceof Long) {
+                    ps.setLong(idx++, (Long) o);
+                } else {
+                    ps.setObject(idx++, o);
+                }
             }
 
             ResultSet rs = ps.executeQuery();
             int result = 0;
-            if (rs.next()) result = rs.getInt(1);
+            if (rs.next()) {
+                result = rs.getInt(1);
+            }
             rs.close();
             ps.close();
             return result;
@@ -604,15 +629,19 @@ public class ShopDAO extends db.DBContext{
         return 0;
     }
 
-    // --- Count variants in/out stock (dùng hiển thị số lượng in/out trên sidebar) ---
+    // 🟢 Count Variants In Stock (Standard SQL - OK)
     public int countVariantsInStock(List<Integer> categoryIds, List<Integer> brandIds, Double minPrice, Double maxPrice) {
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("SELECT COUNT(*) FROM ProductVariant v JOIN Product p ON v.product_id = p.product_id ");
-            sql.append("WHERE v.is_active = 1 AND v.stock_quantity > 0 AND v.price > 0 ");
+            sql.append("WHERE v.is_active = true AND v.stock_quantity > 0 AND v.price > 0 ");
 
-            if (minPrice != null) sql.append(" AND v.price >= ? ");
-            if (maxPrice != null) sql.append(" AND v.price <= ? ");
+            if (minPrice != null) {
+                sql.append(" AND v.price >= ? ");
+            }
+            if (maxPrice != null) {
+                sql.append(" AND v.price <= ? ");
+            }
 
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 sql.append(" AND p.product_category_id IN (");
@@ -628,14 +657,22 @@ public class ShopDAO extends db.DBContext{
             PreparedStatement ps = getConnection().prepareStatement(sql.toString());
 
             int idx = 1;
-            if (minPrice != null) ps.setDouble(idx++, minPrice);
-            if (maxPrice != null) ps.setDouble(idx++, maxPrice);
+            if (minPrice != null) {
+                ps.setDouble(idx++, minPrice);
+            }
+            if (maxPrice != null) {
+                ps.setDouble(idx++, maxPrice);
+            }
 
             if (categoryIds != null && !categoryIds.isEmpty()) {
-                for (Integer id : categoryIds) ps.setInt(idx++, id);
+                for (Integer id : categoryIds) {
+                    ps.setInt(idx++, id);
+                }
             }
             if (brandIds != null && !brandIds.isEmpty()) {
-                for (Integer id : brandIds) ps.setInt(idx++, id);
+                for (Integer id : brandIds) {
+                    ps.setInt(idx++, id);
+                }
             }
 
             ResultSet rs = ps.executeQuery();
@@ -654,14 +691,19 @@ public class ShopDAO extends db.DBContext{
         return 0;
     }
 
+    // 🟢 Count Variants Out Of Stock (Standard SQL - OK)
     public int countVariantsOutOfStock(List<Integer> categoryIds, List<Integer> brandIds, Double minPrice, Double maxPrice) {
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("SELECT COUNT(*) FROM ProductVariant v JOIN Product p ON v.product_id = p.product_id ");
-            sql.append("WHERE v.is_active = 1 AND v.stock_quantity = 0 AND v.price > 0 ");
+            sql.append("WHERE v.is_active = true AND v.stock_quantity = 0 AND v.price > 0 ");
 
-            if (minPrice != null) sql.append(" AND v.price >= ? ");
-            if (maxPrice != null) sql.append(" AND v.price <= ? ");
+            if (minPrice != null) {
+                sql.append(" AND v.price >= ? ");
+            }
+            if (maxPrice != null) {
+                sql.append(" AND v.price <= ? ");
+            }
 
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 sql.append(" AND p.product_category_id IN (");
@@ -677,14 +719,22 @@ public class ShopDAO extends db.DBContext{
             PreparedStatement ps = getConnection().prepareStatement(sql.toString());
 
             int idx = 1;
-            if (minPrice != null) ps.setDouble(idx++, minPrice);
-            if (maxPrice != null) ps.setDouble(idx++, maxPrice);
+            if (minPrice != null) {
+                ps.setDouble(idx++, minPrice);
+            }
+            if (maxPrice != null) {
+                ps.setDouble(idx++, maxPrice);
+            }
 
             if (categoryIds != null && !categoryIds.isEmpty()) {
-                for (Integer id : categoryIds) ps.setInt(idx++, id);
+                for (Integer id : categoryIds) {
+                    ps.setInt(idx++, id);
+                }
             }
             if (brandIds != null && !brandIds.isEmpty()) {
-                for (Integer id : brandIds) ps.setInt(idx++, id);
+                for (Integer id : brandIds) {
+                    ps.setInt(idx++, id);
+                }
             }
 
             ResultSet rs = ps.executeQuery();
@@ -702,6 +752,4 @@ public class ShopDAO extends db.DBContext{
         }
         return 0;
     }
-
-    // NOTE: getRelatedProductsByCategory left in ProductDAO as it's used by product detail
 }
